@@ -29,9 +29,9 @@ namespace Scarlet.IO.BeagleBone
                 case 0: this.Port = new ScarletSPIPortFS(SPIPortEnum.SPIPORT_0); break;
                 case 1: this.Port = new ScarletSPIPortFS(SPIPortEnum.SPIPORT_1); break;
                 default: throw new ArgumentOutOfRangeException("Only SPI ports 0 and 1 are supported.");
-                    this.Port.SetMode(SPIModeEnum.SPI_MODE_0);
-                    this.Port.SetDefaultSpeedInHz(500000); // TODO: Determine appropriate speed.
             }
+            this.Port.SetMode(SPIModeEnum.SPI_MODE_0);
+            this.Port.SetDefaultSpeedInHz(500000); // TODO: Determine appropriate speed.
         }
 
         public byte[] Write(IDigitalOut DeviceSelect, byte[] Data, int DataLength)
