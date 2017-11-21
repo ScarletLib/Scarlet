@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Communications\PacketBuffer.cs" />
     <Compile Include="Communications\WatchdogManager.cs" />
     <Compile Include="Communications\PacketHandler.cs" />
     <Compile Include="Communications\Client.cs" />
