@@ -318,5 +318,21 @@ namespace UnitTest
             Assert.AreEqual(controller.Dequeue(), null);
             Assert.AreEqual(controller.Peek(), null);
         }
+
+        [TestMethod]
+        public void TestCount()
+        {
+            GenericController controller = new GenericController();
+            controller.Enqueue(NewPacket(10, 0), 0);
+            controller.Enqueue(NewPacket(10, 0), 0);
+            controller.Enqueue(NewPacket(10, 1), 1);
+            controller.Enqueue(NewPacket(10, 1), 1);
+            controller.Enqueue(NewPacket(10, 2), 2);
+            controller.Enqueue(NewPacket(10, 3), 3);
+            controller.Enqueue(NewPacket(10, 3), 3);
+            controller.Enqueue(NewPacket(10, 4), 4);
+
+            Assert.AreEqual(8, controller.Count);
+        }
     }
 }

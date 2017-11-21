@@ -38,6 +38,11 @@ namespace Scarlet.Communications
         /// 
         /// <returns> Next packet if buffer is not empty, or null otherwise. </returns>
         public abstract Packet Dequeue();
+
+        /// <summary>
+        /// Get the total number of packets in the buffer.
+        /// </summary>
+        public abstract int Count { get; }
     }
 
     /// <summary>
@@ -118,6 +123,17 @@ namespace Scarlet.Communications
                 }
             }
         }
+
+        /// <summary>
+        /// Get the total number of packets in the buffer.
+        /// </summary>
+        public override int Count
+        {
+            get
+            {
+                return Queue.Count;
+            }
+        }
     }
 
     /// <summary>
@@ -195,6 +211,20 @@ namespace Scarlet.Communications
                     return next;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Get the total number of packets in the buffer.
+        /// </summary>
+        public override int Count
+        {
+            get
+            {
+                int Sum = 0;
+                foreach (PacketBuffer Buffer in Buffers)
+                    Sum += Buffer.Count;
+                return Sum;
+            }
         }
     }
 
@@ -377,6 +407,20 @@ namespace Scarlet.Communications
             }
             return Next;
         }
+
+        /// <summary>
+        /// Get the total number of packets in the buffer.
+        /// </summary>
+        public override int Count
+        {
+            get
+            {
+                int Sum = 0;
+                foreach (PacketBuffer Buffer in Buffers)
+                    Sum += Buffer.Count;
+                return Sum;
+            }
+        }
     }
 
     /// <summary>
@@ -467,6 +511,17 @@ namespace Scarlet.Communications
         public override Packet Dequeue()
         {
             return PriorityBuffer.Dequeue();
+        }
+
+        /// <summary>
+        /// Get the total number of packets in the buffer.
+        /// </summary>
+        public override int Count
+        {
+            get
+            {
+                return PriorityBuffer.Count;
+            }
         }
     }
 }
