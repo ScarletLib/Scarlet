@@ -27,13 +27,13 @@ namespace UnitTest
 
         public static Packet NewPacket(int length, int priority)
         {
-
+            return new Packet(new Message((byte)priority, new byte[length]), false);
         }
 
         public static void AssertPacket(Packet p, int length, int priority)
         {
-            Assert.AreEqual(p.length, length);
-            Assert.AreEqual(p.priority, priority);
+            Assert.AreEqual(p.Data.Payload.Length, length);
+            Assert.AreEqual(p.Data.ID, priority);
         }
 
         [TestMethod]
@@ -44,7 +44,7 @@ namespace UnitTest
             Assert.AreEqual(controller.Peek(), null);
             Assert.AreEqual(controller.Dequeue(), null);
 
-            controller.Enqueue(new Packet(10, 0));
+            controller.Enqueue(NewPacket(10, 0));
             AssertPacket(controller.Peek(), 10, 0);
             AssertPacket(controller.Dequeue(), 10, 0);
             Assert.AreEqual(controller.Peek(), null);
@@ -57,7 +57,7 @@ namespace UnitTest
             QueueBuffer controller = new QueueBuffer();
             int capacity = 200000;
             for (int i = 0; i < capacity; i++)
-                controller.Enqueue(new Packet(10, 0));
+                controller.Enqueue(NewPacket(10, 0));
             controller.Peek();
             for (int i = 0; i < capacity; i++)
                 controller.Dequeue();
@@ -67,9 +67,9 @@ namespace UnitTest
         public void TestLeakyBucketOrder()
         {
             QueueBuffer controller = new QueueBuffer();
-            controller.Enqueue(new Packet(1, 0));
-            controller.Enqueue(new Packet(2, 0));
-            controller.Enqueue(new Packet(3, 0));
+            controller.Enqueue(NewPacket(1, 0));
+            controller.Enqueue(NewPacket(2, 0));
+            controller.Enqueue(NewPacket(3, 0));
             AssertPacket(controller.Dequeue(), 1, 0);
             AssertPacket(controller.Dequeue(), 2, 0);
             AssertPacket(controller.Dequeue(), 3, 0);
@@ -81,7 +81,7 @@ namespace UnitTest
         public void TestLeakyBucketPriority()
         {
             QueueBuffer controller = new QueueBuffer();
-            controller.Enqueue(new Packet(1, 0), 1);
+            controller.Enqueue(NewPacket(1, 0), 1);
         }
 
         public PriorityBuffer ConstructPriorityController()
@@ -98,10 +98,10 @@ namespace UnitTest
         {
             PriorityBuffer controller = ConstructPriorityController();
 
-            controller.Enqueue(new Packet(1, 0), 0);
-            controller.Enqueue(new Packet(2, 2), 2);
-            controller.Enqueue(new Packet(3, 1), 1);
-            controller.Enqueue(new Packet(4, 1), 1);
+            controller.Enqueue(NewPacket(1, 0), 0);
+            controller.Enqueue(NewPacket(2, 2), 2);
+            controller.Enqueue(NewPacket(3, 1), 1);
+            controller.Enqueue(NewPacket(4, 1), 1);
 
             AssertPacket(controller.Dequeue(), 1, 0);
             AssertPacket(controller.Dequeue(), 3, 1);
@@ -115,18 +115,18 @@ namespace UnitTest
         {
             PriorityBuffer controller = ConstructPriorityController();
 
-            controller.Enqueue(new Packet(3, 1), 1);
-            controller.Enqueue(new Packet(4, 1), 1);
+            controller.Enqueue(NewPacket(3, 1), 1);
+            controller.Enqueue(NewPacket(4, 1), 1);
 
             AssertPacket(controller.Peek(), 3, 1);
             AssertPacket(controller.Dequeue(), 3, 1);
             AssertPacket(controller.Peek(), 4, 1);
 
-            controller.Enqueue(new Packet(1, 0), 0);
+            controller.Enqueue(NewPacket(1, 0), 0);
 
             AssertPacket(controller.Peek(), 1, 0);
 
-            controller.Enqueue(new Packet(2, 2), 2);
+            controller.Enqueue(NewPacket(2, 2), 2);
 
             AssertPacket(controller.Peek(), 1, 0);
 
@@ -144,7 +144,7 @@ namespace UnitTest
         public void TestPriorityControllerTooLowPriority()
         {
             PriorityBuffer controller = ConstructPriorityController();
-            controller.Enqueue(new Packet(1, -1), -1);
+            controller.Enqueue(NewPacket(1, -1), -1);
         }
 
         [TestMethod]
@@ -152,7 +152,7 @@ namespace UnitTest
         public void TestPriorityControllerTooHighPriority()
         {
             PriorityBuffer controller = ConstructPriorityController();
-            controller.Enqueue(new Packet(1, 3), 3);
+            controller.Enqueue(NewPacket(1, 3), 3);
         }
 
         public BandwidthControlBuffer ConstructBandwidthController(int[] badwidhtAllocation = null)
@@ -169,7 +169,7 @@ namespace UnitTest
         public void TestBandwidthControllerTooLowPriority()
         {
             BandwidthControlBuffer controller = ConstructBandwidthController();
-            controller.Enqueue(new Packet(1, -1), -1);
+            controller.Enqueue(NewPacket(1, -1), -1);
         }
 
         [TestMethod]
@@ -177,14 +177,14 @@ namespace UnitTest
         public void TestBandwidthControllerTooHighPriority()
         {
             BandwidthControlBuffer controller = ConstructBandwidthController();
-            controller.Enqueue(new Packet(1, 3), 3);
+            controller.Enqueue(NewPacket(1, 3), 3);
         }
 
         [TestMethod]
         public void TestBandwidthControllerBasic()
         {
             BandwidthControlBuffer controller = ConstructBandwidthController();
-            controller.Enqueue(new Packet(1, 0), 0);
+            controller.Enqueue(NewPacket(1, 0), 0);
             AssertPacket(controller.Peek(), 1, 0);
             AssertPacket(controller.Dequeue(), 1, 0);
             Assert.AreEqual(controller.Peek(), null);
@@ -192,21 +192,21 @@ namespace UnitTest
             Assert.AreEqual(controller.Peek(), null);
 
 
-            controller.Enqueue(new Packet(1, 0), 0);
+            controller.Enqueue(NewPacket(1, 0), 0);
             AssertPacket(controller.Peek(), 1, 0);
             AssertPacket(controller.Dequeue(), 1, 0);
             Assert.AreEqual(controller.Peek(), null);
             Assert.AreEqual(controller.Dequeue(), null);
             Assert.AreEqual(controller.Peek(), null);
 
-            controller.Enqueue(new Packet(1, 2), 2);
+            controller.Enqueue(NewPacket(1, 2), 2);
             AssertPacket(controller.Peek(), 1, 2);
             AssertPacket(controller.Dequeue(), 1, 2);
             Assert.AreEqual(controller.Peek(), null);
             Assert.AreEqual(controller.Dequeue(), null);
             Assert.AreEqual(controller.Peek(), null);
 
-            controller.Enqueue(new Packet(1, 1), 1);
+            controller.Enqueue(NewPacket(1, 1), 1);
             AssertPacket(controller.Peek(), 1, 1);
             AssertPacket(controller.Dequeue(), 1, 1);
             Assert.AreEqual(controller.Peek(), null);
@@ -223,15 +223,15 @@ namespace UnitTest
 
             for (int i = 0; i < totalPacket; i++)
             {
-                controller.Enqueue(new Packet(r.Next(1, 64), 0), 0);
-                controller.Enqueue(new Packet(r.Next(1, 64), 1), 1);
-                controller.Enqueue(new Packet(r.Next(1, 64), 2), 2);
+                controller.Enqueue(NewPacket(r.Next(1, 64), 0), 0);
+                controller.Enqueue(NewPacket(r.Next(1, 64), 1), 1);
+                controller.Enqueue(NewPacket(r.Next(1, 64), 2), 2);
             }
 
             for (int i = 0; i < totalPacket * 3 / 4; i++)
             {
                 Packet next = controller.Dequeue();
-                bandwidthCount[next.priority] += next.length;
+                bandwidthCount[next.Data.ID] += next.GetLength();
                 nPacket++;
             }
 
@@ -267,7 +267,7 @@ namespace UnitTest
         public void TestGenericControllerTooLowPriority()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(new Packet(1, -1), -1);
+            controller.Enqueue(NewPacket(1, -1), -1);
         }
 
         [TestMethod]
@@ -275,7 +275,7 @@ namespace UnitTest
         public void TestGenericControllerTooHighPriority()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(new Packet(1, 3), 5);
+            controller.Enqueue(NewPacket(1, 3), 5);
         }
 
         [TestMethod]
@@ -283,7 +283,7 @@ namespace UnitTest
         public void TestGenericControllerTooLowPriority2()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(new Packet(1, -1), (GenericController.Priority)(-1));
+            controller.Enqueue(NewPacket(1, -1), (GenericController.Priority)(-1));
         }
 
         [TestMethod]
@@ -291,7 +291,7 @@ namespace UnitTest
         public void TestGenericControllerTooHighPriority2()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(new Packet(1, 3), (GenericController.Priority)5);
+            controller.Enqueue(NewPacket(1, 3), (GenericController.Priority)5);
         }
 
 
@@ -299,11 +299,11 @@ namespace UnitTest
         public void TestGenericController()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(new Packet(1, 0), GenericController.Priority.MEDIUM);
-            controller.Enqueue(new Packet(2, 0), GenericController.Priority.LOW);
-            controller.Enqueue(new Packet(3, 0), GenericController.Priority.HIGH);
-            controller.Enqueue(new Packet(4, 0), GenericController.Priority.EMERGENT);
-            controller.Enqueue(new Packet(5, 0), GenericController.Priority.LOWEST);
+            controller.Enqueue(NewPacket(1, 0), GenericController.Priority.MEDIUM);
+            controller.Enqueue(NewPacket(2, 0), GenericController.Priority.LOW);
+            controller.Enqueue(NewPacket(3, 0), GenericController.Priority.HIGH);
+            controller.Enqueue(NewPacket(4, 0), GenericController.Priority.EMERGENT);
+            controller.Enqueue(NewPacket(5, 0), GenericController.Priority.LOWEST);
 
             AssertPacket(controller.Peek(), 4, 0);
             AssertPacket(controller.Dequeue(), 4, 0);

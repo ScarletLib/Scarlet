@@ -55,6 +55,16 @@ namespace Scarlet.Communications
         }
 
         /// <summary>
+        /// Return the length of packet in bytes.
+        /// </summary>
+        /// 
+        /// <returns> Length of packet in bytes. </returns>
+        public int GetLength()
+        {
+            return GetForSend().Length;
+        }
+
+        /// <summary>
         /// Updates the packet timestamp to the current time
         /// </summary>
         public void UpdateTimestamp()
