@@ -43,6 +43,15 @@ namespace Scarlet.Communications
         /// Get the total number of packets in the buffer.
         /// </summary>
         public abstract int Count { get; }
+
+        /// <summary>
+        /// Return whether the buffer is empty
+        /// </summary>
+        /// <returns> true if buffer is empty, false otherwise. </returns>
+        public bool IsEmpty()
+        {
+            return Peek() != null;
+        }
     }
 
     /// <summary>
@@ -131,7 +140,10 @@ namespace Scarlet.Communications
         {
             get
             {
-                return Queue.Count;
+                lock (Queue)
+                {
+                    return Queue.Count;
+                }
             }
         }
     }

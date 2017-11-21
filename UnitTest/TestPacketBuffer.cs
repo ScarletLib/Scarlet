@@ -320,10 +320,16 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void TestCount()
+        public void TestCountAndIsEmpty()
         {
             GenericController controller = new GenericController();
+
+            Assert.AreEqual(false, controller.IsEmpty());
+
             controller.Enqueue(NewPacket(10, 0), 0);
+            
+            Assert.AreEqual(true, controller.IsEmpty());
+
             controller.Enqueue(NewPacket(10, 0), 0);
             controller.Enqueue(NewPacket(10, 1), 1);
             controller.Enqueue(NewPacket(10, 1), 1);
@@ -332,7 +338,14 @@ namespace UnitTest
             controller.Enqueue(NewPacket(10, 3), 3);
             controller.Enqueue(NewPacket(10, 4), 4);
 
+            Assert.AreEqual(true, controller.IsEmpty());
+
             Assert.AreEqual(8, controller.Count);
+
+            for (int i = 0; i < 8; i++)
+                controller.Dequeue();
+            
+            Assert.AreEqual(false, controller.IsEmpty());
         }
     }
 }
