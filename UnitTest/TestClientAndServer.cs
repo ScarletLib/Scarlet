@@ -18,6 +18,14 @@ namespace UnitTest
             System.Threading.Thread.Sleep(500);
         }
 
+        private void InitializeConnectionWithQueueBuffer()
+        {
+            Server.Start(2000, 2001, UsePriorityQueue: false);
+            System.Threading.Thread.Sleep(500);
+            Client.Start("127.0.0.1", 2000, 2001, "TestClient", UsePriorityQueue: false);
+            System.Threading.Thread.Sleep(500);
+        }
+
         public void MessageHandler(Packet Packet)
         {
             ReceivedMessage = UtilData.ToString(Packet.Data.Payload);
@@ -42,6 +50,53 @@ namespace UnitTest
 
             Packet MyPack = new Packet(new Message(ChannelID1, UtilData.ToBytes(TestText1)), false);
             Client.Send(MyPack, PacketPriority.LOWEST);
+            System.Threading.Thread.Sleep(200);
+            Assert.AreEqual(TestText1, ReceivedMessage);
+
+            Packet MyPack2 = new Packet(new Message(ChannelID2, UtilData.ToBytes(TestText2)), false, "TestClient");
+            Server.Send(MyPack2, PacketPriority.LOWEST);
+            System.Threading.Thread.Sleep(200);
+            Assert.AreEqual(TestText2, ReceivedMessage2);
+        }
+
+
+        [TestMethod]
+        public void BasicTestDefaultPriority()
+        {
+            String TestText1 = "Hello, World!";
+            String TestText2 = "hello, world";
+            Byte ChannelID1 = 0xcd;
+            Byte ChannelID2 = 0xcf;
+
+            InitializeConnection();
+            Parse.SetParseHandler(ChannelID1, MessageHandler);
+            Parse.SetParseHandler(ChannelID2, MessageHandler2);
+
+            Packet MyPack = new Packet(new Message(ChannelID1, UtilData.ToBytes(TestText1)), false);
+            Client.Send(MyPack);
+            System.Threading.Thread.Sleep(200);
+            Assert.AreEqual(TestText1, ReceivedMessage);
+
+            Packet MyPack2 = new Packet(new Message(ChannelID2, UtilData.ToBytes(TestText2)), false, "TestClient");
+            Server.Send(MyPack2);
+            System.Threading.Thread.Sleep(200);
+            Assert.AreEqual(TestText2, ReceivedMessage2);
+        }
+
+        [TestMethod]
+        public void BasicTestQueueBuffer()
+        {
+            String TestText1 = "Hello, World!";
+            String TestText2 = "hello, world";
+            Byte ChannelID1 = 0xcd;
+            Byte ChannelID2 = 0xcf;
+
+            InitializeConnectionWithQueueBuffer();
+            Parse.SetParseHandler(ChannelID1, MessageHandler);
+            Parse.SetParseHandler(ChannelID2, MessageHandler2);
+
+            Packet MyPack = new Packet(new Message(ChannelID1, UtilData.ToBytes(TestText1)), false);
+            Client.Send(MyPack);
             System.Threading.Thread.Sleep(200);
             Assert.AreEqual(TestText1, ReceivedMessage);
 
