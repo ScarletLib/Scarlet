@@ -16,7 +16,7 @@ namespace Scarlet.Communications
 
         // Buffer
         private static Dictionary<string, PacketBuffer> SendQueues;
-        private static Queue<Packet> ReceiveQueue;
+        private static QueueBuffer ReceiveQueue;
 
         // Port listener
         private static UdpClient UDPListener;
@@ -63,7 +63,7 @@ namespace Scarlet.Communications
 
                 Clients = new Dictionary<string, ScarletClient>();
                 SendQueues = new Dictionary<string, PacketBuffer>();
-                ReceiveQueue = new Queue<Packet>();
+                ReceiveQueue = new QueueBuffer();
                 PacketsSent = new List<Packet>();
                 PacketsReceived = new List<Packet>();
                 Initialized = true;
@@ -256,8 +256,10 @@ namespace Scarlet.Communications
                         byte[] Data = DataBuffer.Take(DataSize).ToArray();
                         IPEndPoint ClientEndpoint = (IPEndPoint)Client.Client.RemoteEndPoint;
                         Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
-                        lock (ReceiveQueue) { ReceiveQueue.Enqueue(ReceivedPack); }
-                        if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
+                        ReceiveQueue.Enqueue(ReceivedPack);
+
+                        if (StorePackets)
+                            PacketsReceived.Add(ReceivedPack);
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Data received from client was too short. Discarding."); }
                 }
@@ -365,8 +367,10 @@ namespace Scarlet.Communications
                 else // Existing client
                 {
                     Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
-                    lock (ReceiveQueue) { ReceiveQueue.Enqueue(ReceivedPack); }
-                    if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
+                    ReceiveQueue.Enqueue(ReceivedPack);
+
+                    if (StorePackets)
+                        PacketsReceived.Add(ReceivedPack);
                 }
             }
             Listener.BeginReceive(HandleUDPData, Listener);
@@ -425,14 +429,11 @@ namespace Scarlet.Communications
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
             while (!Stopping)
             {
-                bool HasPacket;
-                lock (ReceiveQueue) { HasPacket = ReceiveQueue.Count > 0; }
-                if (HasPacket)
-                {
-                    Packet ToProcess;
-                    lock (ReceiveQueue) { ToProcess = (Packet)(ReceiveQueue.Dequeue().Clone()); }
-                    ProcessOnePacket(ToProcess);
-                }
+                Packet CurrentPacket = ReceiveQueue.Dequeue();
+                CurrentPacket = (Packet) CurrentPacket.Clone();
+
+                if (CurrentPacket != null)
+                    ProcessOnePacket(CurrentPacket);
                 Thread.Sleep(OperationPeriod);
             }
         }

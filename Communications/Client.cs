@@ -29,7 +29,7 @@ namespace Scarlet.Communications
         private static TcpClient ServerTCP;
 
         private static PacketBuffer SendQueue; // Buffer of packets waiting to be sent
-        private static Queue<Packet> ReceiveQueue; // Buffer of received packets waiting to be processed
+        private static QueueBuffer ReceiveQueue; // Buffer of received packets waiting to be processed
         private static PacketPriority DefaultPriority; // Default packet priority
 
         private static Thread SendThread, ProcessThread; // Threads for sending and parsing/processing
@@ -88,7 +88,7 @@ namespace Scarlet.Communications
                 WatchdogManager.ConnectionChanged += ConnectionChange;
 
                 // Initialize the receiving queue
-                ReceiveQueue = new Queue<Packet>();
+                ReceiveQueue = new QueueBuffer();
 
                 // Initialize sending queue and default priority
                 if (UsePriorityQueue)
@@ -371,7 +371,7 @@ namespace Scarlet.Communications
                         // Set the packet endpoint to "Server", because that is where it originated
                         Received.Endpoint = "Server";
                         // Queues the packet for processing
-                        lock (ReceiveQueue) { ReceiveQueue.Enqueue(Received); }
+                        ReceiveQueue.Enqueue(Received);
                         // Check if the client is storing packets
                         if (StorePackets)
                         {
@@ -406,21 +406,17 @@ namespace Scarlet.Communications
             // While we need to continue the processing
             while (!StopProcesses)
             {
+
+                Packet CurrentPacket = ReceiveQueue.Dequeue();
+                if (CurrentPacket != null)
+                {
+                    // Parses the message
+                    CurrentPacket.Endpoint = CurrentPacket.Endpoint ?? "Server";
+                    Parse.ParseMessage(CurrentPacket);
+                }
+
                 // Sleep for the operation period
                 Thread.Sleep(OperationPeriod);
-                // Whether or not there are packets in the queue
-                bool HasPackets;
-                // Determines the length of the queue
-                lock (ReceiveQueue) { HasPackets = ReceiveQueue.Count != 0; }
-                if (HasPackets)
-                {
-                    // Locks the receive queue, grabs the receive queue packet
-                    // and parses the message
-                    Packet Processing;
-                    lock (ReceiveQueue) { Processing = ReceiveQueue.Dequeue(); }
-                    if (Processing.Endpoint == null) { Processing.Endpoint = "Server"; }
-                    Parse.ParseMessage(Processing);
-                }
             }
         }
 
