@@ -40,8 +40,8 @@ namespace Scarlet.Communications
         public static List<Packet> PacketsReceived, PacketsSent;
 
         // Packet Priority
-        public static bool PriorityQueueEnabled;
-        public static PacketPriority DefaultPriority;
+        public static bool PriorityQueueEnabled { get; private set; }
+        public static PacketPriority DefaultPriority { get; private set; }
 
         /// <summary>
         /// Prepares the server for use, and starts listening for clients.

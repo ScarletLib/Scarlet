@@ -30,7 +30,7 @@ namespace Scarlet.Communications
 
         private static PacketBuffer SendQueue; // Buffer of packets waiting to be sent
         private static QueueBuffer ReceiveQueue; // Buffer of received packets waiting to be processed
-        private static PacketPriority DefaultPriority; // Default packet priority
+        public static PacketPriority DefaultPriority { get; private set; } // Default packet priority
 
         private static Thread SendThread, ProcessThread; // Threads for sending and parsing/processing
         private static Thread ReceiveThreadUDP, ReceiveThreadTCP; // Threads for receiving on TCP and UDP
