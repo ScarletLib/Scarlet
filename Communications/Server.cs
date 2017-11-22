@@ -430,10 +430,12 @@ namespace Scarlet.Communications
             while (!Stopping)
             {
                 Packet CurrentPacket = ReceiveQueue.Dequeue();
-                CurrentPacket = (Packet) CurrentPacket.Clone();
 
                 if (CurrentPacket != null)
+                {
+                    CurrentPacket = (Packet)CurrentPacket.Clone();
                     ProcessOnePacket(CurrentPacket);
+                }
                 Thread.Sleep(OperationPeriod);
             }
         }
