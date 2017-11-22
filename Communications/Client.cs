@@ -1,17 +1,14 @@
 ﻿using Scarlet.Utilities;
+
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
-using System.IO;
-using System.Collections;
-using System.Diagnostics;
 
 namespace Scarlet.Communications
 {
-
     /// <summary>
     /// Client is a class used to network
     /// a client to a server.
@@ -31,8 +28,9 @@ namespace Scarlet.Communications
         private static UdpClient ServerUDP; // TCP and UDP Clients
         private static TcpClient ServerTCP;
 
-        private static Queue<Packet> SendQueue; // Queue to send packets
-        private static Queue<Packet> ReceiveQueue; // Queue to process packets (incoming packet queue)
+        private static PacketBuffer SendQueue; // Buffer of packets waiting to be sent
+        private static Queue<Packet> ReceiveQueue; // Buffer of received packets waiting to be processed
+        private static PacketPriority DefaultPriority; // Default packet priority
 
         private static Thread SendThread, ProcessThread; // Threads for sending and parsing/processing
         private static Thread ReceiveThreadUDP, ReceiveThreadTCP; // Threads for receiving on TCP and UDP
@@ -51,20 +49,23 @@ namespace Scarlet.Communications
 
         public static string Name { get; private set; } // Name of the client.
         public static bool IsConnected { get; private set; } // Whether or not the client and server are connected
+        public static event EventHandler<ConnectionStatusChanged> ClientConnectionChanged; // Invoked when the Client detects a connection change
+
+        public static bool StorePackets; // Whether or not the client stores packets
         public static List<Packet> SentPackets { get; private set; } // Storage for send packets.
         public static List<Packet> ReceivedPackets { get; private set; } // Storage for received packets.
-        public static event EventHandler<ConnectionStatusChanged> ClientConnectionChanged; // Invoked when the Client detects a connection change
-        public static bool StorePackets; // Whether or not the client stores packets
 
         /// <summary>
         /// Starts a Client process.
         /// </summary>
-        /// <param name="ServerIP">String representation of the IP Address of server.</param>
-        /// <param name="PortTCP">Target port for TCP Communications on the server.</param>
-        /// <param name="PortUDP">Target port for UDP Communications on the server.</param>
-        /// <param name="ReceiveBufferSize">Size of buffer for incoming data.</param>
-        /// <param name="OperationPeriod">Time in between receiving and sending individual packets.</param>
-        public static void Start(string ServerIP, int PortTCP, int PortUDP, string Name, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        /// <param name="ServerIP"> String representation of the IP Address of server.</param>
+        /// <param name="PortTCP"> Target port for TCP Communications on the server.</param>
+        /// <param name="PortUDP"> Target port for UDP Communications on the server.</param>
+        /// <param name="Name"> Name of client. </param>
+        /// <param name="UsePriorityQueue"> If it is true, use `GenericController` as sending buffer. Use `QueueBuffer` otherwise. </param>
+        /// <param name="ReceiveBufferSize"> Size of buffer for incoming packet. Unit: byte </param>
+        /// <param name="OperationPeriod"> Time to wait after receiving or sending each packet. Unit: ms </param>
+        public static void Start(string ServerIP, int PortTCP, int PortUDP, string Name, bool UsePriorityQueue = true, int ReceiveBufferSize = 64, int OperationPeriod = 20)
         {
             // Initialize PacketHandler
             PacketHandler.Start();
@@ -86,9 +87,20 @@ namespace Scarlet.Communications
                 // Subscribe to the watchdog manager
                 WatchdogManager.ConnectionChanged += ConnectionChange;
 
-                // Initialize the send and receive queues
-                SendQueue = new Queue<Packet>();
+                // Initialize the receiving queue
                 ReceiveQueue = new Queue<Packet>();
+
+                // Initialize sending queue and default priority
+                if (UsePriorityQueue)
+                {
+                    SendQueue = new GenericController();
+                    DefaultPriority = PacketPriority.MEDIUM;
+                }
+                else
+                {
+                    SendQueue = new QueueBuffer();
+                    DefaultPriority = 0;
+                }
 
                 // Initialize packet storage structures
                 SentPackets = new List<Packet>();
@@ -418,28 +430,35 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Sends a packet. Handles both UDP and TCP.
-        /// Places packet into send queue to send
-        /// later. Use SendNow for more important
-        /// packets.
+        /// Places the packet into sending queue to wait to be sent.
         /// </summary>
-        /// <param name="SendPacket">Packet to send</param>
-        /// <returns>Success of packet sending</returns>
-        public static bool Send(Packet SendPacket)
+        /// 
+        /// <remark> Please use SendNow for packets that need to be send immediately. </remark>
+        /// 
+        /// <param name="SendPacket"> Packet to send. </param>
+        /// <returns> true if packet is successfully added to queue. false otherwise. </returns>
+        public static bool Send(Packet SendPacket, PacketPriority Priority = PacketPriority.USE_DEFAULT)
         {
+            // Use default priority if needed
+            if (Priority == PacketPriority.USE_DEFAULT)
+                Priority = DefaultPriority;
+
             // Check initialization status of Client.
-            if (!Initialized) { throw new InvalidOperationException("Cannot use client before initialization. Call Client.Start();"); }
-            // If we are not stopping
-            if (!StopProcesses)
+            if (!Initialized)
+                throw new InvalidOperationException("Client not initialized. Please call Client.Start() to establish connection. first");
+
+            // Check if we have stopped the process
+            if (StopProcesses)
+                return false;
+            else
             {
                 // Ensure that cloning the packet will not try to clone a null string
-                if (SendPacket.Endpoint == null) { SendPacket.Endpoint = "Server"; }
+                SendPacket.Endpoint = SendPacket.Endpoint ?? "Server";
+                
                 // Add cloned packet to the send queue
-                lock (SendQueue) { SendQueue.Enqueue((Packet)SendPacket.Clone()); }
+                SendQueue.Enqueue((Packet)SendPacket.Clone(), (int) Priority);
+                return true;
             }
-            // Returns true, because the TCP data will keep getting retried until it succeeds
-            // and we must assume that UDP packets are successful since there is no way to 
-            // tell otherwise
-            return true;
         }
 
         /// <summary>
@@ -517,22 +536,11 @@ namespace Scarlet.Communications
         {
             while (!StopProcesses)
             {
-                bool HasPackets; // Stores whether or not the send queue has packets
-                lock (SendQueue) { HasPackets = SendQueue.Count != 0; }
-                // Determine if there are packets in the queue, if so, send them
-                if (HasPackets)
+                Packet ToSend = SendQueue.Dequeue(); // Get next packet for sending
+
+                // Send packet only if packet is not empty (i.e. buffer is not empty)
+                if (ToSend != null)
                 {
-                    Packet ToSend; // Packet for sending
-                    // Ensures that the packet has a non-null endpoint before clone
-                    lock (SendQueue)
-                    {
-                        // Temporarily store the object in ToSend
-                        ToSend = SendQueue.Peek();
-                        // Check that the packet endpoint is not null, set to "Server" otherwise
-                        ToSend.Endpoint = ToSend.Endpoint ?? "Server";
-                        // Clone the packet so that we do not change the fields of the given packet (other than the Endpoint)
-                        ToSend = (Packet)ToSend.Clone();
-                    }
                     try
                     {
                         SendNow(ToSend); // Try to send the packet
@@ -545,8 +553,6 @@ namespace Scarlet.Communications
                             Log.Exception(Log.Source.NETWORK, Exception);
                         }
                     }
-                    lock (SendQueue) { SendQueue.Dequeue(); } // Dequeue the send packet
-
                 }
 
                 // Sleep for the operation period

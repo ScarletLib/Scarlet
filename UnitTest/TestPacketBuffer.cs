@@ -283,7 +283,7 @@ namespace UnitTest
         public void TestGenericControllerTooLowPriority2()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(NewPacket(1, -1), (GenericController.Priority)(-1));
+            controller.Enqueue(NewPacket(1, -1), (PacketPriority)(-1));
         }
 
         [TestMethod]
@@ -291,7 +291,7 @@ namespace UnitTest
         public void TestGenericControllerTooHighPriority2()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(NewPacket(1, 3), (GenericController.Priority)5);
+            controller.Enqueue(NewPacket(1, 3), (PacketPriority) 5);
         }
 
 
@@ -299,11 +299,11 @@ namespace UnitTest
         public void TestGenericController()
         {
             GenericController controller = new GenericController();
-            controller.Enqueue(NewPacket(1, 0), GenericController.Priority.MEDIUM);
-            controller.Enqueue(NewPacket(2, 0), GenericController.Priority.LOW);
-            controller.Enqueue(NewPacket(3, 0), GenericController.Priority.HIGH);
-            controller.Enqueue(NewPacket(4, 0), GenericController.Priority.EMERGENT);
-            controller.Enqueue(NewPacket(5, 0), GenericController.Priority.LOWEST);
+            controller.Enqueue(NewPacket(1, 0), PacketPriority.MEDIUM);
+            controller.Enqueue(NewPacket(2, 0), PacketPriority.LOW);
+            controller.Enqueue(NewPacket(3, 0), PacketPriority.HIGH);
+            controller.Enqueue(NewPacket(4, 0), PacketPriority.EMERGENT);
+            controller.Enqueue(NewPacket(5, 0), PacketPriority.LOWEST);
 
             AssertPacket(controller.Peek(), 4, 0);
             AssertPacket(controller.Dequeue(), 4, 0);
@@ -324,11 +324,11 @@ namespace UnitTest
         {
             GenericController controller = new GenericController();
 
-            Assert.AreEqual(false, controller.IsEmpty());
+            Assert.AreEqual(true, controller.IsEmpty());
 
             controller.Enqueue(NewPacket(10, 0), 0);
             
-            Assert.AreEqual(true, controller.IsEmpty());
+            Assert.AreEqual(false, controller.IsEmpty());
 
             controller.Enqueue(NewPacket(10, 0), 0);
             controller.Enqueue(NewPacket(10, 1), 1);
@@ -338,14 +338,14 @@ namespace UnitTest
             controller.Enqueue(NewPacket(10, 3), 3);
             controller.Enqueue(NewPacket(10, 4), 4);
 
-            Assert.AreEqual(true, controller.IsEmpty());
+            Assert.AreEqual(false, controller.IsEmpty());
 
             Assert.AreEqual(8, controller.Count);
 
             for (int i = 0; i < 8; i++)
                 controller.Dequeue();
             
-            Assert.AreEqual(false, controller.IsEmpty());
+            Assert.AreEqual(true, controller.IsEmpty());
         }
     }
 }

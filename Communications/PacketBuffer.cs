@@ -50,7 +50,7 @@ namespace Scarlet.Communications
         /// <returns> true if buffer is empty, false otherwise. </returns>
         public bool IsEmpty()
         {
-            return Peek() != null;
+            return Peek() == null;
         }
     }
 
@@ -442,7 +442,6 @@ namespace Scarlet.Communications
     /// </summary>
     public class GenericController : PacketBuffer
     {
-        public enum Priority { EMERGENT, HIGH, MEDIUM, LOW, LOWEST };
         public readonly QueueBuffer[] Buffers;
         public readonly PriorityBuffer PriorityBuffer;
         public readonly BandwidthControlBuffer BandwidthBuffer;
@@ -488,7 +487,7 @@ namespace Scarlet.Communications
         /// <param name="Priority"> Priority of packet. </param>
         /// 
         /// <exception cref="ArgumentOutOfRangeException"> If priority is out of range. </exception>
-        public void Enqueue(Packet Packet, Priority priority = Priority.MEDIUM)
+        public void Enqueue(Packet Packet, PacketPriority priority = PacketPriority.MEDIUM)
         {
             if (priority < 0 || (int)priority >= 5)
                 throw new ArgumentOutOfRangeException("Priority number is out of range");

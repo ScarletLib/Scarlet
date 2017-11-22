@@ -1,5 +1,15 @@
 ﻿namespace Scarlet.Communications
 {
+    public enum PacketPriority
+    {
+        USE_DEFAULT = -1,
+        EMERGENT = 0,
+        HIGH,
+        MEDIUM,
+        LOW,
+        LOWEST
+    }
+
     static class Constants
     {
         #region Communication Defaults
