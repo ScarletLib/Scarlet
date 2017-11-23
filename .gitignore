@@ -5,7 +5,9 @@
 **/bin
 *.suo
 */.vs
+.vs
 *.pdb
+packages
 
 # Scarlet: Logs
 **/Logs
