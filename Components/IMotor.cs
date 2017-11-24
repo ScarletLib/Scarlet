@@ -4,13 +4,13 @@ namespace Scarlet.Components
 {
     public interface IMotor
     {
-        /// <summary>Updates the state of the motor, changing the speed if relevant.</summary>
+        /// <summary> Changes the speed of the motor, subject to filtering and capping. </summary>
         void SetSpeed(float Speed);
 
-        /// <summary>Stops to motor immediately.</summary>
+        /// <summary> Stops to motor immediately. </summary>
         void Stop();
 
-        /// <summary>Used to send events to Motors.</summary>
+        /// <summary> Used to send events to Motors. </summary>
         void EventTriggered(object Sender, EventArgs Event);
     }
 }

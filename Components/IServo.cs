@@ -8,13 +8,13 @@ namespace Scarlet.Components
 {
     public interface IServo
     {
-        /// <summary>Updates the position of the servo</summary>
+        /// <summary> Updates the position of the servo </summary>
         void SetPosition(int NewPosition);
 
-        /// <summary>Stops the servo immediately.</summary>
+        /// <summary> Stops the servo immediately. </summary>
         void Stop();
 
-        /// <summary>Used to send events to Motors.</summary>
+        /// <summary> Used to send events to servos. </summary>
         void EventTriggered(object Sender, EventArgs Event);
     }
 }

@@ -5,14 +5,10 @@ namespace Scarlet.Components
 {
     public interface ICamera
     {
-        /// <summary>
-        /// Takes a picture.
-        /// </summary>
+        /// <summary> Takes a picture. </summary>
         void TakePicture();
 
-        /// <summary>
-        /// Checks to make sure the camera is functioning correctly.
-        /// </summary>
+        /// <summary> Checks to make sure the camera is functioning correctly. </summary>
         bool Test();
     }
 
