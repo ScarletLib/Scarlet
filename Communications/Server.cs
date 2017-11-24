@@ -1,4 +1,5 @@
 ﻿using Scarlet.Utilities;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,26 +7,41 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Scarlet.Communications
 {
     public static class Server
     {
         private static Dictionary<string, ScarletClient> Clients;
-        private static Dictionary<string, Queue<Packet>> SendQueues;
-        private static Queue<Packet> ReceiveQueue;
+
+        // Buffer
+        private static Dictionary<string, PacketBuffer> SendQueues;
+        private static QueueBuffer ReceiveQueue;
+
+        // Port listener
         private static UdpClient UDPListener;
         private static TcpListener TCPListener;
+
+        // Threads
         private static Thread SendThread;
         private static Thread ReceiveThreadTCP, ReceiveThreadUDP, ProcessThread;
+
+        // Running status
         private static bool Initialized = false;
         private static volatile bool Stopping = false;
-        public static bool StorePackets = false;
-        public static List<Packet> PacketsReceived, PacketsSent;
         private static int ReceiveBufferSize, OperationPeriod;
+
+        // Watchdog
         public static event EventHandler<EventArgs> ClientConnectionChange;
         public static bool OutputWatchdogDebug = false;
+
+        // Packet dumping
+        public static bool StorePackets = false;
+        public static List<Packet> PacketsReceived, PacketsSent;
+
+        // Packet Priority
+        public static bool PriorityQueueEnabled { get; private set; }
+        public static PacketPriority DefaultPriority { get; private set; }
 
         /// <summary>
         /// Prepares the server for use, and starts listening for clients.
@@ -34,24 +50,37 @@ namespace Scarlet.Communications
         /// <param name="PortUDP">The port to listen on for clients communicating via UDP.</param>
         /// <param name="ReceiveBufferSize">The size, in bytes, of the receive data buffers. Increase this if your packets are longer than the default.</param>
         /// <param name="OperationPeriod">The time, in ms, between network operations. If you are sending/receiving a lot of packets, and notice delays, lower this.</param>
-        public static void Start(int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        /// <param name="UsePriorityQueue"> If it is ture, packet priority control will be enabled. </param>
+        public static void Start(int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20, bool UsePriorityQueue = false)
         {
             Server.ReceiveBufferSize = ReceiveBufferSize;
             Server.OperationPeriod = OperationPeriod;
             Stopping = false;
+
             if (!Initialized)
             {
                 Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Initializing Server.");
                 Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Listening on ports " + PortTCP + " (TCP), and " + PortUDP + " (UDP).");
 
                 Clients = new Dictionary<string, ScarletClient>();
-                SendQueues = new Dictionary<string, Queue<Packet>>();
-                ReceiveQueue = new Queue<Packet>();
+                SendQueues = new Dictionary<string, PacketBuffer>();
+                ReceiveQueue = new QueueBuffer();
                 PacketsSent = new List<Packet>();
                 PacketsReceived = new List<Packet>();
                 Initialized = true;
+                PriorityQueueEnabled = UsePriorityQueue;
+
+                // Initialize default priority
+                if (PriorityQueueEnabled)
+                    DefaultPriority = PacketPriority.MEDIUM;
+                else
+                    DefaultPriority = 0;
+
+                // Start Handler and listener
                 PacketHandler.Start();
                 new Thread(new ParameterizedThreadStart(StartThreads)).Start(new Tuple<int, int>(PortTCP, PortUDP));
+
+                // Start watchdog
                 WatchdogManager.Start(false);
                 WatchdogManager.ConnectionChanged += WatchdogStatusUpdate;
             }
@@ -122,6 +151,25 @@ namespace Scarlet.Communications
         }
 
         /// <summary>
+        /// Create a new sending buffer for client if the client is new.
+        /// </summary>
+        /// 
+        /// <param name="ClientName"> Name of the client. </param>
+        private static void CreateBufferIfClientIsNew(string ClientName)
+        {
+            lock (SendQueues)
+            {
+                if (!SendQueues.ContainsKey(ClientName))
+                {
+                    if (PriorityQueueEnabled)
+                        SendQueues.Add(ClientName, new GenericController());
+                    else
+                        SendQueues.Add(ClientName, new QueueBuffer());
+                }
+            }
+        }
+
+        /// <summary>
         /// Waits for, and receives data from a connected TCP client.
         /// This must be started on a thread, as it will block until CommHandler.Stopping is true, or the client disconnects.
         /// </summary>
@@ -172,10 +220,9 @@ namespace Scarlet.Communications
                                 Clients.Add(ClientName, NewClient);
                             }
                         }
-                        lock (SendQueues)
-                        {
-                            if (!SendQueues.ContainsKey(ClientName)) { SendQueues.Add(ClientName, new Queue<Packet>()); }
-                        }
+
+                        // Create buffer for the client
+                        CreateBufferIfClientIsNew(ClientName);
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Invalid TCP client name received. Dropping connection."); }
                 }
@@ -209,7 +256,8 @@ namespace Scarlet.Communications
                         byte[] Data = DataBuffer.Take(DataSize).ToArray();
                         IPEndPoint ClientEndpoint = (IPEndPoint)Client.Client.RemoteEndPoint;
                         Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
-                        lock (ReceiveQueue) { ReceiveQueue.Enqueue(ReceivedPack); }
+                        ReceiveQueue.Enqueue(ReceivedPack);
+
                         if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Data received from client was too short. Discarding."); }
@@ -309,17 +357,17 @@ namespace Scarlet.Communications
                                 Clients.Add(ClientName, NewClient);
                             }
                         }
-                        lock (SendQueues)
-                        {
-                            if (!SendQueues.ContainsKey(ClientName)) { SendQueues.Add(ClientName, new Queue<Packet>()); }
-                        }
+
+                        // Create buffer for the client
+                        CreateBufferIfClientIsNew(ClientName);
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "UDP Client sent invalid name upon connecting."); }
                 }
                 else // Existing client
                 {
                     Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
-                    lock (ReceiveQueue) { ReceiveQueue.Enqueue(ReceivedPack); }
+                    ReceiveQueue.Enqueue(ReceivedPack);
+
                     if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
                 }
             }
@@ -379,13 +427,12 @@ namespace Scarlet.Communications
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
             while (!Stopping)
             {
-                bool HasPacket;
-                lock (ReceiveQueue) { HasPacket = ReceiveQueue.Count > 0; }
-                if (HasPacket)
+                Packet CurrentPacket = ReceiveQueue.Dequeue();
+
+                if (CurrentPacket != null)
                 {
-                    Packet ToProcess;
-                    lock (ReceiveQueue) { ToProcess = (Packet)(ReceiveQueue.Dequeue().Clone()); }
-                    ProcessOnePacket(ToProcess);
+                    CurrentPacket = (Packet)CurrentPacket.Clone();
+                    ProcessOnePacket(CurrentPacket);
                 }
                 Thread.Sleep(OperationPeriod);
             }
@@ -412,20 +459,28 @@ namespace Scarlet.Communications
 
         #region Sending
         /// <summary>
-        /// Adds a packet to the queue of packets to be sent. Returns quickly.
+        /// Adds a packet to the queue of packets to be sent.
         /// </summary>
-        public static void Send(Packet Packet)
+        /// 
+        /// <param name="Packet"> The packet to be sent. </param>
+        /// <param name="Priority"> Priority of packet. </param>
+        public static void Send(Packet Packet, PacketPriority Priority = PacketPriority.USE_DEFAULT)
         {
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
 
             if (Packet.IsUDP)
             {
+                // Send UDP in new thread
                 Thread PacketSender = new Thread(new ParameterizedThreadStart(SendNowGen));
                 PacketSender.Start(Packet);
             }
             else
             {
-                lock (SendQueues[Packet.Endpoint]) { SendQueues[Packet.Endpoint].Enqueue(Packet); }
+                // Use default priority if needed
+                if (Priority == PacketPriority.USE_DEFAULT) { Priority = DefaultPriority; }
+
+                // Add to queue
+                SendQueues[Packet.Endpoint].Enqueue(Packet, (int) Priority);
             }
         }
 
@@ -499,18 +554,14 @@ namespace Scarlet.Communications
             if (!Initialized) { throw new InvalidOperationException("Cannot use CommHandler before initialization. Call CommHandler.Start()."); }
             while (!Stopping)
             {
-                foreach(Queue<Packet> SendQueue in SendQueues.Values)
+                foreach (PacketBuffer SendQueue in SendQueues.Values)
                 {
-                    bool HasPacket;
-                    lock (SendQueue) { HasPacket = SendQueue.Count > 0; }
-                    if (HasPacket)
+                    Packet ToSend = SendQueue.Dequeue();
+                    if (ToSend != null)
                     {
-                        Packet ToSend;
-                        lock (SendQueue) { ToSend = (Packet)(SendQueue.Peek().Clone()); }
                         try
                         {
                             SendNow(ToSend);
-                            lock (SendQueue) { SendQueue.Dequeue(); } // Remove the packet from the queue when it has been sent sucessfully.
                         }
                         catch (Exception Exc)
                         {
@@ -519,6 +570,8 @@ namespace Scarlet.Communications
                         }
                     }
                 }
+
+                // Wait for operation period
                 Thread.Sleep(OperationPeriod);
             }
         }

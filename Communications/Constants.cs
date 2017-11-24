@@ -1,5 +1,18 @@
 ﻿namespace Scarlet.Communications
 {
+    /// <summary>
+    /// Represents the priority of packet, from highest to lowest.
+    /// </summary>
+    public enum PacketPriority
+    {
+        USE_DEFAULT = -1,
+        EMERGENT = 0,
+        HIGH = 1,
+        MEDIUM = 2,
+        LOW = 3,
+        LOWEST = 4
+    }
+
     static class Constants
     {
         #region Communication Defaults

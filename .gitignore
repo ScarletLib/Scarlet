@@ -6,7 +6,9 @@
 *.suo
 .vs
 */.vs
+.vs
 *.pdb
+packages
 
 # Scarlet: Logs
 **/Logs

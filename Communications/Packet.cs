@@ -54,13 +54,14 @@ namespace Scarlet.Communications
             return this.Data.GetRawData();
         }
 
+        /// <summary> Return the length of packet in bytes. </summary>
+        /// <returns> Length of packet in bytes. </returns>
+        public int GetLength() { return GetForSend().Length; }
+
         /// <summary>
         /// Updates the packet timestamp to the current time
         /// </summary>
-        public void UpdateTimestamp()
-        {
-            Data.SetTime(GetCurrentTime());
-        }
+        public void UpdateTimestamp() { this.Data.SetTime(GetCurrentTime()); }
 
         /// <summary>
         /// Gets the current time as a byte array for use in packets.
