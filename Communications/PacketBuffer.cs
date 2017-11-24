@@ -4,9 +4,7 @@ using Scarlet.Communications;
 
 namespace Scarlet.Communications
 {
-    /// <summary>
-    /// This defines the interface of packet buffer.
-    /// </summary>
+    /// <summary> This defines the interface of packet buffer. </summary>
     public abstract class PacketBuffer
     {
         /// <summary>
@@ -17,9 +15,7 @@ namespace Scarlet.Communications
         /// <param name="Priority"> Priority of packet. </param>
         public abstract void Enqueue(Packet Packet, int Priority);
 
-        /// <summary>
-        /// Get next packet without removing it.
-        /// </summary>
+        /// <summary> Get next packet without removing it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -28,9 +24,7 @@ namespace Scarlet.Communications
         /// <returns> Next packet if buffer is not empty, or null otherwise. </returns>
         public abstract Packet Peek();
 
-        /// <summary>
-        /// Get next packet and remove it.
-        /// </summary>
+        /// <summary> Get next packet and remove it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -39,14 +33,10 @@ namespace Scarlet.Communications
         /// <returns> Next packet if buffer is not empty, or null otherwise. </returns>
         public abstract Packet Dequeue();
 
-        /// <summary>
-        /// Get the total number of packets in the buffer.
-        /// </summary>
+        /// <summary>  Get the total number of packets in the buffer.  </summary>
         public abstract int Count { get; }
 
-        /// <summary>
-        /// Return whether the buffer is empty
-        /// </summary>
+        /// <summary> Return whether the buffer is empty </summary>
         /// <returns> true if buffer is empty, false otherwise. </returns>
         public bool IsEmpty()
         {
@@ -55,7 +45,7 @@ namespace Scarlet.Communications
     }
 
     /// <summary>
-    /// This class is a basic packet buffer. It is just a queue with thread safty guarantee.
+    /// This class is a basic packet buffer. It is just a queue with thread safety guarantee.
     /// </summary>
     public class QueueBuffer : PacketBuffer
     {
@@ -66,9 +56,7 @@ namespace Scarlet.Communications
             Queue = new Queue<Packet>();
         }
 
-        /// <summary>
-        /// Add a packet to buffer.
-        /// </summary>
+        /// <summary>  Add a packet to buffer. </summary>
         /// 
         /// <param name="Packet"> The packet to add. </param>
         /// <param name="Priority"> Should always be zero because there's just one queue. </param>
@@ -76,18 +64,12 @@ namespace Scarlet.Communications
         /// <exception cref="ArgumentException"> If priority is not zero since there's just one queue. </exception>
         public override void Enqueue(Packet Packet, int Priority = 0)
         {
-            if (Priority != 0)
-                throw new ArgumentException("Leaky bucket controller doesn't have priority.");
+            if (Priority != 0) { throw new ArgumentException("Leaky bucket controller doesn't have priority."); }
 
-            lock (Queue)
-            {
-                Queue.Enqueue(Packet);
-            }
+            lock (Queue) { Queue.Enqueue(Packet); }
         }
 
-        /// <summary>
-        /// Get next packet without removing it.
-        /// </summary>
+        /// <summary> Get next packet without removing it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -109,9 +91,7 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Get next packet and remove it.
-        /// </summary>
+        /// <summary> Get next packet and remove it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -133,17 +113,12 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Get the total number of packets in the buffer.
-        /// </summary>
+        /// <summary> Get the total number of packets in the buffer. </summary>
         public override int Count
         {
             get
             {
-                lock (Queue)
-                {
-                    return Queue.Count;
-                }
+                lock (Queue) { return Queue.Count; }
             }
         }
     }
@@ -156,20 +131,16 @@ namespace Scarlet.Communications
         private readonly PacketBuffer[] Buffers; // List of buffers of each priority
         public readonly int NBuffers; // Number of buffers
 
-        /// <summary>
-        /// Construct priority buffer with a list of sub-buffers.
-        /// </summary>
+        /// <summary> Construct priority buffer with a list of sub-buffers. </summary>
         /// 
         /// <param name="Buffers"> List of buffers for each priority. Low index means higher priority. </param>
         public PriorityBuffer(PacketBuffer[] Buffers)
         {
             this.Buffers = Buffers;
-            NBuffers = Buffers.Length;
+            this.NBuffers = Buffers.Length;
         }
 
-        /// <summary>
-        /// Add a packet to buffer.
-        /// </summary>
+        /// <summary> Add a packet to buffer. </summary>
         /// 
         /// <param name="Packet"> The packet to add. </param>
         /// <param name="Priority"> Priority of packet. Lower number means higher priority. </param>
@@ -177,15 +148,12 @@ namespace Scarlet.Communications
         /// <exception cref="ArgumentOutOfRangeException"> If priority is out of range. </exception>
         public override void Enqueue(Packet Packet, int Priority)
         {
-            if (Priority < 0 || Priority >= NBuffers)
-                throw new ArgumentOutOfRangeException("Priority number is out of range");
+            if (Priority < 0 || Priority >= NBuffers) { throw new ArgumentOutOfRangeException("Priority number is out of range"); }
 
             Buffers[Priority].Enqueue(Packet, 0);
         }
 
-        /// <summary>
-        /// Get next packet without removing it.
-        /// </summary>
+        /// <summary> Get next packet without removing it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -198,15 +166,12 @@ namespace Scarlet.Communications
             {
                 Packet Next = Buffers[i].Peek();
 
-                if (Next != null)
-                    return Next;
+                if (Next != null) { return Next; }
             }
             return null;
         }
 
-        /// <summary>
-        /// Get next packet and remove it.
-        /// </summary>
+        /// <summary> Get next packet and remove it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -219,15 +184,12 @@ namespace Scarlet.Communications
             {
                 Packet next = Buffers[i].Dequeue();
 
-                if (next != null)
-                    return next;
+                if (next != null) { return next; }
             }
             return null;
         }
 
-        /// <summary>
-        /// Get the total number of packets in the buffer.
-        /// </summary>
+        /// <summary> Get the total number of packets in the buffer. </summary>
         public override int Count
         {
             get
@@ -235,6 +197,7 @@ namespace Scarlet.Communications
                 int Sum = 0;
                 foreach (PacketBuffer Buffer in Buffers)
                     Sum += Buffer.Count;
+
                 return Sum;
             }
         }
@@ -253,9 +216,7 @@ namespace Scarlet.Communications
         private int CurrentBucket; // Current priority that is being sent
         private Packet PacketCache; // Cache for last peeked packet.
 
-        /// <summary>
-        /// Construct a controller.
-        /// </summary>
+        /// <summary> Construct a controller. </summary>
         /// 
         /// <remarks>
         /// If `BandwidthAllocation` is null, it will be set to all 1's.
@@ -286,9 +247,9 @@ namespace Scarlet.Communications
             this.Buffers = Buffers;
             this.BandwidthAllocations = BandwidthAllocation;
             this.MaximumToken = MaximumToken;
-            NBuffers = Buffers.Length;
-            CurrentBucket = 0;
-            PacketCache = null;
+            this.NBuffers = Buffers.Length;
+            this.CurrentBucket = 0;
+            this.PacketCache = null;
 
             TokenBuckets = new int[NBuffers];
             for (int i = 0; i < NBuffers; i++)
@@ -303,9 +264,7 @@ namespace Scarlet.Communications
         private void AddToken(int Multiple)
         {
             for (int i = 0; i < NBuffers; i++)
-            {
                 TokenBuckets[i] = Math.Min(TokenBuckets[i] + Multiple * BandwidthAllocations[i], MaximumToken);
-            }
         }
 
         /// <summary>
@@ -313,9 +272,7 @@ namespace Scarlet.Communications
         /// If no bucket have both packet and sufficient token, find the bucket with packet but insufficient token.
         /// </summary>
         /// 
-        /// <remarks>
-        /// It changes `CurrentBucket` to next candidate.
-        /// </remarks>
+        /// <remarks> It changes `CurrentBucket` to next candidate. </remarks>
         /// 
         /// <returns> true if all buffers are empty. </returns>
         private bool NextBucket()
@@ -329,11 +286,7 @@ namespace Scarlet.Communications
             } while (CurrentBucket != Previous &&
                 (TokenBuckets[CurrentBucket] < 0 || Buffers[CurrentBucket].Peek() == null));
 
-            if (CurrentBucket != Previous)
-            {
-                // Found the packet
-                return false;
-            }
+            if (CurrentBucket != Previous) { return false; } // Found the packet
             else
             {
                 // Find the bucket with packet
@@ -347,9 +300,7 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Add a packet to buffer.
-        /// </summary>
+        /// <summary> Add a packet to buffer. </summary>
         /// 
         /// <param name="Packet"> The packet to add. </param>
         /// <param name="Priority"> Priority of packet. </param>
@@ -363,9 +314,7 @@ namespace Scarlet.Communications
             Buffers[Priority].Enqueue(Packet, 0);
         }
 
-        /// <summary>
-        /// Get next packet without removing it.
-        /// </summary>
+        /// <summary> Get next packet without removing it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -380,9 +329,7 @@ namespace Scarlet.Communications
             return PacketCache;
         }
 
-        /// <summary>
-        /// Get next packet and remove it.
-        /// </summary>
+        /// <summary> Get next packet and remove it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -420,9 +367,7 @@ namespace Scarlet.Communications
             return Next;
         }
 
-        /// <summary>
-        /// Get the total number of packets in the buffer.
-        /// </summary>
+        /// <summary> Get the total number of packets in the buffer. </summary>
         public override int Count
         {
             get
@@ -446,9 +391,7 @@ namespace Scarlet.Communications
         public readonly PriorityBuffer PriorityBuffer;
         public readonly BandwidthControlBuffer BandwidthBuffer;
 
-        /// <summary>
-        /// Constrict a generic Controller.
-        /// </summary>
+        /// <summary> Constrict a generic Controller. </summary>
         public GenericController()
         {
             Buffers = new QueueBuffer[5];
@@ -463,9 +406,7 @@ namespace Scarlet.Communications
             PriorityBuffer = new PriorityBuffer(PrioritySubcontrollers);
         }
 
-        /// <summary>
-        /// Add a packet to buffer.
-        /// </summary>
+        /// <summary> Add a packet to buffer. </summary>
         /// 
         /// <param name="Packet"> The packet to add. </param>
         /// <param name="Priority"> Priority of packet. </param>
@@ -479,9 +420,7 @@ namespace Scarlet.Communications
             Buffers[Priority].Enqueue(Packet);
         }
 
-        /// <summary>
-        /// Add a packet to buffer.
-        /// </summary>
+        /// <summary> Add a packet to buffer. </summary>
         /// 
         /// <param name="Packet"> The packet to add. </param>
         /// <param name="Priority"> Priority of packet. </param>
@@ -495,9 +434,7 @@ namespace Scarlet.Communications
             Buffers[(int)priority].Enqueue(Packet);
         }
 
-        /// <summary>
-        /// Get next packet without removing it.
-        /// </summary>
+        /// <summary> Get next packet without removing it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -510,9 +447,7 @@ namespace Scarlet.Communications
         }
 
 
-        /// <summary>
-        /// Get next packet and remove it.
-        /// </summary>
+        /// <summary> Get next packet and remove it. </summary>
         /// 
         /// <remarks>
         /// It will return null if the buffer is empty instead of throwing an exception.
@@ -524,9 +459,7 @@ namespace Scarlet.Communications
             return PriorityBuffer.Dequeue();
         }
 
-        /// <summary>
-        /// Get the total number of packets in the buffer.
-        /// </summary>
+        /// <summary> Get the total number of packets in the buffer. </summary>
         public override int Count
         {
             get

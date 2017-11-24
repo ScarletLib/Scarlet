@@ -12,9 +12,9 @@ namespace UnitTest
 
         private void InitializeConnection()
         {
-            Server.Start(2000, 2001);
+            Server.Start(2000, 2001, UsePriorityQueue: true);
             System.Threading.Thread.Sleep(500);
-            Client.Start("127.0.0.1", 2000, 2001, "TestClient");
+            Client.Start("127.0.0.1", 2000, 2001, "TestClient", UsePriorityQueue: true);
             System.Threading.Thread.Sleep(500);
         }
 

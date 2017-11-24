@@ -7,10 +7,10 @@
     {
         USE_DEFAULT = -1,
         EMERGENT = 0,
-        HIGH,
-        MEDIUM,
-        LOW,
-        LOWEST
+        HIGH = 1,
+        MEDIUM = 2,
+        LOW = 3,
+        LOWEST = 4
     }
 
     static class Constants

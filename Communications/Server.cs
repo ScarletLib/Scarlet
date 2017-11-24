@@ -50,7 +50,8 @@ namespace Scarlet.Communications
         /// <param name="PortUDP">The port to listen on for clients communicating via UDP.</param>
         /// <param name="ReceiveBufferSize">The size, in bytes, of the receive data buffers. Increase this if your packets are longer than the default.</param>
         /// <param name="OperationPeriod">The time, in ms, between network operations. If you are sending/receiving a lot of packets, and notice delays, lower this.</param>
-        public static void Start(int PortTCP, int PortUDP, bool UsePriorityQueue = true, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        /// <param name="UsePriorityQueue"> If it is ture, packet priority control will be enabled. </param>
+        public static void Start(int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20, bool UsePriorityQueue = false)
         {
             Server.ReceiveBufferSize = ReceiveBufferSize;
             Server.OperationPeriod = OperationPeriod;
@@ -83,8 +84,7 @@ namespace Scarlet.Communications
                 WatchdogManager.Start(false);
                 WatchdogManager.ConnectionChanged += WatchdogStatusUpdate;
             }
-            else
-                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Attempted to start Server when already started.");
+            else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Attempted to start Server when already started."); }
         }
 
         /// <summary>
@@ -155,7 +155,7 @@ namespace Scarlet.Communications
         /// </summary>
         /// 
         /// <param name="ClientName"> Name of the client. </param>
-        private static void CreatBufferIfClientIsNew(string ClientName)
+        private static void CreateBufferIfClientIsNew(string ClientName)
         {
             lock (SendQueues)
             {
@@ -222,7 +222,7 @@ namespace Scarlet.Communications
                         }
 
                         // Create buffer for the client
-                        CreatBufferIfClientIsNew(ClientName);
+                        CreateBufferIfClientIsNew(ClientName);
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Invalid TCP client name received. Dropping connection."); }
                 }
@@ -258,8 +258,7 @@ namespace Scarlet.Communications
                         Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
                         ReceiveQueue.Enqueue(ReceivedPack);
 
-                        if (StorePackets)
-                            PacketsReceived.Add(ReceivedPack);
+                        if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Data received from client was too short. Discarding."); }
                 }
@@ -360,7 +359,7 @@ namespace Scarlet.Communications
                         }
 
                         // Create buffer for the client
-                        CreatBufferIfClientIsNew(ClientName);
+                        CreateBufferIfClientIsNew(ClientName);
                     }
                     else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "UDP Client sent invalid name upon connecting."); }
                 }
@@ -369,8 +368,7 @@ namespace Scarlet.Communications
                     Packet ReceivedPack = new Packet(new Message(Data), false, ClientName);
                     ReceiveQueue.Enqueue(ReceivedPack);
 
-                    if (StorePackets)
-                        PacketsReceived.Add(ReceivedPack);
+                    if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
                 }
             }
             Listener.BeginReceive(HandleUDPData, Listener);

@@ -62,10 +62,10 @@ namespace Scarlet.Communications
         /// <param name="PortTCP"> Target port for TCP Communications on the server.</param>
         /// <param name="PortUDP"> Target port for UDP Communications on the server.</param>
         /// <param name="Name"> Name of client. </param>
-        /// <param name="UsePriorityQueue"> If it is true, use `GenericController` as sending buffer. Use `QueueBuffer` otherwise. </param>
         /// <param name="ReceiveBufferSize"> Size of buffer for incoming packet. Unit: byte </param>
         /// <param name="OperationPeriod"> Time to wait after receiving or sending each packet. Unit: ms </param>
-        public static void Start(string ServerIP, int PortTCP, int PortUDP, string Name, bool UsePriorityQueue = true, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        /// <param name="UsePriorityQueue"> If it is true, packet priority control will be enabled. </param>
+        public static void Start(string ServerIP, int PortTCP, int PortUDP, string Name, int ReceiveBufferSize = 64, int OperationPeriod = 20, bool UsePriorityQueue = false)
         {
             // Initialize PacketHandler
             PacketHandler.Start();
@@ -410,8 +410,10 @@ namespace Scarlet.Communications
                 Packet CurrentPacket = ReceiveQueue.Dequeue();
                 if (CurrentPacket != null)
                 {
-                    // Parses the message
+                    // Make sure endpoint is set
                     CurrentPacket.Endpoint = CurrentPacket.Endpoint ?? "Server";
+
+                    // Parses the message
                     Parse.ParseMessage(CurrentPacket);
                 }
 
@@ -436,12 +438,10 @@ namespace Scarlet.Communications
         public static bool Send(Packet SendPacket, PacketPriority Priority = PacketPriority.USE_DEFAULT)
         {
             // Use default priority if needed
-            if (Priority == PacketPriority.USE_DEFAULT)
-                Priority = DefaultPriority;
+            if (Priority == PacketPriority.USE_DEFAULT) { Priority = DefaultPriority; }
 
             // Check initialization status of Client.
-            if (!Initialized)
-                throw new InvalidOperationException("Client not initialized. Please call Client.Start() to establish connection. first");
+            if (!Initialized) { throw new InvalidOperationException("Client not initialized. Please call Client.Start() to establish connection. first"); }
 
             // Check if we have stopped the process
             if (StopProcesses)

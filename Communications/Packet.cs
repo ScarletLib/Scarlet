@@ -54,10 +54,7 @@ namespace Scarlet.Communications
             return this.Data.GetRawData();
         }
 
-        /// <summary>
-        /// Return the length of packet in bytes.
-        /// </summary>
-        /// 
+        /// <summary> Return the length of packet in bytes. </summary>
         /// <returns> Length of packet in bytes. </returns>
         public int GetLength()
         {
