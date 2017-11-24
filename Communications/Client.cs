@@ -536,10 +536,7 @@ namespace Scarlet.Communications
                 // Send packet only if packet is not empty (i.e. buffer is not empty)
                 if (ToSend != null)
                 {
-                    try
-                    {
-                        SendNow(ToSend); // Try to send the packet
-                    }
+                    try { SendNow(ToSend); } // Try to send the packet
                     catch (Exception Exception)
                     {
                         if (IsConnected) // Log an exception if the client is supposedly connected (so we don't bog down the console)
