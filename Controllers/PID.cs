@@ -6,7 +6,9 @@ namespace Scarlet.Controllers
     /// <summary>
     /// Class built to create a PID control loop in C#
     /// Based off of the PID control algorithm:
-    /// https://en.wikipedia.org/wiki/PID_controller 
+    /// https://en.wikipedia.org/wiki/PID_controller
+    /// </summary>
+    /// <remarks>
     /// * * Built for Real-Time Operation * * 
     /// Basic Implementation as follows:
     /// 1) Choose P, I, and D constants in constructor
@@ -26,7 +28,7 @@ namespace Scarlet.Controllers
     /// coefficients need to be precisely chosen.
     /// An algorithm for determining coefficients:
     /// https://en.wikipedia.org/wiki/PID_controller#Ziegler.E2.80.93Nichols_method
-    /// </summary>
+    /// </remarks>
     public class PID
     {
 
@@ -36,12 +38,9 @@ namespace Scarlet.Controllers
         private double P, I, D;                                // Stored values for last P, I, and D terms.
         public double Output { get; private set; }             // Ouptut of the PID Controller.
         
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Kp">Proportional Coefficient</param>
-        /// <param name="Ki">Integral Coefficient</param>
-        /// <param name="Kd">Derivative Coefficient</param>
+        /// <param name="Kp"> Proportional Coefficient </param>
+        /// <param name="Ki"> Integral Coefficient </param>
+        /// <param name="Kd"> Derivative Coefficient </param>
         public PID(double Kp = 0.0, double Ki = 0.0, double Kd = 0.0)
         {
             this.SetCoefficients(Kp, Ki, Kd);
@@ -52,14 +51,11 @@ namespace Scarlet.Controllers
         }
 
         /// <summary>
-        /// Feeds the PID controller with given input
-        /// value. The input is the desired controlled value,
-        /// the output is the relative control value to the
-        /// control mechanism (e.g. a motor). Tune PID coeficients
-        /// accordingly and limit output to desired limits.
+        /// Feeds the PID controller with given input value.
+        /// The input is the desired controlled value, the output is the relative control value to the control mechanism (e.g. a motor).
+        /// Tune PID coefficients accordingly and limit output to desired limits.
         /// </summary>
-        /// <param name="Input">
-        /// Input to feed the PID controller.</param>
+        /// <param name="Input"> Input to feed the PID controller. </param>
         public void Feed(double Input)
         {
             if (!this.StopWatch.IsRunning) // Start stopwatch first if not already running.
@@ -83,22 +79,17 @@ namespace Scarlet.Controllers
             this.Output = this.P + this.I + this.D;
         }
 
-        /// <summary>
-        /// Sets the PID target to a new target.
-        /// </summary>
-        /// <param name="Target">
-        /// New PID target.</param>
+        /// <summary> Sets the PID target to a new target. </summary>
+        /// <param name="Target"> New PID target. </param>
         public void SetTarget(double Target)
         {
             this.Target = Target;
         }
 
-        /// <summary>
-        /// Sets the PID coefficients.
-        /// </summary>
-        /// <param name="Kp">Proportional Coefficient</param>
-        /// <param name="Ki">Integral Coefficient</param>
-        /// <param name="Kd">Derivative Coefficient</param>
+        /// <summary> Sets the PID coefficients. </summary>
+        /// <param name="Kp"> Proportional Coefficient </param>
+        /// <param name="Ki"> Integral Coefficient </param>
+        /// <param name="Kd"> Derivative Coefficient </param>
         public void SetCoefficients(double Kp, double Ki, double Kd)
         {
             this.Kp = Kp;
@@ -106,9 +97,7 @@ namespace Scarlet.Controllers
             this.Kd = Kd;
         }
 
-        /// <summary>
-        /// Resets PID Controller.
-        /// </summary>
+        /// <summary> Resets PID Controller, setting all values to 0. </summary>
         public void Reset()
         {
             this.P = 0.0;
