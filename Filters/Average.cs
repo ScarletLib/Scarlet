@@ -3,12 +3,8 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Filters
 {
-    /// <summary>
-    /// The Average filter is intended
-    /// for use as an average-gathering
-    /// system, using a rolling average
-    /// with "roll-length" <c>FilterCount</c>.</summary>
-    /// 
+    /// <summary> The Average filter is intended for use as an average-gathering system, using a rolling average with "roll-length" <c>FilterCount</c>.</summary>
+    /// <remarks>
     /// Implementation Details:
     /// 
     /// *Construct Average filter given a rolling
@@ -19,9 +15,8 @@ namespace Scarlet.Filters
     /// 
     /// *Get the filter output by calling
     ///  <c>YourFilterInstance.Output</c>
-    /// 
-    /// <typeparam name="T">
-    /// A type, which must be a numeric.</typeparam>
+    /// </remarks>
+    /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
     public class Average<T> : IFilter<T> where T : IComparable
     {
 
@@ -32,12 +27,8 @@ namespace Scarlet.Filters
                     Index,              // Current index of the average array
                     Iterations;         // Number of iterations in the filter
 
-        /// <summary>
-        /// Construct an average filter with
-        /// given roll-length.
-        /// </summary>
-        /// <param name="FilterCount">
-        /// Roll length for the average filter.</param>
+        /// <summary> Construct an average filter with given roll-length. </summary>
+        /// <param name="FilterCount"> Roll length for the average filter. </param>
         public Average(int FilterCount = 10)
         {
             if (!UtilData.IsNumericType(typeof(T)))
@@ -55,11 +46,8 @@ namespace Scarlet.Filters
             this.InitializeArray(); // Initialize average array to defaults
         }
 
-        /// <summary>
-        /// Feeds a value into the filter.
-        /// </summary>
-        /// <param name="Input">
-        /// Value to feed into the filter.</param>
+        /// <summary> Feeds a value into the filter. </summary>
+        /// <param name="Input"> Value to feed into the filter. </param>
         public void Feed(T Input)
         {
             // Increase number of iterations by 1
@@ -78,22 +66,15 @@ namespace Scarlet.Filters
             this.Output = this.CurSum / (Math.Min(this.Iterations, this.FilterCount)); 
         }
 
-        /// <summary>
-        /// Feeds filter with specified rate.
-        /// Not used for average filter.
-        /// </summary>
-        /// <param name="Input">
-        /// Value to feed into the filer.</param>
-        /// <param name="Rate">
-        /// Current rate to feed into the filter.</param>
+        /// <summary> Rate is irrelevant to average filter, so this is no different than using Feed(Input). </summary>
+        /// <param name="Input"> Value to feed into the filer. </param>
+        /// <param name="Rate"> Ignored </param>
         public void Feed(T Input, T Rate)
         {
             this.Feed(Input); // Average filter is independent of rate
         }
 
-        /// <summary>
-        /// Initializes dynamic number array to  
-        /// all zeros.</summary>
+        /// <summary> Initializes dynamic number array to all zeros. </summary>
         private void InitializeArray()
         {
             for (int i = 0; i < this.AverageArray.Length; i++)
@@ -102,6 +83,6 @@ namespace Scarlet.Filters
             }
         }
 
-        public T GetOutput() { return Output; }
+        public T GetOutput() { return this.Output; }
     }
 }

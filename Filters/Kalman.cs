@@ -5,25 +5,20 @@ using Scarlet.Utilities;
 namespace Scarlet.Filters
 {
     /// <summary>
-    /// This Kalman Filter class is intended to be used for the 
-    /// implementation of a single-measurement Kalman Filter.
-    /// See https://en.m.wikipedia.org/wiki/Kalman_filter for
-    /// details of the construction and operation of a Kalman
-    /// filter.</summary>
-    /// <typeparam name="T">
-    /// A type, which must be a numeric.</typeparam>
-    /// 
+    /// This Kalman Filter class is intended to be used for the implementation of a single-measurement Kalman Filter.
+    /// See https://en.m.wikipedia.org/wiki/Kalman_filter for details of the construction and operation of a Kalman filter.
+    /// </summary>
+    /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
+    /// <remarks>
     /// Basic implementation as follows:
     /// 
-    /// For basic prototyping, it is probably best to leave the 
-    /// coefficients as their defaults. For tuning, you can change
-    /// the coefficients later.
+    /// For basic prototyping, it is probably best to leave the coefficients as their defaults.
+    /// For tuning, you can change the coefficients later.
     /// 
     /// Coefficients:
-    /// <c>
-    /// Q,</c><c>
-    /// Qbias, </c><c>
-    /// Rmeasure</c>.
+    /// <c>Q,</c>
+    /// <c>Qbias, </c>
+    /// <c>Rmeasure</c>.
     /// 
     /// - Before iterations call <c>Initialize()</c>
     /// - Iteratively call <c> Feed(T input, T rate)</c>
@@ -36,6 +31,7 @@ namespace Scarlet.Filters
     /// As such, a sensor or system must have (or be close to) a linear 
     /// response in order to apply a Kalman filter. "
     /// Quote from: http://robotsforroboticists.com/kalman-filtering/
+    /// </remarks>
     public class Kalman<T> : IFilter<T> where T : IComparable
     { 
         public double Rmeasure { get; set; } // Measurement noise variance.
@@ -55,14 +51,10 @@ namespace Scarlet.Filters
         public double Q;             // Process noise variance for the signal.
         public double Qbias;         // Process noise variance for the signal rate bias.
                 
-        /// Kalman Filter Constructor
         /// <summary>
-        /// Handles construction of the
-        /// Kalman filter with default
-        /// filter coefficients.
-        /// See class comment for more
-        /// information regarding 
-        /// implementation.</summary>
+        /// Handles construction of the Kalman filter with default filter coefficients.
+        /// See class comment for more information regarding implementation.
+        /// </summary>
         public Kalman()
         {
             if (!UtilData.IsNumericType(typeof(T))) // Can now assert that T is a numeric
@@ -88,26 +80,20 @@ namespace Scarlet.Filters
             this.P[1, 1] = 0.0;
         }
 
-        /// <summary>
-        /// Feeds the Kalman filter with an
-        /// input, but only uses the last
-        /// supplied rate.</summary>
-        /// <param name="Input">
-        /// is the new input 
-        /// to the Kalman filter.</param>
+        /// <summary> Feeds the Kalman filter with an input, but only uses the last supplied rate. </summary>
+        /// <param name="Input"> The new input to the Kalman filter. </param>
         public void Feed(T Input)
         {
             // Kalman Filter is rate-dependent
             // Therefore must be given a rate.
-            // By default, the last rate
-            // fed into the filter will be
-            // given or, by default 0.0.
+            // By default, the last rate fed into the filter will be given or, by default 0.0.
             this.Feed(Input, this.LastRate); 
         }
 
         /// <summary>
         /// Initializes the Kalman filter.
-        /// Call before running iteratively.</summary>
+        /// Call before running iteratively.
+        /// </summary>
         public void Initialize()
         {
             this.StopWatch.Start();
@@ -115,16 +101,9 @@ namespace Scarlet.Filters
             this.Initialized = true;
         }
 
-        /// <summary>
-        /// Feeds the Kalman filter with an
-        /// input and rate and
-        /// calculates the feedback
-        /// from the filter.</summary>
-        /// <param name="Input">
-        /// is the new input to 
-        /// the Kalman filter.</param> 
-        /// <param name="Rate"> is the
-        /// new rate to the Kalman filter.
+        /// <summary> Feeds the Kalman filter with an input and rate and calculates the feedback from the filter. </summary>
+        /// <param name="Input"> The new input to the Kalman filter. </param> 
+        /// <param name="Rate"> The new rate to the Kalman filter. </param>
         /// Also computes filter feedback.
         public void Feed(T Input, T Rate)
         {
@@ -169,6 +148,6 @@ namespace Scarlet.Filters
             this.Output = SetAngle;
         }
 
-        public T GetOutput() { return Output; }
+        public T GetOutput() { return this.Output; }
     }
 }
