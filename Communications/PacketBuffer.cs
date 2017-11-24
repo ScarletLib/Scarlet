@@ -311,6 +311,8 @@ namespace Scarlet.Communications
     /// </summary>
     public class GenericController : PacketBuffer
     {
+        public static readonly int N_PRIORITIES = 5;
+
         public readonly QueueBuffer[] Buffers;
         public readonly PriorityBuffer PriorityBuffer;
         public readonly BandwidthControlBuffer BandwidthBuffer;
@@ -318,8 +320,8 @@ namespace Scarlet.Communications
         /// <summary> Construct a generic Controller. </summary>
         public GenericController()
         {
-            this.Buffers = new QueueBuffer[5];
-            for (int i = 0; i < 5; i++) { this.Buffers[i] = new QueueBuffer(); }
+            this.Buffers = new QueueBuffer[N_PRIORITIES];
+            for (int i = 0; i < N_PRIORITIES; i++) { this.Buffers[i] = new QueueBuffer(); }
 
             PacketBuffer[] BandwidthSubcontrollers = { this.Buffers[1], this.Buffers[2], this.Buffers[3] };
             int[] BandwidthAllocation = { 3, 2, 1 };
@@ -337,7 +339,7 @@ namespace Scarlet.Communications
         /// <exception cref="ArgumentOutOfRangeException"> If priority is out of range. </exception>
         public override void Enqueue(Packet Packet, int Priority)
         {
-            if (Priority < 0 || Priority >= 5) { throw new ArgumentOutOfRangeException("Priority number is out of range"); }
+            if (Priority < 0 || Priority >= N_PRIORITIES) { throw new ArgumentOutOfRangeException("Priority number is out of range"); }
             this.Buffers[Priority].Enqueue(Packet);
         }
 
@@ -349,7 +351,7 @@ namespace Scarlet.Communications
         /// <exception cref="ArgumentOutOfRangeException"> If priority is out of range. </exception>
         public void Enqueue(Packet Packet, PacketPriority Priority = PacketPriority.MEDIUM)
         {
-            if (Priority < 0 || (int)Priority >= 5) { throw new ArgumentOutOfRangeException("Priority number is out of range"); }
+            if (Priority < 0 || (int)Priority >= N_PRIORITIES) { throw new ArgumentOutOfRangeException("Priority number is out of range"); }
             this.Buffers[(int)Priority].Enqueue(Packet);
         }
 
