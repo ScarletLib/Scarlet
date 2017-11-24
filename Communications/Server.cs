@@ -477,8 +477,7 @@ namespace Scarlet.Communications
             else
             {
                 // Use default priority if needed
-                if (Priority == PacketPriority.USE_DEFAULT)
-                    Priority = DefaultPriority;
+                if (Priority == PacketPriority.USE_DEFAULT) { Priority = DefaultPriority; }
 
                 // Add to queue
                 SendQueues[Packet.Endpoint].Enqueue(Packet, (int) Priority);

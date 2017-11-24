@@ -444,8 +444,7 @@ namespace Scarlet.Communications
             if (!Initialized) { throw new InvalidOperationException("Client not initialized. Please call Client.Start() to establish connection. first"); }
 
             // Check if we have stopped the process
-            if (StopProcesses)
-                return false;
+            if (StopProcesses) { return false; }
             else
             {
                 // Ensure that cloning the packet will not try to clone a null string
