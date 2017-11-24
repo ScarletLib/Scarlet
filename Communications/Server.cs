@@ -43,13 +43,11 @@ namespace Scarlet.Communications
         public static bool PriorityQueueEnabled { get; private set; }
         public static PacketPriority DefaultPriority { get; private set; }
 
-        /// <summary>
-        /// Prepares the server for use, and starts listening for clients.
-        /// </summary>
-        /// <param name="PortTCP">The port to listen on for clients communicating via TCP.</param>
-        /// <param name="PortUDP">The port to listen on for clients communicating via UDP.</param>
-        /// <param name="ReceiveBufferSize">The size, in bytes, of the receive data buffers. Increase this if your packets are longer than the default.</param>
-        /// <param name="OperationPeriod">The time, in ms, between network operations. If you are sending/receiving a lot of packets, and notice delays, lower this.</param>
+        /// <summary> Prepares the server for use, and starts listening for clients. </summary>
+        /// <param name="PortTCP"> The port to listen on for clients communicating via TCP. </param>
+        /// <param name="PortUDP"> The port to listen on for clients communicating via UDP. </param>
+        /// <param name="ReceiveBufferSize"> The size, in bytes, of the receive data buffers. Increase this if your packets are longer than the default. </param>
+        /// <param name="OperationPeriod"> The time, in ms, between network operations. If you are sending/receiving a lot of packets, and notice delays, lower this. </param>
         /// <param name="UsePriorityQueue"> If it is ture, packet priority control will be enabled. </param>
         public static void Start(int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20, bool UsePriorityQueue = false)
         {
@@ -71,10 +69,8 @@ namespace Scarlet.Communications
                 PriorityQueueEnabled = UsePriorityQueue;
 
                 // Initialize default priority
-                if (PriorityQueueEnabled)
-                    DefaultPriority = PacketPriority.MEDIUM;
-                else
-                    DefaultPriority = 0;
+                if (PriorityQueueEnabled) { DefaultPriority = PacketPriority.MEDIUM; }
+                else { DefaultPriority = 0; }
 
                 // Start Handler and listener
                 PacketHandler.Start();
@@ -87,10 +83,8 @@ namespace Scarlet.Communications
             else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Attempted to start Server when already started."); }
         }
 
-        /// <summary>
-        /// Starts all Server threads, then waits for them to terminate.
-        /// </summary>
-        /// <param name="Ports">Tuple<int, int> of ports</param>
+        /// <summary> Starts all Server threads, then waits for them to terminate. </summary>
+        /// <param name="Ports"> Tuple<int, int> of ports, corresponding to (TCP, UDP). </param>
         private static void StartThreads(object Ports)
         {
             ReceiveThreadTCP = new Thread(new ParameterizedThreadStart(WaitForClientsTCP));
@@ -112,9 +106,7 @@ namespace Scarlet.Communications
             Initialized = false;
         }
 
-        /// <summary>
-        /// Sends signal to all components of Server to stop, then waits for everything to shut down.
-        /// </summary>
+        /// <summary> Sends signal to all components of Server to stop, then waits for everything to shut down. </summary>
         public static void Stop()
         {
             Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Server.");
@@ -130,10 +122,8 @@ namespace Scarlet.Communications
         }
 
         #region Client Handling
-        /// <summary>
-        /// Waits for incoming TCP clients, then creates a HandleTCPClient thread to interface with each client.
-        /// </summary>
-        /// <param name="ReceivePort">The port to listen for TCP clients on. Must be int.</param>
+        /// <summary> Waits for incoming TCP clients, then creates a HandleTCPClient thread to interface with each client. </summary>
+        /// <param name="ReceivePort"> The port to listen for TCP clients on. Must be int. </param>
         private static void WaitForClientsTCP(object ReceivePort)
         {
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
@@ -150,10 +140,7 @@ namespace Scarlet.Communications
             TCPListener.Stop();
         }
 
-        /// <summary>
-        /// Create a new sending buffer for client if the client is new.
-        /// </summary>
-        /// 
+        /// <summary> Create a new sending buffer for client if the client is new. </summary>
         /// <param name="ClientName"> Name of the client. </param>
         private static void CreateBufferIfClientIsNew(string ClientName)
         {
@@ -173,7 +160,7 @@ namespace Scarlet.Communications
         /// Waits for, and receives data from a connected TCP client.
         /// This must be started on a thread, as it will block until CommHandler.Stopping is true, or the client disconnects.
         /// </summary>
-        /// <param name="ClientObj">The client to receive data from. Must be TcpClient.</param>
+        /// <param name="ClientObj"> The client to receive data from. Must be TcpClient. </param>
         private static void HandleTCPClient(object ClientObj)
         {
             TcpClient Client = (TcpClient)ClientObj;
@@ -291,19 +278,15 @@ namespace Scarlet.Communications
             ClientConnChange(new EventArgs());
         }
 
-        /// <summary>
-        /// Initially starts the UDP receiver.
-        /// </summary>
-        /// <param name="ReceivePort">Port to listen for UDP packets on. Must be int.</param>
+        /// <summary> Initially starts the UDP receiver. </summary>
+        /// <param name="ReceivePort"> Port to listen for UDP packets on. Must be int. </param>
         private static void WaitForClientsUDP(object ReceivePort)
         {
             UDPListener = new UdpClient(new IPEndPoint(IPAddress.Any, (int)ReceivePort));
             UDPListener.BeginReceive(HandleUDPData, UDPListener);
         }
 
-        /// <summary>
-        /// Processes incoming UDP packet, then starts the listener again.
-        /// </summary>
+        /// <summary> Processes incoming UDP packet, then starts the listener again. </summary>
         private static void HandleUDPData(IAsyncResult Result)
         {
             UdpClient Listener;
@@ -374,9 +357,7 @@ namespace Scarlet.Communications
             Listener.BeginReceive(HandleUDPData, Listener);
         }
 
-        /// <summary>
-        /// Tries to find the client name that matches the given IPEndPoint.
-        /// </summary>
+        /// <summary> Tries to find the client name that matches the given IPEndPoint. </summary>
         public static string FindClient(IPEndPoint Endpoint, bool IsUDP)
         {
             try
@@ -389,7 +370,7 @@ namespace Scarlet.Communications
             catch { return null; }
         }
 
-        /// <summary>Gets the TCP and UDP endpoints of the specified client by client name.</summary>
+        /// <summary> Gets the TCP and UDP endpoints of the specified client by client name. </summary>
         public static IPEndPoint[] GetEndpoints(string ClientName)
         {
             if (Clients.ContainsKey(ClientName))
@@ -401,18 +382,14 @@ namespace Scarlet.Communications
 
         private static void ClientConnChange(EventArgs Event) { ClientConnectionChange?.Invoke("Server", Event); }
 
-        /// <summary>
-        /// Receives watchdog events for clients disconnecting/reconnecting.
-        /// </summary>
+        /// <summary> Receives watchdog events for clients disconnecting/reconnecting. </summary>
         public static void WatchdogStatusUpdate(object Sender, EventArgs Event)
         {
             ConnectionStatusChanged WatchdogEvent = (ConnectionStatusChanged)Event;
             if(Clients.ContainsKey(WatchdogEvent.StatusEndpoint)) { Clients[WatchdogEvent.StatusEndpoint].Connected = WatchdogEvent.StatusConnected; }
         }
 
-        /// <summary>
-        /// Gets a list of clients. Clients may not be connected, or partially connected.
-        /// </summary>
+        /// <summary> Gets a list of clients. Clients may not be connected, or partially connected. </summary>
         public static List<string> GetClients() { return Clients.Keys.ToList(); }
         #endregion
 
@@ -438,10 +415,8 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Attempts to process a packet. Outputs to log and discards if processing fails.
-        /// </summary>
-        /// <returns>Whether processing was successful.</returns>
+        /// <summary> Attempts to process a packet. Outputs to log and discards if processing fails. </summary>
+        /// <returns> Whether processing was successful. </returns>
         private static bool ProcessOnePacket(Packet Packet)
         {
             try
@@ -458,10 +433,7 @@ namespace Scarlet.Communications
         #endregion
 
         #region Sending
-        /// <summary>
-        /// Adds a packet to the queue of packets to be sent.
-        /// </summary>
-        /// 
+        /// <summary> Adds a packet to the queue of packets to be sent. </summary>
         /// <param name="Packet"> The packet to be sent. </param>
         /// <param name="Priority"> Priority of packet. </param>
         public static void Send(Packet Packet, PacketPriority Priority = PacketPriority.USE_DEFAULT)
@@ -484,18 +456,14 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Used for threaded applications.
-        /// </summary>
-        /// <param name="Packet">A Packet, which will be passed to SendNow(Packet).</param>
+        /// <summary> Used for threaded applications. </summary>
+        /// <param name="Packet"> A Packet, which will be passed to SendNow(Packet). </param>
         private static void SendNowGen(object Packet)
         {
             SendNow((Packet)Packet);
         }
 
-        /// <summary>
-        /// Immediately sends a packet. Blocks until sending is complete, regardless of protocol.
-        /// </summary>
+        /// <summary> Immediately sends a packet. Blocks until sending is complete, regardless of protocol. </summary>
         public static void SendNow(Packet ToSend)
         {
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }

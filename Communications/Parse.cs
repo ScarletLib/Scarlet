@@ -4,40 +4,30 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Communications
 {
-    /// <summary>
-    /// Handles packet parsing,
-    /// using handlers of incoming message IDs.
-    /// </summary>
+    /// <summary> Handles packet parsing, using handlers of incoming message IDs. </summary>
     public static class Parse
     {
 
-        // Delegate method type for parsing specific packet ids
+        // Delegate method type for parsing specific packet IDs
         public delegate void ParseMethod(Packet Packet);
-        // Stored parsing Handlers for all possible message ids
+        // Stored parsing Handlers for all possible message IDs
         static readonly Dictionary<byte, Delegate> ParsingHandlers = new Dictionary<byte, Delegate>();
 
-        /// <summary>
-        /// Sets the handler for parsing of the appropriate
-        /// MessageId.
-        /// </summary>
-        /// <param name="MessageId">
-        /// Message ID for parsing.</param>
-        /// <param name="ParseMethod">Method used when incoming packet.
-        /// of <c>MessageId</c> is received.</param>
-        public static void SetParseHandler(byte MessageId, ParseMethod ParseMethod)
+        /// <summary> Sets the handler for parsing of the appropriate Message ID. </summary>
+        /// <param name="MessageID"> Message ID for parsing. </param>
+        /// <param name="ParseMethod"> Method used when incoming packet of <c>MessageID</c> is received. </param>
+        public static void SetParseHandler(byte MessageID, ParseMethod ParseMethod)
         {
-            if (ParsingHandlers.ContainsKey(MessageId))
+            if (ParsingHandlers.ContainsKey(MessageID))
             {
-                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Parse Method for Packet ID 0x" + MessageId.ToString("X4") + " overridden.");
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Parse Method for Packet ID 0x" + MessageID.ToString("X4") + " overridden.");
             }
-            ParsingHandlers[MessageId] = ParseMethod;
+            ParsingHandlers[MessageID] = ParseMethod;
         }
 
-        /// <summary>
-        /// Appropriately parses incoming message.
-        /// </summary>
-        /// <param name="NewMessage">Message to parse.</param>
-        /// <returns>Whether or not parsing was successful.</returns>
+        /// <summary> Appropriately parses incoming message. </summary>
+        /// <param name="NewMessage"> Message to parse. </param>
+        /// <returns> Whether or not parsing was successful. </returns>
         public static bool ParseMessage(Packet Packet)
         {
             try

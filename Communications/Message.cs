@@ -5,9 +5,7 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Communications
 {
-    /// <summary>
-    /// This class is intended to contain packet data.
-    /// </summary>
+    /// <summary> This class is intended to contain packet data. </summary>
     public class Message : ICloneable
     {
         public byte[] Timestamp;  // Stores message timestamp (Unix time format)
@@ -21,7 +19,7 @@ namespace Scarlet.Communications
         /// ID: RawData[4]
         /// Payload: Remainder (RawData[5] though end)
         /// </summary>
-        /// <param name="RawData">Incoming data array</param>
+        /// <param name="RawData"> Incoming data array </param>
         public Message(byte[] RawData)
         {
             if (RawData.Length < 5) { throw new ArgumentException("Raw data not sufficient for packet. Must be at least 5 bytes long."); }
@@ -31,12 +29,10 @@ namespace Scarlet.Communications
             else { this.Payload = new byte[0]; }
         }
 
-        /// <summary>
-        /// Constructs a message given data that is already split.
-        /// </summary>
-        /// <param name="ID">The packet ID, used to determine how it is handled at the recipient.</param>
-        /// <param name="Payload">The packet's data content.</param>
-        /// <param name="Timestamp">The timestamp of the packet. If null or invalid, the current time gets set.</param>
+        /// <summary> Constructs a message given data that is already split. </summary>
+        /// <param name="ID"> The packet ID, used to determine how it is handled at the recipient. </param>
+        /// <param name="Payload"> The packet's data content. </param>
+        /// <param name="Timestamp"> The timestamp of the packet. If null or invalid, the current time gets set. </param>
         public Message(byte ID, byte[] Payload = null, byte[] Timestamp = null)
         {
             this.Payload = Payload ?? new byte[0];
@@ -45,20 +41,16 @@ namespace Scarlet.Communications
             this.ID = ID;
         }
 
-        /// <summary>
-        /// Sets the timestamp. Must be 4 or more bytes (only first 4 used).
-        /// </summary>
-        /// <param name="Time">The new timestamp.</param>
+        /// <summary> Sets the timestamp. Must be 4 or more bytes (only first 4 used). </summary>
+        /// <param name="Time"> The new timestamp. </param>
         public void SetTime(byte[] Time)
         {
             if (Time.Length < 4) { throw new ArgumentException("Timestamp must be 4 bytes."); }
             this.Timestamp = UtilMain.SubArray(Time, 0, 4);
         }
 
-        /// <summary>
-        /// Appends data to the end of message.
-        /// </summary>
-        /// <param name="NewData">New Data to append to current data.</param>
+        /// <summary> Appends data to the end of message. </summary>
+        /// <param name="NewData"> New Data to append to current data. </param>
         public void AppendData(byte[] NewData)
         {
             List<byte> TempList = new List<byte>(this.Payload);
@@ -73,7 +65,7 @@ namespace Scarlet.Communications
         /// ID at data[4]
         /// Data encoded after data[4], i.e. data[5:]
         /// </summary>
-        /// <returns>Returns all data in message</returns>
+        /// <returns> Returns all data in message </returns>
         public byte[] GetRawData()
         {
             List<byte> Output = new List<byte>();
@@ -83,9 +75,7 @@ namespace Scarlet.Communications
             return Output.ToArray();
         }
 
-        /// <summary>
-        /// Formats the Messages's contents to be human-readable.
-        /// </summary>
+        /// <summary> Formats the Messages's contents to be human-readable. </summary>
         public override string ToString()
         {
             StringBuilder Str = new StringBuilder();

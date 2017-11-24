@@ -6,12 +6,9 @@ using System.Text;
 namespace Scarlet.Communications
 {
     /// <summary>
-    /// WatchdogManager handles internal
-    /// watchdog receiving and sending for
-    /// both Clients and Servers. Not meant
-    /// for End-User. Is internal to Scarlet.
-    /// For more information about watchdogs,
-    /// visit the OneNote documentation.
+    /// WatchdogManager handles internal watchdog receiving and sending for both Clients and Servers.
+    /// Not meant for End-User. Is internal to Scarlet.
+    /// For more information about watchdogs, visit the OneNote documentation.
     /// * All watchdogs are send with UDP
     /// </summary>
     internal static class WatchdogManager
@@ -31,14 +28,11 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Starts a watchdog manager.
-        /// Parameters default to a server
-        /// watchdog. If you are a server you
-        /// can just call WatchdogManager.Start()
-        /// Will not change any functionality unless 
-        /// WatchdogManager is in a stopped state
+        /// Parameters default to a server watchdog. If you are a server you can just call WatchdogManager.Start()
+        /// Will not change any functionality unless WatchdogManager is in a stopped state
         /// </summary>
-        /// <param name="IsClient">Whether or not the watchdog sender is a client</param>
-        /// <param name="MyName">The name of the watchdog sender</param>
+        /// <param name="IsClient"> Whether or not the watchdog sender is a client </param>
+        /// <param name="MyName"> The name of the watchdog sender </param>
         internal static void Start(bool IsClient = false, string MyName = "Server")
         {
             // As long as the watchdog is not already started, go ahead with initialization.
@@ -61,18 +55,14 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Stops the watchdog. Call Start(...) again to restart the watchdog process
-        /// </summary>
+        /// <summary> Stops the watchdog. Call Start(...) again to restart the watchdog process </summary>
         internal static void Stop()
         {
             Continue = false;
             Started = false;
         }
 
-        /// <summary>
-        /// Sends all required watchdogs over the network.
-        /// </summary>
+        /// <summary> Sends all required watchdogs over the network. </summary>
         private static void Send()
         {
             // While the continue state of watchdog is set
@@ -110,7 +100,7 @@ namespace Scarlet.Communications
         /// Useful for servers, cannot use with Client Watchdogs. 
         /// Creates a new Watchdog for send-receive
         /// </summary>
-        /// <param name="Endpoint">The endpoint to add</param>
+        /// <param name="Endpoint"> The endpoint to add </param>
         internal static void AddWatchdog(string Endpoint)
         {
             // Check if a client attempts to add a watchdog
@@ -130,7 +120,7 @@ namespace Scarlet.Communications
         /// Removes a watchdog endpoint from the system completely.
         /// Use only if you are a server
         /// </summary>
-        /// <param name="Endpoint">The endpoint to remove</param>
+        /// <param name="Endpoint"> The endpoint to remove </param>
         internal static void RemoveWatchdog(string Endpoint)
         {
             // Check if a client attempts to remove a watchdog
@@ -141,13 +131,10 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Call this if you have found a watchdog.
-        /// If you are client, make sure that the
-        /// Endpoint is "Server".
-        /// This is the basis of the operation,
-        /// when you receive a watchdog packet,
-        /// call this method to invoke a watchdog is found.
+        /// If you are client, make sure that the Endpoint is "Server".
+        /// This is the basis of the operation, when you receive a watchdog packet, call this method to invoke a watchdog is found.
         /// </summary>
-        /// <param name="Endpoint">The endpoint the watchdog was found on</param>
+        /// <param name="Endpoint"> The endpoint the watchdog was found on </param>
         internal static void FoundWatchdog(string Endpoint)
         {
             // If we have not started a watchdog, and we are a client, start it.
@@ -156,10 +143,8 @@ namespace Scarlet.Communications
             Watchdogs[Endpoint].FoundWatchdog();
         }
 
-        /// <summary>
-        /// Checks if there is a connection, only for Client
-        /// </summary>
-        /// <returns>Whether or not there is a server connection</returns>
+        /// <summary> Checks if there is a connection, only for Client </summary>
+        /// <returns> Whether or not there is a server connection </returns>
         internal static bool IsConnected()
         {
             // Check if the system is a server or client. Throw an illegal operation exception if server
@@ -169,12 +154,9 @@ namespace Scarlet.Communications
             return Watchdogs["Server"].IsConnected;
         }
 
-        /// <summary>
-        /// Checks if there is a client connection
-        /// given an endpoint. Only for server
-        /// </summary>
-        /// <param name="Endpoint">Endpoint to check</param>
-        /// <returns>Whether or not there is a watchdog connection with the given endpoint</returns>
+        /// <summary> Checks if there is a client connection given an endpoint. Only for server </summary>
+        /// <param name="Endpoint"> Endpoint to check </param>
+        /// <returns> Whether or not there is a watchdog connection with the given endpoint </returns>
         internal static bool IsConnected(string Endpoint)
         {
             // Check if the wrong usage occurs
@@ -185,11 +167,8 @@ namespace Scarlet.Communications
             return Watchdogs[Endpoint].IsConnected;
         }
 
-        /// <summary>
-        /// Invokes a connection change event. Call
-        /// when a connection status changes.
-        /// </summary>
-        /// <param name="Event">The event to trigger</param>
+        /// <summary> Invokes a connection change event. Call when a connection status changes. </summary>
+        /// <param name="Event"> The event to trigger </param>
         private static void OnConnectionChange(ConnectionStatusChanged Event) { ConnectionChanged?.Invoke("Watchdog Timer", Event); }
 
         /// <summary>
@@ -220,10 +199,8 @@ namespace Scarlet.Communications
             // The endpoint of the watchdog receiver (i.e. not the sender)
             private string Endpoint;
 
-            /// <summary>
-            /// Constructs a watchdog object
-            /// </summary>
-            /// <param name="ListenFor">The endpoint to listen for (i.e. not the sender)</param>
+            /// <summary> Constructs a watchdog object </summary>
+            /// <param name="ListenFor"> The endpoint to listen for (i.e. not the sender) </param>
             public Watchdog(string ListenFor)
             {
                 // Set the internal fields and start the listening thread
@@ -231,15 +208,10 @@ namespace Scarlet.Communications
                 new Thread(new ThreadStart(Listen)).Start();
             }
 
-            /// <summary>
-            /// Call this on the watchdog if the watchdog was found on the cycle
-            /// </summary>
+            /// <summary> Call this on the watchdog if the watchdog was found on the cycle </summary>
             internal void FoundWatchdog() { FoundWatchdogThisCycle = true; }
 
-            /// <summary>
-            /// An interative thread that will stop if 
-            /// WatchdogManager.Stop() is called
-            /// </summary>
+            /// <summary> An interative thread that will stop if WatchdogManager.Stop() is called </summary>
             private void Listen()
             {
                 // While we are not stopping
@@ -259,10 +231,8 @@ namespace Scarlet.Communications
     }
 
     /// <summary>
-    /// This class contains the endpoint of the connection,
-    /// and the status of the connection. It overloads EventArgs
-    /// and is used in triggering connection changes between points
-    /// on the communication stream.
+    /// This class contains the endpoint of the connection, and the status of the connection.
+    /// It overloads EventArgs and is used in triggering connection changes between points on the communication stream.
     /// </summary>
     public class ConnectionStatusChanged : EventArgs
     {

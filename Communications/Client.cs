@@ -10,11 +10,8 @@ using System.Threading;
 namespace Scarlet.Communications
 {
     /// <summary>
-    /// Client is a class used to network
-    /// a client to a server.
-    /// 
-    /// Please read the Scarlet documentation
-    /// before use.
+    /// Client is a class used to network a client to a server.
+    /// Please read the Scarlet documentation before use.
     /// </summary>
     public static class Client
     {
@@ -55,16 +52,14 @@ namespace Scarlet.Communications
         public static List<Packet> SentPackets { get; private set; } // Storage for send packets.
         public static List<Packet> ReceivedPackets { get; private set; } // Storage for received packets.
 
-        /// <summary>
-        /// Starts a Client process.
-        /// </summary>
+        /// <summary> Starts a Client process. </summary>
         /// <param name="ServerIP"> String representation of the IP Address of server.</param>
         /// <param name="PortTCP"> Target port for TCP Communications on the server.</param>
         /// <param name="PortUDP"> Target port for UDP Communications on the server.</param>
         /// <param name="Name"> Name of client. </param>
-        /// <param name="ReceiveBufferSize"> Size of buffer for incoming packet. Unit: byte </param>
-        /// <param name="OperationPeriod"> Time to wait after receiving or sending each packet. Unit: ms </param>
-        /// <param name="UsePriorityQueue"> If it is true, packet priority control will be enabled. </param>
+        /// <param name="ReceiveBufferSize"> Size of buffer for receving incoming packet. Unit: byte. Increase this if you are receiving larger packets. </param>
+        /// <param name="OperationPeriod"> Time to wait after receiving or sending each packet. Unit: ms. Decrease this if the send/receive operations cannot keep up with your data rate. </param>
+        /// <param name="UsePriorityQueue"> If it is true, packet priority control will be enabled, and packets will be sent in an order corresponding to their importance. If false, packets are sent in the order that they are provided. </param>
         public static void Start(string ServerIP, int PortTCP, int PortUDP, string Name, int ReceiveBufferSize = 64, int OperationPeriod = 20, bool UsePriorityQueue = false)
         {
             // Initialize PacketHandler
@@ -122,12 +117,9 @@ namespace Scarlet.Communications
 
         #region Internal
 
-        /// <summary>
-        /// Event triggered when WatchdogManager
-        /// detects a change in connection status.
-        /// </summary>
-        /// <param name="Sender">If triggered internally by WatchdogManager, this will be "Watchdog Timer"</param>
-        /// <param name="Args">A ConnectionStatusChanged object containing the new status of the Client.</param>
+        /// <summary> Event triggered when WatchdogManager detects a change in connection status. </summary>
+        /// <param name="Sender"> If triggered internally by WatchdogManager, this will be "Watchdog Timer" </param>
+        /// <param name="Args"> A ConnectionStatusChanged object containing the new status of the Client. </param>
         private static void ConnectionChange(object Sender, ConnectionStatusChanged Args)
         {
             // Whether or not the connection has changed state (this should usually be true, unless connecting for the first time)
@@ -165,12 +157,10 @@ namespace Scarlet.Communications
         }
 
         /// <summary>
-        /// Logs to the console the appropriate information 
-        /// if the connection is alive or dead. 
-        /// * Will tell the console that the connection will
-        /// be retried if the connection is not alive.
+        /// Logs to the console the appropriate information if the connection is alive or dead. 
+        /// * Will tell the console that the connection will be retried if the connection is not alive.
         /// </summary>
-        /// <param name="IsAlive">Whether or not the connection is now alive</param>
+        /// <param name="IsAlive"> Whether or not the connection is now alive </param>
         private static void ConnectionAliveOutput(bool IsAlive)
         {
             // Tell the console that the server is connected if the connection is alive
@@ -179,9 +169,7 @@ namespace Scarlet.Communications
             else { Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Disconnected from server... Retrying..."); }
         }
 
-        /// <summary>
-        /// Starts up the Client
-        /// </summary>
+        /// <summary> Starts up the Client </summary>
         private static void Startup()
         {
             // Initialize the TCP and UDP clients
@@ -216,11 +204,7 @@ namespace Scarlet.Communications
             StartedUp = true;
         }
 
-        /// <summary>
-        /// Retries sending names to the
-        /// server until the Watchdog Manager finds 
-        /// watchdog ping again.
-        /// </summary>
+        /// <summary> Retries sending names to the server until the Watchdog Manager finds watchdog ping again. </summary>
         private static void RetryConnecting()
         {
             while (!IsConnected)
@@ -231,13 +215,9 @@ namespace Scarlet.Communications
                 {
                     // Both these commands are allowed to fail
                     // Initialize the TCP connection
-                    // We only need to initialize the
-                    // TCP connection if the TCP connection
-                    // has ever began, otherwise server
-                    // will open a TCP socket
+                    // We only need to initialize the TCP connection if the TCP connection has ever began, otherwise server will open a TCP socket
                     InitializeTCPClient();
-                    // Send the name of the client
-                    // on the TCP and UDP bus
+                    // Send the name of the client on the TCP and UDP bus
                     SendNames();
                 }
                 catch { }
@@ -247,19 +227,14 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Retry Startup until connection is established
-        /// </summary>
+        /// <summary> Retry Startup until connection is established </summary>
         private static void RetryStart()
         {
             // While the Client is not connected
             while (!IsConnected)
             {
                 // Try starting up the client
-                // Startup is allowed to fail
-                // because if we do not have 
-                // a valid connection, then
-                // we will get an exception
+                // Startup is allowed to fail because if we do not have a valid connection, then we will get an exception
                 try { Startup(); }
                 catch { }
                 // Wait some amount of time
@@ -269,8 +244,7 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Assumes TCP and UCP clients are connected.
-        /// Sends name to initialize a connection
-        /// with server.
+        /// Sends name to initialize a connection with server.
         /// </summary>
         private static void SendNames()
         {
@@ -279,9 +253,7 @@ namespace Scarlet.Communications
             ServerTCP.Client.Send(SendData);
         }
 
-        /// <summary>
-        /// Initializes the Client connections
-        /// </summary>
+        /// <summary> Initializes the Client connections </summary>
         private static void InitializeClients()
         {
             // Initialize and connect to the UDP and TCP clients
@@ -290,9 +262,7 @@ namespace Scarlet.Communications
             ServerUDP.Connect(ServerEndpointUDP);
         }
 
-        /// <summary>
-        /// Initializes TCP Client connection
-        /// </summary>
+        /// <summary> Initializes TCP Client connection </summary>
         private static void InitializeTCPClient()
         {
             // Initialize and connect to the UDP and TCP clients
@@ -308,10 +278,7 @@ namespace Scarlet.Communications
             ServerTCP.ReceiveBufferSize = ReceiveBufferSize;    // Sets the receive buffer size to the max buffer size
         }
 
-        /// <summary>
-        /// Starts the threads for the receive, send, and processing
-        /// systems.
-        /// </summary>
+        /// <summary> Starts the threads for the receive, send, and processing systems. </summary>
         private static void StartThreads()
         {
             SendThread.Start();                         // Start sending packets
@@ -320,17 +287,12 @@ namespace Scarlet.Communications
             ReceiveThreadUDP.Start(ServerUDP.Client);   // Start receiving on the UDP socket
         }
 
-        /// <summary>
-        /// Creates a new thread for
-        /// handling connection retries
-        /// </summary>
-        /// <returns>New RetryConnecting Thread</returns>
+        /// <summary> Creates a new thread for handling connection retries </summary>
+        /// <returns> New RetryConnecting Thread </returns>
         private static Thread RetryConnectionThreadFactory() { return new Thread(new ThreadStart(RetryConnecting)); }
-        /// <summary>
-        /// Creates a new thread for
-        /// handling startup retries
-        /// </summary>
-        /// <returns>New RetryStart Thread</returns>
+
+        /// <summary> Creates a new thread for handling startup retries </summary>
+        /// <returns> New RetryStart Thread </returns>
         private static Thread RetryStartupThreadFactory() { return new Thread(new ThreadStart(RetryStart)); }
 
         #endregion
@@ -339,10 +301,9 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Receives packets from a given socket
-        /// Object type parameter, because it must
-        /// be if called from a thread.
+        /// Object type parameter, because it must be if called from a thread.
         /// </summary>
-        /// <param name="ReceiveSocket">The socket to recieve from.</param>
+        /// <param name="ReceiveSocket"> The socket to recieve from. </param>
         private static void ReceiveFromSocket(object ReceiveSocket)
         {
             // Cast to a socket
@@ -398,15 +359,12 @@ namespace Scarlet.Communications
 
         }
 
-        /// <summary>
-        /// Processes packets/sends them to the parsing system.
-        /// </summary>
+        /// <summary> Processes packets/sends them to the parsing system. </summary>
         private static void ProcessPackets()
         {
             // While we need to continue the processing
             while (!StopProcesses)
             {
-
                 Packet CurrentPacket = ReceiveQueue.Dequeue();
                 if (CurrentPacket != null)
                 {
@@ -456,12 +414,9 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Sends a packet asynchronously, 
-        /// handles both UDP and TCP Packets.
-        /// </summary>
-        /// <param name="SendPacket">Packet to send.</param>
-        /// <returns>Success of packet sending.</returns>
+        /// <summary> Sends a packet asynchronously, handles both UDP and TCP Packets. </summary>
+        /// <param name="SendPacket"> Packet to send. </param>
+        /// <returns> Success of packet sending. </returns>
         public static bool SendNow(Packet SendPacket)
         {
             // Check initialization status of Client
@@ -474,11 +429,10 @@ namespace Scarlet.Communications
 
         /// <summary>
         /// Assumes IsConnected is true.
-        /// Sends a packet to the Server UDP
-        /// port.
+        /// Sends a packet to the Server UDP port.
         /// </summary>
-        /// <param name="UDPPacket">The Packet to send via UDP</param>
-        /// <returns>True always, because there is no way to detect a successful UDP transmission</returns>
+        /// <param name="UDPPacket"> The Packet to send via UDP </param>
+        /// <returns> True always, because there is no way to detect a successful UDP transmission </returns>
         private static bool SendUDPNow(Packet UDPPacket)
         {
             // Sends the data as a byte array
@@ -487,18 +441,16 @@ namespace Scarlet.Communications
             if (UDPPacket.Data.Timestamp == null) { UDPPacket.UpdateTimestamp(); }
             // Send the UDP data
             ServerUDP.Send(Data, Data.Length);
-            // Returns true always, because there is no way to detect if a UDP
-            // message is received
+            // Returns true always, because there is no way to detect if a UDP message is received
             return true;
         }
 
         /// <summary>
         /// Assumes IsConnected is true.
-        /// Sends a packet to the Server TCP
-        /// port.
+        /// Sends a packet to the Server TCP port.
         /// </summary>
-        /// <param name="TCPPacket">The Packet to send via TCP</param>
-        /// <returns>The success of the TCP transmission</returns>
+        /// <param name="TCPPacket"> The Packet to send via TCP </param>
+        /// <returns> The success of the TCP transmission </returns>
         private static bool SendTCPNow(Packet TCPPacket)
         {
             // Get the packet's raw data
@@ -523,10 +475,7 @@ namespace Scarlet.Communications
             return true; // Return that the send process was successful
         }
 
-        /// <summary>
-        /// Iteratively sends packets to the server
-        /// from the send queue.
-        /// </summary>
+        /// <summary> Iteratively sends packets to the server from the send queue. </summary>
         private static void SendPackets()
         {
             while (!StopProcesses)
@@ -552,24 +501,16 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary>
-        /// Sends a Packet regardless of the connection
-        /// status of Client. This method will throw an
-        /// exception if you try and send a TCP exception
-        /// without IsConnected being true.
-        /// </summary>
-        /// <param name="SendPacket">The Packet to send</param>
-        /// <returns>Whether or not the packet was sent.</returns>
+        /// <summary> Sends a Packet regardless of the connection status of Client. This method will throw an exception if you try and send a TCP exception without IsConnected being true. </summary>
+        /// <param name="SendPacket"> The Packet to send </param>
+        /// <returns> Whether or not the packet was sent. </returns>
         internal static bool SendRegardless(Packet SendPacket)
         {
-            // Check to make sure that you are not
-            // sending a TCP connection without an
-            // established connection
+            // Check to make sure that you are not sending a TCP connection without an established connection
             if (SendPacket.IsUDP || IsConnected)
             {
                 // Check if the Client is storing packets
-                // If so, lock that packet store and add
-                // the packet into the list
+                // If so, lock that packet store and add the packet into the list
                 if (StorePackets)
                 {
                     lock (SentPackets) { SentPackets.Add(SendPacket); }
@@ -607,20 +548,12 @@ namespace Scarlet.Communications
             Initialized = false;
         }
 
-        /// <summary>
-        /// Gets the length of the current receive queue.
-        /// (The processing queue) i.e. the packets in this 
-        /// queue have yet to be parsed.
-        /// </summary>
-        /// <returns>The length of the recieve queue</returns>
+        /// <summary> Gets the length of the current receive queue. i.e. The number of packets that have yet to be parsed. </summary>
+        /// <returns> The length of the recieve queue </returns>
         public static int GetReceiveQueueCount() { return ReceiveQueue.Count; }
 
-        /// <summary>
-        /// Gets the length of the current send queue.
-        /// i.e. the packets in this 
-        /// queue have yet to be sent.
-        /// </summary>
-        /// <returns>The length of the send queue</returns>
+        /// <summary> Gets the length of the current send queue. i.e. The number of packets that have yet to be sent. </summary>
+        /// <returns> The length of the send queue </returns>
         public static int GetSendQueueCount() { return SendQueue.Count; }
 
         #endregion
