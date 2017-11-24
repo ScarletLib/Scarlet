@@ -15,8 +15,8 @@ namespace Scarlet.Components.Sensors
         private ushort LastReading;
         private byte Speed = (byte)RefreshSpeed.REGULAR;
 
-        /// <summary>
-        /// Determines how often readins are taken. DOUBLE is fastest, QUARTER is slowest.
+        /// <summary> Determines how often readins are taken. DOUBLE is fastest, QUARTER is slowest. </summary>
+        /// <remarks>
         /// The actual time depends on R_SET. See here for times:
         /// (Note: The Adafruit breakout board uses 300k)
         /// 
@@ -28,7 +28,7 @@ namespace Scarlet.Components.Sensors
         /// QUARTER     500ms       1000ms
         /// 
         /// (From page 8 in datasheet)
-        /// </summary>
+        /// </remarks>
         public enum RefreshSpeed { DOUBLE, REGULAR, HALF, QUARTER }
 
         public VEML6070(II2CBus Bus, byte Address = 0x38)
@@ -39,24 +39,28 @@ namespace Scarlet.Components.Sensors
             SetRefreshSpeed((RefreshSpeed)this.Speed);
         }
 
+        /// <summary> Instructs the sensor to use the gven refresh speed starting now. </summary>
         public void SetRefreshSpeed(RefreshSpeed Speed)
         {
             this.Speed = (byte)Speed;
             this.Bus.Write(this.AddressLSB, new byte[] { (byte)(((this.Speed & 0b0000_0011) << 2) | 0b0000_0010) });
         }
 
-        /// <summary>
-        /// Gets the current UV light level.
-        /// </summary>
-        /// <returns>UV light level in μW/cm/cm.</returns>
+        /// <summary> Gets the current UV light level as of the last UpdateState() call. </summary>
+        /// <returns> UV light level in μW/cm/cm, in increments of 5. </returns>
         public int GetData() { return ConvertFromRaw(this.LastReading); }
 
+        /// <summary> Gets the sensor's raw data as it was received at the last UpdateState() call. </summary>
+        /// <returns> The bytes sent over I2C from the sensor at the last reading. </returns>
         public ushort GetRawData() { return this.LastReading; }
 
+        /// <summary> Gets the UV reading at the last UpdateState() call. </summary>
+        /// <returns> UV light level in μW/cm/cm, in increments of 5. </returns>
         public static int ConvertFromRaw(ushort RawData) { return RawData * 5; }
 
         public bool Test() { return true; } // TODO: See if there is a way to test.
 
+        /// <summary> Gets a new reading from the sensor and stores it. </summary>
         public void UpdateState()
         {
             ushort Data = 0x00_00;
@@ -65,9 +69,7 @@ namespace Scarlet.Components.Sensors
             this.LastReading = Data;
         }
 
-        public void EventTriggered(object Sender, EventArgs Event)
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary> This sensor does not process events. Will do nothing. </summary>
+        public void EventTriggered(object Sender, EventArgs Event) { }
     }
 }

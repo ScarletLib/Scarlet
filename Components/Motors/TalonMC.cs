@@ -28,7 +28,7 @@ namespace Scarlet.Components.Motors
 
         }
 
-        /// <summary>Immediately stops the motor, bypassing the Filter.</summary>
+        /// <summary> Immediately stops the motor, bypassing the Filter. </summary>
         public void Stop()
         {
             this.TargetSpeed = 0;
@@ -36,6 +36,14 @@ namespace Scarlet.Components.Motors
             this.SetSpeed(0);
         }
 
+        /// <summary>
+        /// Sets the motor speed. Output may vary from the given value under the following conditions:
+        /// - Input exceeds maximum speed. Capped to given maximum.
+        /// - Filter changes value. Filter's output used instead.
+        ///     (If filter is null, this does not occur)
+        /// - The motor is disabled. You must first re-enable the motor.
+        /// </summary>
+        /// <param name="Speed"> The new speed to set the motor at. </param>
         public void SetSpeed(float Speed)
         {
             float NewSpeed = Speed;

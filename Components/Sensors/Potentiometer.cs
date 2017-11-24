@@ -29,6 +29,11 @@ namespace Scarlet.Components.Sensors
             return true; // TODO: What could we check for?
         }
 
+        /// <summary>
+        /// Checks the IAnalogueInput for the new angle, and sends events if applicable.
+        /// Cannot determine the total amount turned since the last UpdateState call, only the net change.
+        /// As such, if the potentiometer is turned one direction, then back to the same place, we have no way of determining any movement occured.
+        /// </summary>
         public void UpdateState()
         {
             int NewAngle = this.Range - (int)((this.Input.GetRawInput() / this.Input.GetRawRange()) * this.Range);
@@ -44,15 +49,10 @@ namespace Scarlet.Components.Sensors
             }
         }
 
-        protected virtual void OnTurn(PotentiometerTurn Event)
-        {
-            Turned?.Invoke(this, Event);
-        }
+        protected virtual void OnTurn(PotentiometerTurn Event) { Turned?.Invoke(this, Event); }
 
-        public void EventTriggered(object Sender, EventArgs Event)
-        {
-            
-        }
+        /// <summary> This sensor does not process events. Will do nothing. </summary>
+        public void EventTriggered(object Sender, EventArgs Event) { }
     }
 
     public class PotentiometerTurn : EventArgs

@@ -4,9 +4,7 @@ using Scarlet.IO;
 
 namespace Scarlet.Components.Sensors
 {
-    /// <summary>
-    /// Quickly releases incoming interrupt events to prevent I/O system from getting bogged down, then will pass them on when UpdateState is called next.
-    /// </summary>
+    /// <summary> Quickly releases incoming interrupt events to prevent I/O system from getting bogged down, then will pass them on when UpdateState is called next. </summary>
     public class LimitSwitch : ISensor
     {
         private IDigitalIn Input;
@@ -26,6 +24,11 @@ namespace Scarlet.Components.Sensors
             return true; // TODO: Determine method for, and implement, limit switch testing.
         }
 
+        /// <summary>
+        /// Checks if the switch has been pressed since the last UpdateState, and fires off relevant events if so.
+        /// Call this frequently enough to catch all presses, as only one event is registered per cycle.
+        /// I.e. if a switch is pressed 3 times between UpdateState() calls, only one event is sent.
+        /// </summary>
         public void UpdateState()
         {
             if(this.HadEvent)
@@ -36,11 +39,9 @@ namespace Scarlet.Components.Sensors
             }
         }
 
-        protected virtual void OnSwitchToggle(LimitSwitchToggle Event)
-        {
-            SwitchToggle?.Invoke(this, Event);
-        }
-
+        protected virtual void OnSwitchToggle(LimitSwitchToggle Event) { SwitchToggle?.Invoke(this, Event); }
+        
+        /// <summary> Receives incoming InputInterrupt events to process. </summary>
         public void EventTriggered(object Sender, EventArgs Event)
         {
             if(Event is InputInterrupt)
