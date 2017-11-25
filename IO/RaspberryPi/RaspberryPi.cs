@@ -19,9 +19,7 @@ namespace Scarlet.IO.RaspberryPi
         [DllImport(WIRING_PI_LIB, EntryPoint = "wiringPiSetupPhys")]
         private static extern int Ext_SetupGPIO();
 
-        /// <summary>
-        /// Prepares the Raspberry Pi's GPIO system for use. You should do this before using any GPIO functions.
-        /// </summary>
+        /// <summary> Prepares the Raspberry Pi's GPIO system for use. You should do this before using any GPIO functions. </summary>
         public static void Initialize()
         {
             Initialized = true;
@@ -50,6 +48,7 @@ namespace Scarlet.IO.RaspberryPi
         [DllImport(WIRING_PI_LIB, EntryPoint = "pullUpDnControl")]
         private static extern void Ext_SetResistor(int Pin, int ResMode);
 
+        /// <summary> Sets or disconnects the pull-up/-down resistor. </summary>
         internal static void SetResistor(int Pin, ResistorState ResMode)
         {
             if (!Initialized) { throw new InvalidOperationException("Cannot perform GPIO operations until the system is initialized. Call RasperryPi.Initialize()."); }
@@ -150,7 +149,8 @@ namespace Scarlet.IO.RaspberryPi
         [DllImport(WIRING_PI_LIB, EntryPoint = "serialOpen")]
         private static extern int Ext_SerialOpen(byte Device, int Baud);
 
-        // Returns Device ID, -1 on error
+        /// <summary> Attempts to prepare a UART device for use. </summary>
+        /// <returns> Device ID, or -1 on error </returns>
         internal static int SerialOpen(byte Device, int Baud) { return Ext_SerialOpen(Device, Baud); }
 
         [DllImport(WIRING_PI_LIB, EntryPoint = "serialClose")]
@@ -166,13 +166,13 @@ namespace Scarlet.IO.RaspberryPi
         [DllImport(WIRING_PI_LIB, EntryPoint = "serialDataAvail")]
         private static extern int Ext_SerialDataAvailable(int DeviceID);
 
-        // Returns # bytes available to read
+        /// <summary> Checks how many bytes are available for read. </summary>
         internal static int SerialDataAvailable(int DeviceID) { return Ext_SerialDataAvailable(DeviceID); }
 
         [DllImport(WIRING_PI_LIB, EntryPoint = "serialFlush")]
         private static extern void Ext_SerialFlush(int DeviceID);
 
-        // Clears all data waiting to be sent.
+        /// <summary> Clears all data waiting to be sent. </summary>
         internal static void SerialFlush(int DeviceID) { Ext_SerialFlush(DeviceID); }
 
         [DllImport(WIRING_PI_LIB, EntryPoint = "serialGetchar")]

@@ -16,25 +16,13 @@ namespace Scarlet.IO.RaspberryPi
             RaspberryPi.SetPinMode(this.PinNumber, (int)RaspberryPi.PinMode.INPUT);
         }
 
-        /// <summary>
-        /// Sets the input to either have a ~50KΩ pullup resistor, pulldown resistor, or no resistor.
-        /// </summary>
-        public void SetResistor(ResistorState Resistor)
-        {
-            RaspberryPi.SetResistor(this.PinNumber, Resistor);
-        }
+        /// <summary> Sets the input to either have a ~50KΩ pullup resistor, pulldown resistor, or no resistor. </summary>
+        public void SetResistor(ResistorState Resistor) { RaspberryPi.SetResistor(this.PinNumber, Resistor); }
 
-        /// <summary>
-        /// Gets the current logic-level input.
-        /// </summary>
-        public bool GetInput()
-        {
-            return RaspberryPi.DigitalRead(this.PinNumber);
-        }
+        /// <summary> Gets the current logic-level input. </summary>
+        public bool GetInput() { return RaspberryPi.DigitalRead(this.PinNumber); }
 
-        /// <summary>
-        /// Registers an interrupt handler for the specified interrupt type.
-        /// </summary>
+        /// <summary> Registers an interrupt handler for the specified interrupt type. </summary>
         public void RegisterInterruptHandler(EventHandler<InputInterrupt> Handler, InterruptType Type)
         {
             switch (Type)
@@ -90,9 +78,7 @@ namespace Scarlet.IO.RaspberryPi
             this.AnyHandlers?.Invoke(this, Event);
         }
 
-        /// <summary>
-        /// Does nothing currently. You should still call this when finished in case it does gain functionality later on.
-        /// </summary>
+        /// <summary> Does nothing currently. You should still call this when finished in case it does gain functionality later on. </summary>
         public void Dispose()
         {
             // TODO: Do we need to do anything here?

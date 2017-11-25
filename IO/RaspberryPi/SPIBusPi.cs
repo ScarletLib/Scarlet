@@ -18,11 +18,9 @@ namespace Scarlet.IO.RaspberryPi
             RaspberryPi.SPISetup(Bus, DEFAULT_SPEED);
         }
 
-        public void SetBusSpeed(int Speed)
-        {
-            RaspberryPi.SPISetup(BusNum, Speed);
-        }
+        public void SetBusSpeed(int Speed) { RaspberryPi.SPISetup(BusNum, Speed); }
 
+        /// <summary> Simultaneously writes/reads data to/from the device. </summary>
         public byte[] Write(IDigitalOut DeviceSelect, byte[] Data, int DataLength)
         {
             DeviceSelect.SetOutput(false);
@@ -31,9 +29,6 @@ namespace Scarlet.IO.RaspberryPi
             return DataReturn;
         }
 
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() { }
     }
 }

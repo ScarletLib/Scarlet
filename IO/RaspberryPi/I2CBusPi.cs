@@ -16,6 +16,7 @@ namespace Scarlet.IO.RaspberryPi
             this.DeviceIDs = new int[0x7F];
         }
 
+        /// <summary> Reads raw data from the device at the given address. </summary>
         public byte[] Read(byte Address, int DataLength)
         {
             if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
@@ -27,18 +28,21 @@ namespace Scarlet.IO.RaspberryPi
             return Buffer;
         }
 
+        /// <summary> Requests data from the given device at the specified register. </summary>
         public byte[] ReadRegister(byte Address, byte Register, int DataLength)
         {
             Write(Address, new byte[] { Register });
             return Read(Address, DataLength);
         }
 
+        /// <summary> Writes the data as given to the device at the specified address. </summary>
         public void Write(byte Address, byte[] Data)
         {
             if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
             foreach (byte Byte in Data) { RaspberryPi.I2CWrite(this.DeviceIDs[Address], Byte); }
         }
 
+        /// <summary> Selects the register in the given device, then writes the given data. </summary>
         public void WriteRegister(byte Address, byte Register, byte[] Data)
         {
             byte[] NewData = new byte[Data.Length + 1];
