@@ -27,6 +27,7 @@ namespace Scarlet.IO.BeagleBone
             else { return ((InputPortFS)this.InputPort).Read(); }
         }
 
+        /// <summary> Registers a handler for the given type of interrupt on this pin. </summary>
         public void RegisterInterruptHandler(EventHandler<InputInterrupt> Handler, InterruptType Type)
         {
             switch (Type)
@@ -97,10 +98,8 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        public void SetResistor(ResistorState Resistor)
-        {
-            throw new NotImplementedException("Resistor state cannot be changed on BBB without re-applying device tree overlay.");
-        }
+        /// <summary> Resistor state cannot be changed during runtime on BBB, it must be set in the device tree overlay. This will throw an exception. </summary>
+        public void SetResistor(ResistorState Resistor) { throw new NotImplementedException("Resistor state cannot be changed on BBB without re-applying device tree overlay."); }
 
         public void Dispose()
         {

@@ -8,6 +8,7 @@ namespace Scarlet.IO.BeagleBone
         public static I2CBusBBB I2CBus1 { get; private set; }
         public static I2CBusBBB I2CBus2 { get; private set; }
 
+        /// <summary> Prepares the given I2C ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
         static internal void Initialize(bool Enable1, bool Enable2)
         {
             if (Enable1) { I2CBus1 = new I2CBusBBB(1); }
@@ -19,6 +20,7 @@ namespace Scarlet.IO.BeagleBone
     {
         private I2CPortFS Port;
 
+        /// <summary> This should only be initialized from I2CBBB. </summary>
         internal I2CBusBBB(byte ID)
         {
             switch (ID)
@@ -29,11 +31,13 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
+        /// <summary> Writes the data as given to the device at the specified address. </summary>
         public void Write(byte Address, byte[] Data)
         {
             this.Port.Write(Address, Data, Data.Length);
         }
 
+        /// <summary> Selects the register in the given device, then writes the given data. </summary>
         public void WriteRegister(byte Address, byte Register, byte[] Data)
         {
             byte[] NewData = new byte[Data.Length + 1];
@@ -42,6 +46,7 @@ namespace Scarlet.IO.BeagleBone
             Write(Address, NewData);
         }
 
+        /// <summary> Reads raw data from the device at the given address. </summary>
         public byte[] Read(byte Address, int DataLength)
         {
             byte[] Buffer = new byte[DataLength];
@@ -49,6 +54,7 @@ namespace Scarlet.IO.BeagleBone
             return Buffer;
         }
 
+        /// <summary> Requests data from the given device at the specified register. </summary>
         public byte[] ReadRegister(byte Address, byte Register, int DataLength)
         {
             Write(Address, new byte[] { Register });

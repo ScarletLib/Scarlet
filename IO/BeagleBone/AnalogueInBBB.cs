@@ -11,6 +11,9 @@ namespace Scarlet.IO.BeagleBone
         public BBBPin Pin { get; private set; }
         private A2DPortFS Port;
 
+        /// <summary> Prepares the analogue input for use. This can block for up to 5 seconds while the hardware and kernel are intiializing. </summary>
+        /// <param name="Pin"> The pin on the BeagleBone to use for analogue input. Must be one of the 7 AIN pins. </param>
+        /// <exception cref="TimeoutException"> If the hardware/kernel take longer than 5 seconds to initialize. </exception>
         public AnalogueInBBB(BBBPin Pin)
         {
             this.Pin = Pin;
@@ -42,10 +45,16 @@ namespace Scarlet.IO.BeagleBone
             this.Port = new A2DPortFS(IO.BeagleBone.Pin.PinToA2D(this.Pin));
         }
 
+        /// <summary> The number of possible ADC values. </summary>
         public long GetRawRange() { return 4096; } // This may change depending on device tree settings.
+
+        /// <summary> The range of voltages the ADC can sense. In Volts. </summary>
         public double GetRange() { return 1.8D; }
 
+        /// <summary> Gets the current ADC value, as a voltage. </summary>
         public double GetInput() { return (double)GetRawInput() * GetRange() / (double)(GetRawRange() - 1); }
+
+        /// <summary> Gets the current ADC value, as the raw number. </summary>
         public long GetRawInput() { return this.Port.Read(); }
 
         public void Dispose() { this.Port.Dispose(); }

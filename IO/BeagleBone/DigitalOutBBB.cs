@@ -16,14 +16,14 @@ namespace Scarlet.IO.BeagleBone
             else { this.OutputPort = new OutputPortFS(IO.BeagleBone.Pin.PinToGPIO(this.Pin)); }
         }
 
-        /// <summary>Sets the logic-level ouput.</summary>
+        /// <summary> Sets the logic-level ouput. </summary>
         public void SetOutput(bool Output)
         {
             if (BeagleBone.FastGPIO) { ((OutputPortMM)this.OutputPort).Write(Output); }
             else { ((OutputPortFS)this.OutputPort).Write(Output); }
         }
 
-        /// <summary>Cleans up the pin for future use by other software.</summary>
+        /// <summary> Cleans up the pin for future use by other software. </summary>
         public void Dispose()
         {
             if(BeagleBone.FastGPIO)

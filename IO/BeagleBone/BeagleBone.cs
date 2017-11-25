@@ -8,9 +8,7 @@ namespace Scarlet.IO.BeagleBone
         internal static SystemMode Peripherals;
         internal static bool FastGPIO { get; private set; }
 
-        /// <summary>
-        /// Prepares the Beaglebone I/O system for use.
-        /// </summary>
+        /// <summary> Prepares the Beaglebone I/O system for use. </summary>
         /// <param name="UseFastAccess">
         /// This switches between memory mapped I/O (true), and filesystem-based I/O (false).
         /// Filesystem-based I/O is the "correct" Linux way to do it, so is therefore more supported.

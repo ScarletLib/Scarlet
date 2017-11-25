@@ -86,25 +86,19 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P9_29, new PinData(0x994, 101, 111, GpioEnum.GPIO_111, 2) },
             { BBBPin.P9_30, new PinData(0x998, 102, 112, GpioEnum.GPIO_112, 2) },
             { BBBPin.P9_31, new PinData(0x990, 100, 110, GpioEnum.GPIO_110, 0) },
-            //{ BBBPin.P9_33, new PinData() }, // ADC // TODO: See if these have/need addresses.
-            //{ BBBPin.P9_35, new PinData() }, // ADC
-            //{ BBBPin.P9_36, new PinData() }, // ADC
-            //{ BBBPin.P9_37, new PinData() }, // ADC
-            //{ BBBPin.P9_38, new PinData() }, // ADC
-            //{ BBBPin.P9_39, new PinData() }, // ADC
-            //{ BBBPin.P9_40, new PinData() }, // ADC
+            // Pins P9_33 to P9_40 are ADC inputs, and don't have addresses.
             { BBBPin.P9_41, new PinData(0x984, 97, 20, GpioEnum.GPIO_20, 0) },
             { BBBPin.P9_42, new PinData(0x964, 89, 7, GpioEnum.GPIO_7, 0) }
         };
 
-        /// <summary>Converts a Scarlet BBBPin to a BBBCSIO GpioEnum.</summary>
+        /// <summary> Converts a Scarlet BBBPin to a BBBCSIO GpioEnum. </summary>
         public static GpioEnum PinToGPIO(BBBPin Pin)
         {
             if (PinInfo.ContainsKey(Pin)) { return PinInfo[Pin].GPIO; }
             else { return GpioEnum.GPIO_NONE; }
         }
 
-        /// <summary>Converts a Scarlet BBBPin to a BBBCSIO A2DPinEnum.</summary>
+        /// <summary> Converts a Scarlet BBBPin to a BBBCSIO A2DPinEnum. </summary>
         public static A2DPortEnum PinToA2D(BBBPin Pin)
         {
             switch(Pin)
@@ -120,7 +114,7 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        /// <summary>Determines if the given pin can be used in the system mode, or if it used by another device.</summary>
+        /// <summary> Determines if the given pin can be used in the system mode, or if it used by another device. </summary>
         public static bool CheckPin(BBBPin Pin, SystemMode Mode)
         {
             if (!PinInfo.ContainsKey(Pin)) { return false; }
@@ -131,14 +125,14 @@ namespace Scarlet.IO.BeagleBone
             return false; // Invalid system mode.
         }
 
-        /// <summary>Returns the memory address offset for each pin. Returns 0x000 if not found or invalid input.</summary>
+        /// <summary> Returns the memory address offset for each pin. Returns 0x000 if not found or invalid input. </summary>
         internal static int GetOffset(BBBPin Pin)
         {
             if (PinInfo.ContainsKey(Pin)) { return PinInfo[Pin].Offset; }
             else { return 0x000; }
         }
 
-        /// <summary>Creates a 8-bit pin mode from the specified parameters.</summary>
+        /// <summary> Creates a 8-bit pin mode from the specified parameters. </summary>
         internal static byte GetPinMode(bool FastSlew, bool EnableReceiver, ResistorState Resistor, byte ModeID)
         {
             // Bit | Function           | Modes
@@ -181,7 +175,7 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        /// <summary>Gets the mux mode that needs to be used for the given pin usage. Returns 255 if invalid usage provided.</summary>
+        /// <summary> Gets the mux mode that needs to be used for the given pin usage. Returns 255 if invalid usage provided. </summary>
         internal static byte GetModeID(BBBPin Pin, BBBPinMode Mode)
         {
             // Definitely not the prettiest code in the world.

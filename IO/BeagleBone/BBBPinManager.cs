@@ -16,6 +16,15 @@ namespace Scarlet.IO.BeagleBone
         private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2;
 
         #region Adding Mappings
+        /// <summary>
+        /// Adds a GPIO mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="SelectedPin"> The pin to assign as GPIO. </param>
+        /// <param name="IsOutput"> Whether this pin will be used as input or output. </param>
+        /// <param name="Resistor"> The type of resistance to apply to the pin. Only useful for inputs. </param>
+        /// <param name="FastSlew"> Whether to use fast or slow rising/falling edges. Leave at true unless this causes issues in your application. </param>
+        /// <exception cref="InvalidOperationException"> If this pin cannot be used for GPIO at this time. Reason will be given. </exception>
         public static void AddMappingGPIO(BBBPin SelectedPin, bool IsOutput, ResistorState Resistor, bool FastSlew = true)
         {
             byte Mode = Pin.GetModeID(SelectedPin, BBBPinMode.GPIO);
@@ -40,6 +49,12 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
+        /// <summary>
+        /// Adds a PWM mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="SelectedPin"> The pin to assign as a PWM output. Must be one of the PWM-capable pins. See the BBB chart in OneNote. </param>
+        /// <exception cref="InvalidOperationException"> If this pin cannot be used as a PWM output at this time. Reason will be given. </exception>
         public static void AddMappingPWM(BBBPin SelectedPin)
         {
             byte Mode = Pin.GetModeID(SelectedPin, BBBPinMode.PWM);
@@ -71,6 +86,13 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
+        /// <summary>
+        /// Adds an I2C mapping to the BBB device tree overlay, preparing the pins for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="ClockPin"> The pin to use for the I2C clock signal. </param>
+        /// <param name="DataPin"> The pin to use for the I2C data signal. </param>
+        /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for the given I2C task at this time. Reason will be given. </exception>
         public static void AddMappingsI2C(BBBPin ClockPin, BBBPin DataPin)
         {
             byte ClockMode = Pin.GetModeID(ClockPin, BBBPinMode.I2C);
@@ -126,8 +148,15 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        // Either MISO or MOSI can be BBBPin.NONE if you only need 1-way communication.
-        // To add chip select pins, call AddMappingSPI_CS().
+        /// <summary>
+        /// Adds an SPI mapping to the BBB device tree overlay, preparing the pins for use in hardware & kernel.
+        /// To add Slave-/Chip- select lines, use AddMappingSPI_CS().
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="MISO"> The pin to use as Master-In, Slave-Out data line. Can be BBBPin.NONE if you don't need communication in this direction. </param>
+        /// <param name="MOSI"> The pin to use as Master-Out, Slave-In data line. Can be BBBPin.NONE if you don't need communication in this direction. </param>
+        /// <param name="Clock"> The pin to use as the SPI clock line. </param>
+        /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for the given SPI task at this time. Reason will be given. </exception>
         public static void AddMappingsSPI(BBBPin MISO, BBBPin MOSI, BBBPin Clock)
         {
             byte ClockMode = Pin.GetModeID(Clock, BBBPinMode.SPI);
@@ -216,11 +245,24 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
+        /// <summary>
+        /// Adds an SPI chip-select mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// To prepare the data/clock lines, use AddMappingsSPI().
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="ChipSelect"> The pin to prepare for use as a chip-select line. It will be treated like a GPIO output, and the pull-up will be enabled. </param>
+        /// <exception cref="InvalidOperationException"> If the given pin cannot be used for chip-select at this time. Reason will be given. </exception>
         public static void AddMappingSPI_CS(BBBPin ChipSelect)
         {
             AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP); // TODO: Switch this to be in SPI overlay section instead of GPIO to make it clear.
         }
 
+        /// <summary>
+        /// Adds an ADC mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="SelectedPin"> The pin to prepare for use as ADC input. </param>
+        /// <exception cref="InvalidOperationException"> If the given pin cannot be used as an ADC input at this time. Reason will be given. </exception>
         public static void AddMappingADC(BBBPin SelectedPin)
         {
             int ADCNum = -1;
@@ -251,9 +293,16 @@ namespace Scarlet.IO.BeagleBone
         public enum ApplicationMode { NO_CHANGES, APPLY_IF_NONE, REMOVE_AND_APPLY, APPLY_REGARDLESS }
 
         /// <summary>
-        /// Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while.
-        /// Currently this can only be done once, as Scarlet does not have a way of removing the existing mappings.
+        /// Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while. Should only be run once per program execution.
+        /// We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the OneNote page for more info.
         /// </summary>
+        /// <param name="Mode">
+        /// The behaviour to use when determining what to do during application of the overlay. Please read the OneNote documentation for a more thorough explanation.
+        /// NO_CHANGES: Does not apply the device tree overlay regardles
+        /// APPLY_IF_NONE: Apply the overlay only if there is no Scarlet overlay already applied.
+        /// REMOVE_AND_APPLY: Removes old Scarlet overlays, and applies the new one.
+        /// APPLY_REGARDLESS: Blindly applies the current overlay, regardless of current state.
+        /// </param>
         public static void ApplyPinSettings(ApplicationMode Mode)
         {
             // Generate the device tree
@@ -392,8 +441,9 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        // WARNING: Treacherous territory ahead. This is an extremely complex function that does all the work of actually generating a device tree overlay.
-        // Don't read through this unless you really need to :P
+        /// <summary> Uses all of the previously created device tree overlay mappings (using the AddMapping___() functions), and generates a device tree overlay for application via the cape manager. </summary>
+        /// <remarks> This is probably the longest function I've ever written. It's reasonably simple to follwo though, there's just a lot of output it needs to be able to generate. </remarks>
+        /// <returns> A list of lines to save to a file, which can then be compiled into a DTBO and applied as an overlay. </returns>
         static List<string> GenerateDeviceTree()
         {
             List<string> Output = new List<string>();

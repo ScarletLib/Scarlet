@@ -1,6 +1,5 @@
 ﻿using BBBCSIO;
 using System;
-using System.Collections.Generic;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -9,6 +8,7 @@ namespace Scarlet.IO.BeagleBone
         public static SPIBusBBB SPIBus0 { get; private set; }
         public static SPIBusBBB SPIBus1 { get; private set; }
 
+        /// <summary> Prepares the given SPI ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
         static internal void Initialize(bool Enable0, bool Enable1)
         {
             if (Enable0) { SPIBus0 = new SPIBusBBB(0); }
@@ -18,10 +18,9 @@ namespace Scarlet.IO.BeagleBone
 
     public class SPIBusBBB : ISPIBus
     {
-
         private ScarletSPIPortFS Port;
-        //private Dictionary<BBBPin, SPISlaveDeviceHandle> Devices;
 
+        /// <summary> This should only be initialized from SPIBBB. </summary>
         internal SPIBusBBB(byte ID)
         {
             switch (ID)
@@ -34,6 +33,7 @@ namespace Scarlet.IO.BeagleBone
             this.Port.SetDefaultSpeedInHz(500000); // TODO: Determine appropriate speed.
         }
 
+        /// <summary> Simultaneously writes/reads data to/from the device. </summary>
         public byte[] Write(IDigitalOut DeviceSelect, byte[] Data, int DataLength)
         {
             byte[] ReceivedData = new byte[DataLength];
