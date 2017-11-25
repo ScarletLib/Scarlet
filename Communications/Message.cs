@@ -53,9 +53,25 @@ namespace Scarlet.Communications
         /// <param name="NewData"> New Data to append to current data. </param>
         public void AppendData(byte[] NewData)
         {
-            List<byte> TempList = new List<byte>(this.Payload);
-            TempList.AddRange(NewData);
-            this.Payload = TempList.ToArray();
+            if (this.Payload == null) { this.Payload = NewData; }
+            else
+            {
+                List<byte> TempList = new List<byte>(this.Payload);
+                TempList.AddRange(NewData);
+                this.Payload = TempList.ToArray();
+            }
+        }
+
+        public byte[] GetDataSlice(int Offset, int Size)
+        {
+            byte[] Data = new byte[Size];
+            Buffer.BlockCopy(this.Payload, Offset, Data, 0, Size);
+            return Data;
+        }
+
+        public byte[] GetDataSlice(int Offset)
+        {
+            return GetDataSlice(Offset, this.Payload.Length - Offset);
         }
 
         /// <summary>

@@ -51,6 +51,7 @@
     <Compile Include="TestClientAndServer.cs" />
     <Compile Include="TestPacketBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestPacketWriterAndScanner.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

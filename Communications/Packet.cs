@@ -35,6 +35,10 @@ namespace Scarlet.Communications
         /// <param name="Data"> Data to append to packet. </param>
         public void AppendData(byte[] NewData) { this.Data.AppendData(NewData); }
 
+        public byte[] GetDataSlice(int Offset, int Size) { return this.Data.GetDataSlice(Offset, Size); }
+
+        public byte[] GetDataSlice(int Offset) { return this.Data.GetDataSlice(Offset); }
+
         /// <summary> Prepares the packet for sending, then returns the raw data. </summary>
         /// <returns> The raw data, ready to be sent. </returns>
         public byte[] GetForSend(byte[] Timestamp = null)
