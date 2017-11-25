@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Scarlet.Utilities
 {
@@ -15,6 +12,8 @@ namespace Scarlet.Utilities
 
         //TODO: Make this thread-safe.
 
+        /// <summary> Prepares the system for use. Creates a file if it doesn't exist, or reads the configuration if it does. </summary>
+        /// <param name="SystemName"> A unique identifier for this application, used as part of the filename to prevent multiple applications on one system from interfering. </param>
         public static void Start(string SystemName)
         {
             FileName = "ScarletStore-" + SystemName + ".txt";
@@ -27,6 +26,7 @@ namespace Scarlet.Utilities
             Started = true;
         }
 
+        /// <summary> Saves the configuration to disk. </summary>
         public static void Save()
         {
             List<string> Lines = new List<string>(Data.Count);
@@ -40,14 +40,17 @@ namespace Scarlet.Utilities
             File.Delete(OldFile);
         }
 
+        /// <summary> Sets the specified proprty internally. Does not change the file, you must use Save() to save changes to file. </summary>
         public static void Set(string Key, string Value)
         {
             if (!Data.ContainsKey(Key)) { Data.Add(Key, Value); }
             else { Data[Key] = Value; }
         }
 
+        /// <summary> Gets the specified property, or null if it doesn't exist. </summary>
         public static string Get(string Key) { return Data.ContainsKey(Key) ? Data[Key] : null; }
 
+        /// <summary> Gets the specified property, or if it doesn't exist, sets it to the default value and then returns that default value. </summary>
         public static string GetOrCreate(string Key, string DefaultValue)
         {
             if (!Data.ContainsKey(Key)) { Data.Add(Key, DefaultValue); }

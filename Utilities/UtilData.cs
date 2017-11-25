@@ -95,13 +95,9 @@ namespace Scarlet.Utilities
             return BitConverter.ToUInt16(EnsureBigEndian(Input), 0);
         }
 
-        /// <summary>
-        /// Returns a string from the byte
-        /// representation of the string in
-        /// unicode
-        /// </summary>
-        /// <param name="Input">Byte represensation of the unicode string</param>
-        /// <returns>String representation of the bytes</returns>
+        /// <summary> Returns a string from the byte representation of the string in unicode </summary>
+        /// <param name="Input"> Byte represensation of the unicode string </param>
+        /// <returns> String representation of the bytes </returns>
         public static string ToString(byte[] Input)
         {
             if (Input == null || Input.Length == 0 || Input.Length % 2 == 1) { throw new FormatException("Given byte[] does not convert to string."); }
@@ -113,12 +109,10 @@ namespace Scarlet.Utilities
             return Output.ToString();
         }
 
-        /// <summary>
-        /// Tries to convert a byte input (unicode) to a string
-        /// </summary>
-        /// <param name="Input">Bytes to convert to string</param>
-        /// <param name="Output">Output of the conversion. (Null if failed)</param>
-        /// <returns>True if string conversion succeeds</returns>
+        /// <summary> Tries to convert a byte input (unicode) to a string </summary>
+        /// <param name="Input"> Bytes to convert to string </param>
+        /// <param name="Output"> Output of the conversion. (Null if failed) </param>
+        /// <returns> True if string conversion succeeds </returns>
         public static bool TryToString(byte[] Input, out string Output)
         {
             Output = null; 
@@ -127,16 +121,9 @@ namespace Scarlet.Utilities
             return true;
         }
 
-        /// <summary>
-        /// <c>IsNumericType(Type Type)</c>
-        /// Determines if the given type
-        /// is numeric. 
-        /// </summary>
-        /// <param name="Type">Type to determine whether or not it is a numeric</param>
-        /// <returns>
-        /// Returns <c>true</c> if 
-        /// param is a numeric; 
-        /// otherwise returns <c>false</c>.</returns>
+        /// <summary> Determines if the given type is numeric. </summary>
+        /// <param name="Type"> Type to determine whether or not it is a numeric </param>
+        /// <returns> Returns <c>true</c> if param is a numeric; otherwise returns <c>false</c>. </returns>
         public static bool IsNumericType(Type Type)
         {
             switch (Type.GetTypeCode(Type))
