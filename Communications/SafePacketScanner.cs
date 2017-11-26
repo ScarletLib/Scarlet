@@ -28,12 +28,13 @@ namespace Scarlet.Communications
         /// <param name="Type"> Expected type. </param>
         private void AssertType(TypeID Type)
         {
-            if((byte)Type != Scanner.NextByte()) {
+            if(!HasNext(Type)) {
                 TypeID NextType = (TypeID)Scanner.PeekNextByte();
                 String StrExpectedType = Type.ToString().ToLower();
-                String StrActualType = Type.ToString().ToLower();
-                throw new InvalidOperationException("Expected " + StrExpectedType + ", Actual type " + StrActualType + ".");
+                String StrActualType = NextType.ToString().ToLower();
+                throw new InvalidOperationException("Expected to read " + StrExpectedType + ", but actual type of next data block is " + StrActualType + ".");
             }
+            Scanner.NextByte(); // Move cursor forward
         }
 
         /// <summary>
