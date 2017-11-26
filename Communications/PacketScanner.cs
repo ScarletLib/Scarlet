@@ -39,12 +39,30 @@ namespace Scarlet.Communications
             return data;
         }
 
+        public string NextString(int Length)
+        {
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+
+            string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor, Length));
+            this.Cursor += Length;
+            return data;
+        }
+
         public byte[] NextBytes()
         {
             if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
 
             byte[] data = this.Packet.GetDataSlice(Cursor);
             this.Cursor = Packet.Data.Payload.Length;
+            return data;
+        }
+
+        public byte[] NextBytes(int Length)
+        {
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+
+            byte[] data = this.Packet.GetDataSlice(Cursor, Length);
+            this.Cursor += Length;
             return data;
         }
 
@@ -56,5 +74,7 @@ namespace Scarlet.Communications
             Cursor++;
             return data;
         }
+
+        public byte PeekNextByte() { return Packet.Data.Payload[Cursor]; }
     }
 }
