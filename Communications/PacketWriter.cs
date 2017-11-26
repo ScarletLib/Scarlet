@@ -2,12 +2,12 @@
 
 namespace Scarlet.Communications
 {
-    /// <summary> A helper class that can construct a packet. </summary>
+    /// <summary> A helper class that can construct a <see cref="Scarlet.Communications.Packet"/>. </summary>
     public class PacketWriter
     {
         public Packet Packet; // The packet to write to
 
-        /// <summary> Write into a new packet. </summary>
+        /// <summary> Write into a new <see cref="Scarlet.Communications.Packet"/>. </summary>
         /// <param name="ID"> Packet ID. </param>
         /// <param name="IsUDP"> Whether it is a UDP packet. </param>
         public PacketWriter(byte ID, bool IsUDP = false)
@@ -15,7 +15,7 @@ namespace Scarlet.Communications
             this.Packet = new Packet(new Message(ID), IsUDP);
         }
 
-        /// <summary> Write into an existing packet. </summary>
+        /// <summary> Write into an existing <see cref="Scarlet.Communications.Packet"/>. </summary>
         /// <param name="Packet"> The packet to write into. </param>
         public PacketWriter(Packet Packet)
         {

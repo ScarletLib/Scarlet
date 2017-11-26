@@ -3,14 +3,14 @@ using System;
 
 namespace Scarlet.Communications
 {
-    /// <summary> A helper class that extract data from package. </summary>
+    /// <summary> A helper class that extract data from <see cref="Scarlet.Communications.Packet"/>. </summary>
     public class PacketScanner
     {
         private int Cursor; // The position of next unread data block
-        public Packet Packet; // The package to extract data from
+        public Packet Packet; // The packet to extract data from
 
-        /// <summary> Construct a new scanner from package. </summary>
-        /// <param name="Packet"> The package to extract data from. </param>
+        /// <summary> Construct a new scanner from <see cref="Scarlet.Communications.Packet"/>. </summary>
+        /// <param name="Packet"> The packet to extract data from. </param>
         public PacketScanner(Packet Packet)
         {
             this.Packet = Packet;
@@ -22,7 +22,7 @@ namespace Scarlet.Communications
         /// <returns> Next data block in bytes. </returns>
         private byte[] NextData(int Size)
         {
-            if (this.Cursor + Size > this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor + Size > this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             byte[] Data = this.Packet.GetDataSlice(this.Cursor, Size);
             this.Cursor += Size;
@@ -53,7 +53,7 @@ namespace Scarlet.Communications
         /// <returns> Next data. </returns>
         public string NextString()
         {
-            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor));
             this.Cursor = Packet.Data.Payload.Length;
@@ -66,7 +66,7 @@ namespace Scarlet.Communications
         /// <returns> Next data. </returns>
         public string NextString(int Length)
         {
-            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor, Length));
             this.Cursor += Length;
@@ -77,7 +77,7 @@ namespace Scarlet.Communications
         /// <returns> Next data. </returns>
         public byte[] NextBytes()
         {
-            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             byte[] data = this.Packet.GetDataSlice(Cursor);
             this.Cursor = Packet.Data.Payload.Length;
@@ -89,7 +89,7 @@ namespace Scarlet.Communications
         /// <returns> Next data. </returns>
         public byte[] NextBytes(int Length)
         {
-            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             byte[] data = this.Packet.GetDataSlice(Cursor, Length);
             this.Cursor += Length;
@@ -100,7 +100,7 @@ namespace Scarlet.Communications
         /// <returns> Next byte. </returns>
         public byte NextByte()
         {
-            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
             byte data = Packet.Data.Payload[Cursor];
             Cursor++;
@@ -112,7 +112,7 @@ namespace Scarlet.Communications
         public byte PeekNextByte()
         {
             try { return Packet.Data.Payload[Cursor]; }
-            catch (IndexOutOfRangeException) { throw new InvalidOperationException("Reached the end of package data"); }
+            catch (IndexOutOfRangeException) { throw new InvalidOperationException("Reached the end of packet data"); }
         }
     }
 }

@@ -2,12 +2,12 @@
 
 namespace Scarlet.Communications
 {
-    /// <summary> This is a packet scanner that can check data type consistancy when reading data. </summary>
+    /// <summary> This is an enhanced version of <see cref="PacketScanner"/> that can check data type consistancy when reading data. </summary>
     public class SafePacketScanner
     {
         private PacketScanner Scanner; // Scanner to read data from
 
-        /// <summary> Construct <see cref="SafePacketScanner"/> from <see cref="PacketScanner"/>. </summary>
+        /// <summary> Construct <see cref="SafePacketScanner"/> from a normal <see cref="PacketScanner"/>. </summary>
         /// <param name="Scanner"> A normal packet scanner. </param>
         public SafePacketScanner(PacketScanner Scanner) { this.Scanner = Scanner; }
 
@@ -40,6 +40,7 @@ namespace Scarlet.Communications
         /// Check the type of next data block.
         /// Return the data block as the requested type if the type matches. 
         /// </summary>
+        /// <exception cref="InvalidOperationException"> If type doesn't match. </exception>
         /// <returns> Next data. </returns>
         public bool   NextBool()   { AssertType(TypeID.BOOL); return Scanner.NextBool(); }
         public char   NextChar()   { AssertType(TypeID.CHAR); return Scanner.NextChar(); }

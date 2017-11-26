@@ -42,7 +42,7 @@ namespace Scarlet.Communications
         /// <returns> Data with index in range [Offset, Offset + Size). </returns>
         public byte[] GetDataSlice(int Offset, int Size) { return this.Data.GetDataSlice(Offset, Size); }
 
-        /// <summary> Get a part of current data from a offset to the end. </summary>
+        /// <summary> Get a part of current data from an offset to the end. </summary>
         /// <param name="Offset"> Index to start copying. </param>
         /// <returns> Data from `Offset` to the end. </returns>
         public byte[] GetDataSlice(int Offset) { return this.Data.GetDataSlice(Offset); }

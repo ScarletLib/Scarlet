@@ -49,7 +49,7 @@ namespace Scarlet.Communications
             this.Timestamp = UtilMain.SubArray(Time, 0, 4);
         }
 
-        /// <summary> Appends data to the end of payload. If payload is currently null, create it. </summary>
+        /// <summary> Appends data to the end of <see cref="Payload"/>. If <see cref="Payload"/> is currently null, create it. </summary>
         /// <param name="NewData"> New Data to append. </param>
         public void AppendData(byte[] NewData)
         {
@@ -75,7 +75,7 @@ namespace Scarlet.Communications
         }
 
 
-        /// <summary> Get a part of current data from a offset to the end. </summary>
+        /// <summary> Get a part of current data from an offset to the end. </summary>
         /// <param name="Offset"> Index to start copying. </param>
         /// <returns> Data from `Offset` to the end. </returns>
         public byte[] GetDataSlice(int Offset)
