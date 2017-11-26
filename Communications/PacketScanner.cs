@@ -109,6 +109,10 @@ namespace Scarlet.Communications
 
         /// <summary> Get next byte without moving the cursor. </summary>
         /// <returns> Next byte. </returns>
-        public byte PeekNextByte() { return Packet.Data.Payload[Cursor]; }
+        public byte PeekNextByte()
+        {
+            try { return Packet.Data.Payload[Cursor]; }
+            catch (IndexOutOfRangeException) { throw new InvalidOperationException("Reached the end of package data"); }
+        }
     }
 }

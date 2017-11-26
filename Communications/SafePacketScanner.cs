@@ -2,16 +2,30 @@
 
 namespace Scarlet.Communications
 {
+    /// <summary> This is a packet scanner that can check data type consistancy when reading data. </summary>
     public class SafePacketScanner
     {
-        private PacketScanner Scanner;
+        private PacketScanner Scanner; // Scanner to read data from
 
+        /// <summary> Construct <see cref="SafePacketScanner"/> from <see cref="PacketScanner"/>. </summary>
+        /// <param name="Scanner"> A normal packet scanner. </param>
         public SafePacketScanner(PacketScanner Scanner) { this.Scanner = Scanner; }
 
+        /// <summary> Construct <see cref="SafePacketScanner"/> from an existing <see cref="Packet"/>. </summary>
+        /// <param name="Packet"> The packet to read data from. </param>
         public SafePacketScanner(Packet Packet) { this.Scanner = new PacketScanner(Packet); }
 
-        public bool HasType(TypeID Type) { return (byte)Type == Scanner.PeekNextByte(); }
+        /// <summary> Check if there's next data block available. </summary>
+        /// <param name="Type"> The expected type of next data block. </param>
+        /// <returns> true if there is data of expected type; false otherwise. </returns>
+        public bool HasNext(TypeID Type)
+        {
+            try { return (byte)Type == Scanner.PeekNextByte(); }
+            catch (InvalidOperationException) { return false; }
+        }
 
+        /// <summary> Throw <see cref="InvalidOperationException"/> if type of next data block is not expected type. </summary>
+        /// <param name="Type"> Expected type. </param>
         private void AssertType(TypeID Type)
         {
             if((byte)Type != Scanner.NextByte()) {
@@ -22,6 +36,11 @@ namespace Scarlet.Communications
             }
         }
 
+        /// <summary>
+        /// Check the type of next data block.
+        /// Return the data block as the requested type if the type matches. 
+        /// </summary>
+        /// <returns> Next data. </returns>
         public bool   NextBool()   { AssertType(TypeID.BOOL); return Scanner.NextBool(); }
         public char   NextChar()   { AssertType(TypeID.CHAR); return Scanner.NextChar(); }
         public double NextDouble() { AssertType(TypeID.DOUBLE); return Scanner.NextDouble(); }
