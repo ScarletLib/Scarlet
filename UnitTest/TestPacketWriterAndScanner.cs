@@ -155,5 +155,15 @@ namespace UnitTest
             Assert.IsTrue(Equality(new byte[5] { 0x12, 0x34, 0x56, 0x78, 0xaf }, scanner.NextBytes()));
             scanner.NextBytes();
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void TestEmptyScanner()
+        {
+            PacketWriter writer = new PacketWriter(0x10, false);
+
+            PacketScanner scanner = new PacketScanner(writer.Packet);
+            scanner.NextBytes();
+        }
     }
 }
