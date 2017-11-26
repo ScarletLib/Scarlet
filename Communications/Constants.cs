@@ -12,7 +12,9 @@
         UINT = 7,
         ULONG = 8,
         USHORT = 9,
-        STRING = 10
+        BYTE = 10,
+        STRING = 11,
+        BYTES = 12,
     }
 
     /// <summary> Represents the priority of packet, from highest to lowest. </summary>

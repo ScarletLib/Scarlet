@@ -52,6 +52,8 @@
     <Compile Include="Communications\PacketBuffer.cs" />
     <Compile Include="Communications\PacketScanner.cs" />
     <Compile Include="Communications\PacketWriter.cs" />
+    <Compile Include="Communications\SafePacketScanner.cs" />
+    <Compile Include="Communications\SafePacketWriter.cs" />
     <Compile Include="Communications\WatchdogManager.cs" />
     <Compile Include="Communications\PacketHandler.cs" />
     <Compile Include="Communications\Client.cs" />
