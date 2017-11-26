@@ -1,5 +1,6 @@
 ﻿namespace Scarlet.Communications
 {
+    /// <summary> Represents data type. </summary>
     public enum TypeID
     {
         BOOL = 0,

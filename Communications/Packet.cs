@@ -35,8 +35,16 @@ namespace Scarlet.Communications
         /// <param name="Data"> Data to append to packet. </param>
         public void AppendData(byte[] NewData) { this.Data.AppendData(NewData); }
 
+
+        /// <summary> Get a part of current data. </summary>
+        /// <param name="Offset"> Index to start copying. </param>
+        /// <param name="Size"> Size of data to copy. </param>
+        /// <returns> Data with index in range [Offset, Offset + Size). </returns>
         public byte[] GetDataSlice(int Offset, int Size) { return this.Data.GetDataSlice(Offset, Size); }
 
+        /// <summary> Get a part of current data from a offset to the end. </summary>
+        /// <param name="Offset"> Index to start copying. </param>
+        /// <returns> Data from `Offset` to the end. </returns>
         public byte[] GetDataSlice(int Offset) { return this.Data.GetDataSlice(Offset); }
 
         /// <summary> Prepares the packet for sending, then returns the raw data. </summary>
