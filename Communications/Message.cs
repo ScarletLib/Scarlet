@@ -56,9 +56,10 @@ namespace Scarlet.Communications
             if (this.Payload == null) { this.Payload = NewData; }
             else
             {
-                List<byte> TempList = new List<byte>(this.Payload);
-                TempList.AddRange(NewData);
-                this.Payload = TempList.ToArray();
+                byte[] UpdatedPayload = new byte[this.Payload.Length + NewData.Length];
+                Buffer.BlockCopy(this.Payload, 0, UpdatedPayload, 0, this.Payload.Length);
+                Buffer.BlockCopy(NewData, 0, UpdatedPayload, this.Payload.Length, NewData.Length);
+                this.Payload = UpdatedPayload;
             }
         }
 
