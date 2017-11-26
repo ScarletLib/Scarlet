@@ -22,6 +22,7 @@ namespace Scarlet.Communications
         public PacketWriter Put(float data)  { this.Packet.AppendData(UtilData.ToBytes(data)); return this; }
         public PacketWriter Put(int data)    { this.Packet.AppendData(UtilData.ToBytes(data)); return this; }
         public PacketWriter Put(string data) { this.Packet.AppendData(UtilData.ToBytes(data)); return this; }
-        public PacketWriter Put(byte[] data)   { this.Packet.AppendData(data); return this; }
+        public PacketWriter Put(byte[] data) { this.Packet.AppendData(data); return this; }
+        public PacketWriter Put(byte data)   { this.Packet.AppendData(new byte[1] { data }); return this; }
     }
 }

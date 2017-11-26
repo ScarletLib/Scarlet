@@ -135,7 +135,7 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void TestByte()
+        public void TestBytes()
         {
             PacketWriter writer = new PacketWriter(0x10, false);
             writer.Put(new byte[5] { 0x12, 0x34, 0x56, 0x78, 0xaf });
@@ -146,7 +146,7 @@ namespace UnitTest
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void TestByteException()
+        public void TestBytesException()
         {
             PacketWriter writer = new PacketWriter(0x10, false);
             writer.Put(new byte[5] { 0x12, 0x34, 0x56, 0x78, 0xaf });
@@ -154,6 +154,30 @@ namespace UnitTest
             PacketScanner scanner = new PacketScanner(writer.Packet);
             Assert.IsTrue(Equality(new byte[5] { 0x12, 0x34, 0x56, 0x78, 0xaf }, scanner.NextBytes()));
             scanner.NextBytes();
+        }
+
+        [TestMethod]
+        public void TestByte()
+        {
+            PacketWriter writer = new PacketWriter(0x10, false);
+            writer.Put((byte)0x12).Put((byte)0xcf);
+
+            PacketScanner scanner = new PacketScanner(writer.Packet);
+            Assert.AreEqual(0x12, scanner.NextByte());
+            Assert.AreEqual(0xcf, scanner.NextByte());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void TestByteException()
+        {
+            PacketWriter writer = new PacketWriter(0x10, false);
+            writer.Put((byte)0x12).Put((byte)0xcf);
+
+            PacketScanner scanner = new PacketScanner(writer.Packet);
+            Assert.AreEqual(0x12, scanner.NextByte());
+            Assert.AreEqual(0xcf, scanner.NextByte());
+            scanner.NextByte();
         }
 
         [TestMethod]

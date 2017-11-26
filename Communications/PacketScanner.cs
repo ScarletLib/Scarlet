@@ -17,7 +17,7 @@ namespace Scarlet.Communications
 
         private byte[] NextData(int Size)
         {
-            if (Cursor + Size > Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor + Size > this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
 
             byte[] Data = this.Packet.GetDataSlice(this.Cursor, Size);
             this.Cursor += Size;
@@ -32,7 +32,7 @@ namespace Scarlet.Communications
 
         public string NextString()
         {
-            if (Cursor >= Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
 
             string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor));
             this.Cursor = Packet.Data.Payload.Length;
@@ -41,10 +41,19 @@ namespace Scarlet.Communications
 
         public byte[] NextBytes()
         {
-            if (Cursor >= Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
 
             byte[] data = this.Packet.GetDataSlice(Cursor);
             this.Cursor = Packet.Data.Payload.Length;
+            return data;
+        }
+
+        public byte NextByte()
+        {
+            if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of package data"); }
+
+            byte data = Packet.Data.Payload[Cursor];
+            Cursor++;
             return data;
         }
     }
