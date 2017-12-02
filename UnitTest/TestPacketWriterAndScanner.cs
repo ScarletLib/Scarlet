@@ -39,6 +39,24 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void TestWatchdog()
+        {
+            string Endpoint = "helloworld";
+            Packet Packet1 = new Packet(0xf0, true, Endpoint);
+            Packet1.Data.AppendData(Scarlet.Utilities.UtilData.ToBytes(Endpoint));
+
+            Packet Packet2 = new PacketWriter(0xf0, true, Endpoint).Put(Endpoint).Packet;
+
+            byte[] Data1 = Packet1.GetForSend();
+            byte[] Data2 = Packet2.GetForSend();
+
+            Console.WriteLine(BitConverter.ToString(Data1));
+            Console.WriteLine(BitConverter.ToString(Data2));
+
+            Assert.IsTrue(Equality(Data1, Data2));
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void TestBoolException()
         {
