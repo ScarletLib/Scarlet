@@ -16,6 +16,7 @@
         BYTE = 10,
         STRING = 11,
         BYTES = 12,
+        MAX = 13,
     }
 
     /// <summary> Represents the priority of packet, from highest to lowest. </summary>

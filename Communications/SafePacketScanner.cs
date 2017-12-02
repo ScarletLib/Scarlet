@@ -31,8 +31,13 @@ namespace Scarlet.Communications
             if(!HasNext(Type)) {
                 TypeID NextType = (TypeID)Scanner.PeekNextByte();
                 String StrExpectedType = Type.ToString().ToLower();
-                String StrActualType = NextType.ToString().ToLower();
-                throw new InvalidOperationException("Expected to read " + StrExpectedType + ", but actual type of next data block is " + StrActualType + ".");
+
+                if (NextType >= TypeID.MAX) { throw new InvalidOperationException("Expected to read " + StrExpectedType + ", but got unknown type id. Did you use SafePacketWriter on the other end?"); }
+                else
+                {
+                    String StrActualType = NextType.ToString().ToLower();
+                    throw new InvalidOperationException("Expected to read " + StrExpectedType + ", but actual type of next data block is " + StrActualType + ".");
+                }
             }
             Scanner.NextByte(); // Move cursor forward
         }
