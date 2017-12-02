@@ -24,7 +24,7 @@ namespace Scarlet.Communications
         {
             if (this.Cursor + Size > this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
-            byte[] Data = this.Packet.GetDataSlice(this.Cursor, Size);
+            byte[] Data = this.Packet.Data.GetDataSlice(this.Cursor, Size);
             this.Cursor += Size;
             return Data;
         }
@@ -55,7 +55,7 @@ namespace Scarlet.Communications
         {
             if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
-            string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor));
+            string data = UtilData.ToString(this.Packet.Data.GetDataSlice(Cursor));
             this.Cursor = Packet.Data.Payload.Length;
             return data;
         }
@@ -68,7 +68,7 @@ namespace Scarlet.Communications
         {
             if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
-            string data = UtilData.ToString(this.Packet.GetDataSlice(Cursor, Length));
+            string data = UtilData.ToString(this.Packet.Data.GetDataSlice(Cursor, Length));
             this.Cursor += Length;
             return data;
         }
@@ -79,7 +79,7 @@ namespace Scarlet.Communications
         {
             if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
-            byte[] data = this.Packet.GetDataSlice(Cursor);
+            byte[] data = this.Packet.Data.GetDataSlice(Cursor);
             this.Cursor = Packet.Data.Payload.Length;
             return data;
         }
@@ -91,7 +91,7 @@ namespace Scarlet.Communications
         {
             if (this.Cursor >= this.Packet.Data.Payload.Length) { throw new InvalidOperationException("Reached the end of packet data"); }
 
-            byte[] data = this.Packet.GetDataSlice(Cursor, Length);
+            byte[] data = this.Packet.Data.GetDataSlice(Cursor, Length);
             this.Cursor += Length;
             return data;
         }

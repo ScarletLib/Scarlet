@@ -30,23 +30,7 @@ namespace Scarlet.Communications
         /// <param name="Endpoint"> The destination where this packet will be sent </param>
         public Packet(byte ID, bool IsUDP, string Endpoint = null)
             : this(new Message(ID), IsUDP, Endpoint) { }
-
-        /// <summary> Appends data to packet. </summary>
-        /// <param name="Data"> Data to append to packet. </param>
-        public void AppendData(byte[] NewData) { this.Data.AppendData(NewData); }
-
-
-        /// <summary> Get a part of current data. </summary>
-        /// <param name="Offset"> Index to start copying. </param>
-        /// <param name="Size"> Size of data to copy. </param>
-        /// <returns> Data with index in range [Offset, Offset + Size). </returns>
-        public byte[] GetDataSlice(int Offset, int Size) { return this.Data.GetDataSlice(Offset, Size); }
-
-        /// <summary> Get a part of current data from an offset to the end. </summary>
-        /// <param name="Offset"> Index to start copying. </param>
-        /// <returns> Data from `Offset` to the end. </returns>
-        public byte[] GetDataSlice(int Offset) { return this.Data.GetDataSlice(Offset); }
-
+        
         /// <summary> Prepares the packet for sending, then returns the raw data. </summary>
         /// <returns> The raw data, ready to be sent. </returns>
         public byte[] GetForSend(byte[] Timestamp = null)

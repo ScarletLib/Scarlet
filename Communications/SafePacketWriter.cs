@@ -17,7 +17,7 @@
         /// <summary> Construct an empty <see cref="SafePacketWriter"/> with an empty <see cref="Scarlet.Communications.Packet"/>. </summary>
         /// <param name="ID"> Packet ID. </param>
         /// <param name="IsUDP"> Whether it is an UDP packet. </param>
-        public SafePacketWriter(byte ID, bool IsUDP = false) { this.Writer = new PacketWriter(ID, IsUDP); }
+        public SafePacketWriter(byte ID, bool IsUDP = false, string Endpoint = null) { this.Writer = new PacketWriter(ID, IsUDP, Endpoint); }
 
         /// <summary> Put data into packet. </summary>
         /// <remarks> Those methods can be chained together because they return `this`. </remarks>
