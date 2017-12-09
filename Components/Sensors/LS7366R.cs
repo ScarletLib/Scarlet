@@ -45,7 +45,7 @@ namespace Scarlet.Components.Sensors
         /// Configures the device given a configuration
         /// </summary>
         /// <param name="Configuration">Configuration to use.</param>
-        public void Configure(LS7366RConfiguration Configuration)
+        public void Configure(Configuration Configuration)
         {
 
         }
@@ -89,9 +89,9 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary>
-        /// 
+        /// Tests the LS7366R device.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Whether or not the test passed</returns>
         public bool Test()
         {
             throw new NotImplementedException();
@@ -109,11 +109,67 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary>
+        /// Structure for the configuration of
+        /// the device.
+        /// </summary>
+        public struct Configuration
+        {
+            public QuadMode CountMode;
+            public CountMode FreeRunCountMode;
+            public IndexConfig IndexConfig;
+            public CounterMode CounterMode;
+
+            public bool DivideClkBy2;
+            public bool SynchronousIndex;
+
+            public bool FlagOnIDX;
+            public bool FlagOnCMP;
+            public bool FlagOnBW;
+            public bool FlagOnCY;
+        }
+
+        /// <summary>
         /// 
         /// </summary>
-        public struct LS7366RConfiguration
+        public enum QuadMode
         {
+            NON_QUAD,
+            X1_QUAD,
+            X2_QUAD,
+            X4_QUAD
+        }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public enum CountMode
+        {
+            FREE_RUNNING,
+            SINGLE_CYCLE,
+            RANGE_LIMIT,
+            MOD_N
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public enum IndexConfig
+        {
+            DISABLE,
+            LOAD_CTR,
+            RESET_CTR,
+            LOAD_OTR
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public enum CounterMode
+        {
+            BYTE_4,
+            BYTE_3,
+            BYTE_2,
+            BYTE_1
         }
 
     }
