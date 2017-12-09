@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Components.Sensors
 {
+    /// <summary>
+    /// Implements the LS7366R encoder
+    /// reader. 
+    /// Datasheet here:
+    /// https://cdn.usdigital.com/assets/general/LS7366R.pdf
+    /// </summary>
     public class LS7366R : ISensor
     {
         private const float LOAD_READ_DELAY = 0.02f; // seconds
@@ -33,6 +39,23 @@ namespace Scarlet.Components.Sensors
             this.ChipSelect = ChipSelect;
             this.CountEnable = CountEnable;
             this.SPIBus = SPIBus;
+        }
+
+        /// <summary>
+        /// Configures the device given a configuration
+        /// </summary>
+        /// <param name="Configuration">Configuration to use.</param>
+        public void Configure(LS7366RConfiguration Configuration)
+        {
+
+        }
+
+        /// <summary>
+        /// Configures device with a default configuration
+        /// </summary>
+        public void Configure()
+        {
+
         }
 
         /// <summary>
