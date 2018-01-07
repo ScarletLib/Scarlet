@@ -501,6 +501,20 @@ namespace Scarlet.Communications
             }
         }
 
+        /// <summary>
+        /// Sends an error packet to the server via
+        /// TCP.
+        /// Jumps the outgoing packet queue and sends immediately.
+        /// </summary>
+        /// <param name="ErrorPacketID">ID for the Error Packet</param>
+        /// <param name="ErrorCode">Error code for the indicated error</param>
+        public static void SendError(byte ErrorPacketID, int ErrorCode)
+        {
+            Packet ErrorPacket = new Packet(ErrorPacketID, false);
+            ErrorPacket.AppendData(UtilData.ToBytes(ErrorCode));
+            SendNow(ErrorPacket);
+        }
+
         /// <summary> Sends a Packet regardless of the connection status of Client. This method will throw an exception if you try and send a TCP exception without IsConnected being true. </summary>
         /// <param name="SendPacket"> The Packet to send </param>
         /// <returns> Whether or not the packet was sent. </returns>
