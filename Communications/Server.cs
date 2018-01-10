@@ -515,7 +515,7 @@ namespace Scarlet.Communications
         /// <summary>
         /// Sends an error packet to the given 
         /// endpoint via TCP.
-        /// Jumps the outgoing packet queue and sends immediately.
+        /// Adds Error packet to packet send queue
         /// </summary>
         /// <param name="ErrorPacketID">ID for the Error Packet</param>
         /// <param name="Endpoint">Endpoint to send the packet</param>
@@ -524,7 +524,7 @@ namespace Scarlet.Communications
         {
             Packet ErrorPacket = new Packet(ErrorPacketID, false, Endpoint);
             ErrorPacket.AppendData(UtilData.ToBytes(ErrorCode));
-            SendNow(ErrorPacket);
+            Send(ErrorPacket);
         }
 
         /// <summary>
