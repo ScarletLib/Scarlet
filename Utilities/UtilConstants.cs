@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Utilities
 {
-    /// <summary>
-    /// Class to store constants
-    /// </summary>
+    /// <summary> Class to store constants </summary>
     public class Constants
     {
         // PHYSICAL CONSTANTS
