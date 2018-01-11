@@ -13,7 +13,7 @@ namespace Scarlet.IO.BeagleBone
 
     public enum BBBPinMode
     {
-        NONE, GPIO, PWM, ADC, I2C, SPI, UART
+        NONE, GPIO, PWM, ADC, I2C, SPI, UART, CAN
     }
 
     static class Pin
@@ -275,9 +275,10 @@ namespace Scarlet.IO.BeagleBone
 
                 case BBBPin.P9_19:
                 case BBBPin.P9_20:
-                    if (Mode == BBBPinMode.I2C) { return 3; }
-                    if (Mode == BBBPinMode.SPI) { return 4; }
-                    if (Mode == BBBPinMode.GPIO) { return 7; }
+                    if (Mode == BBBPinMode.CAN) { return 2; }
+                    else if (Mode == BBBPinMode.I2C) { return 3; }
+                    else if (Mode == BBBPinMode.SPI) { return 4; }
+                    else if (Mode == BBBPinMode.GPIO) { return 7; }
                     else { return 255; }
 
                 case BBBPin.P9_21:
@@ -292,6 +293,7 @@ namespace Scarlet.IO.BeagleBone
                 case BBBPin.P9_24:
                 case BBBPin.P9_26:
                     if (Mode == BBBPinMode.UART) { return 0; }
+                    else if (Mode == BBBPinMode.CAN) { return 2; }
                     else if (Mode == BBBPinMode.I2C) { return 3; }
                     else if (Mode == BBBPinMode.GPIO) { return 7; }
                     else { return 255; }

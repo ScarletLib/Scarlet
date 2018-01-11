@@ -11,9 +11,9 @@ namespace Scarlet.IO.BeagleBone
 {
     public static class BBBPinManager
     {
-        private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings;
+        private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings, CANMappings;
         private static Dictionary<BBBPin, int> ADCMappings;
-        private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2;
+        private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2, EnableCAN0, EnableCAN1;
 
         #region Adding Mappings
         /// <summary>
@@ -35,6 +35,7 @@ namespace Scarlet.IO.BeagleBone
             if (PWMMappings != null && PWMMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for GPIO."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for GPIO."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for GPIO."); }
+            if (CANMappings != null && CANMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for GPIO."); }
 
             if (GPIOMappings == null) { GPIOMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(FastSlew, !IsOutput, Resistor, Mode));
@@ -65,8 +66,9 @@ namespace Scarlet.IO.BeagleBone
             if (GPIOMappings != null && GPIOMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for PWM."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for PWM."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for PWM."); }
+            if (CANMappings != null && CANMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for PWM."); }
 
-            switch(PWMBBB.PinToPWMID(SelectedPin))
+            switch (PWMBBB.PinToPWMID(SelectedPin))
             {
                 case BBBCSIO.PWMPortEnum.PWM0_A: case BBBCSIO.PWMPortEnum.PWM0_B: EnablePWM0 = true; break;
                 case BBBCSIO.PWMPortEnum.PWM1_A: case BBBCSIO.PWMPortEnum.PWM1_B: EnablePWM1 = true; break;
@@ -126,6 +128,8 @@ namespace Scarlet.IO.BeagleBone
             if (PWMMappings != null && PWMMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for I2C Data."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for I2C Clock."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for I2C Data."); }
+            if (CANMappings != null && CANMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for I2C Clock."); }
+            if (CANMappings != null && CANMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for I2C Data."); }
 
             if (I2CMappings == null) { I2CMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment ClockMap = new PinAssignment(ClockPin, Pin.GetPinMode(false, true, ResistorState.PULL_UP, ClockMode));
@@ -192,6 +196,9 @@ namespace Scarlet.IO.BeagleBone
             if (I2CMappings != null && MISO != BBBPin.NONE && I2CMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI MISO."); }
             if (I2CMappings != null && MOSI != BBBPin.NONE && I2CMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI MOSI."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI Clock."); }
+            if (CANMappings != null && MISO != BBBPin.NONE && CANMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI MISO."); }
+            if (CANMappings != null && MOSI != BBBPin.NONE && CANMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI MOSI."); }
+            if (CANMappings != null && CANMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI Clock."); }
 
             if (Clock == BBBPin.P9_22) // Port 0
             {
@@ -257,6 +264,63 @@ namespace Scarlet.IO.BeagleBone
             AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP); // TODO: Switch this to be in SPI overlay section instead of GPIO to make it clear.
         }
 
+        public static void AddMappingCAN(BBBPin TX, BBBPin RX)
+        {
+            byte TXMode = Pin.GetModeID(TX, BBBPinMode.CAN);
+            byte RXMode = Pin.GetModeID(RX, BBBPinMode.CAN);
+            if (TXMode == 255) { throw new InvalidOperationException("This pin cannot be used for CAN TX line."); }
+            if (RXMode == 255) { throw new InvalidOperationException("This pin cannot be used for CAN RX line."); }
+            if (!Pin.CheckPin(TX, BeagleBone.Peripherals)) { throw new InvalidOperationException("CAN TX pin cannot be used without disabling some peripherals first."); }
+            if (!Pin.CheckPin(RX, BeagleBone.Peripherals)) { throw new InvalidOperationException("CAN RX pin cannot be used without disabling some peripherals first."); }
+            if (Pin.GetOffset(TX) == 0x000) { throw new InvalidOperationException("CAN TX pin is not valid for device tree registration."); }
+            if (Pin.GetOffset(RX) == 0x000) { throw new InvalidOperationException("CAN RX pin is not valid for device tree registration."); }
+            if (TX == BBBPin.P9_20)
+            {
+                if (RX != BBBPin.P9_19) { throw new InvalidOperationException("CAN RX pin selected is invalid with the selected TX pin. Make sure that it is part of the same CAN Bus."); }
+            }
+            else if (TX == BBBPin.P9_26)
+            {
+                if (RX != BBBPin.P9_24) { throw new InvalidOperationException("CAN RX pin selected is invalid with the selected TX pin. Make sure that it is part of the same CAN Bus."); }
+            }
+            else { throw new InvalidOperationException("Given pin is not a possible CAN pin. Check the documentation for pinouts."); }
+
+            if (GPIOMappings != null && GPIOMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for CAN TX."); }
+            if (GPIOMappings != null && GPIOMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for CAN RX."); }
+            if (PWMMappings != null && PWMMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for CAN TX."); }
+            if (PWMMappings != null && PWMMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for CAN RX."); }
+            if (SPIMappings != null && SPIMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for CAN TX."); }
+            if (SPIMappings != null && SPIMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for CAN RX."); }
+            if (I2CMappings != null && I2CMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for CAN TX."); }
+            if (I2CMappings != null && I2CMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for CAN RX."); }
+
+            switch (CANBBB.PinToCANBus(TX))
+            {
+                case 0: EnableCAN0 = true; break;
+                case 1: EnableCAN1 = true; break;
+            }
+
+            if (CANMappings == null) { CANMappings = new Dictionary<BBBPin, PinAssignment>(); }
+            PinAssignment TXMap = new PinAssignment(TX, Pin.GetPinMode(true, false, ResistorState.PULL_UP, TXMode));
+            PinAssignment RXMap = new PinAssignment(RX, Pin.GetPinMode(true, true, ResistorState.PULL_UP, RXMode));
+
+            lock (CANMappings)
+            {
+                if (CANMappings.ContainsKey(TX))
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding CAN TX pin setting. This may mean that you have a pin usage conflict.");
+                    CANMappings[TX] = TXMap;
+                }
+                else { CANMappings.Add(TX, TXMap); }
+
+                if (CANMappings.ContainsKey(RX))
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding CAN RX pin setting. This may mean that you have a pin usage conflict.");
+                    CANMappings[RX] = RXMap;
+                }
+                else { CANMappings.Add(RX, RXMap); }
+            }
+        }
+
         /// <summary>
         /// Adds an ADC mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
         /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
@@ -310,6 +374,7 @@ namespace Scarlet.IO.BeagleBone
                (PWMMappings == null || PWMMappings.Count == 0) &&
                (I2CMappings == null || I2CMappings.Count == 0) &&
                (SPIMappings == null || SPIMappings.Count == 0) &&
+               (CANMappings == null || CANMappings.Count == 0) &&
                (ADCMappings == null || ADCMappings.Count == 0))
                 { Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application."); return; }
             if (!StateStore.Started) { throw new Exception("Please start the StateStore system first."); }
@@ -398,6 +463,7 @@ namespace Scarlet.IO.BeagleBone
             I2CBBB.Initialize(EnableI2C1, EnableI2C2);
             SPIBBB.Initialize(EnableSPI0, EnableSPI1);
             PWMBBB.Initialize(EnablePWM0, EnablePWM1, EnablePWM2);
+            CANBBB.Initialize(EnableCAN0, EnableCAN1);
         }
 
         /// <summary>
