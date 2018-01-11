@@ -30,10 +30,7 @@ namespace Scarlet.Components.Motors
             this.PWMOut.SetEnabled(true);
         }
 
-        public void EventTriggered(object Sender, EventArgs Event)
-        {
-
-        }
+        public void EventTriggered(object Sender, EventArgs Event) { }
 
         /// <summary> Immediately stops the motor, bypassing the Filter. </summary>
         public void Stop()
