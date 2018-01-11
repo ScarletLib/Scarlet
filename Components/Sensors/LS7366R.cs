@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 namespace Scarlet.Components.Sensors
 {
     /// <summary>
-    /// Implements the LS7366R encoder
-    /// reader. 
+    /// Implements the LS7366R encoder reader. 
     /// Datasheet here:
     /// https://cdn.usdigital.com/assets/general/LS7366R.pdf
     /// </summary>
@@ -27,13 +26,10 @@ namespace Scarlet.Components.Sensors
         public event EventHandler<OverflowEvent> OverflowOccured;
 
 
-        /// <summary>
-        /// Initializes the LS7366R SPI
-        /// encoder counter chip.
-        /// </summary>
-        /// <param name="SPIBus">SPI Bus to communicate with</param>
-        /// <param name="ChipSelect">Chip Select to use with SPI</param>
-        /// <param name="CountEnable">Digital Out to enable the counters</param>
+        /// <summary> Initializes the LS7366R SPI encoder counter chip. </summary>
+        /// <param name="SPIBus"> SPI Bus to communicate with </param>
+        /// <param name="ChipSelect"> Chip Select to use with SPI </param>
+        /// <param name="CountEnable"> Digital Out to enable the counters </param>
         public LS7366R(ISPIBus SPIBus, IDigitalOut ChipSelect, IDigitalOut CountEnable = null)
         {
             this.ChipSelect = ChipSelect;
@@ -41,17 +37,16 @@ namespace Scarlet.Components.Sensors
             this.SPIBus = SPIBus;
         }
 
-        /// <summary>
-        /// Configures the device given a configuration
-        /// </summary>
-        /// <param name="Configuration">Configuration to use.</param>
+        /// <summary> Configures the device given a configuration </summary>
+        /// <param name="Configuration"> Configuration to use. </param>
         public void Configure(Configuration Configuration)
         {
             // Bools to bytes
             byte SynIndex = Configuration.SynchronousIndex ? (byte)1 : (byte)0;
             byte FltrClk = Configuration.DivideClkBy2 ? (byte)1 : (byte)0;
 
-            byte CntEnable = 1; // Implement later (works like the count enable pin)?
+            byte CntEnable = Configuration.CountEnable ? (byte)1 : (byte)0;
+
             byte IDXFlg = Configuration.FlagOnIDX ? (byte)1 : (byte)0;
             byte CMPFlg = Configuration.FlagOnCMP ? (byte)1 : (byte)0;
             byte BWFlg = Configuration.FlagOnBW ? (byte)1 : (byte)0;
@@ -77,14 +72,12 @@ namespace Scarlet.Components.Sensors
             // Clear MDR1 to zero
             SPIBus.Write(ChipSelect, new byte[] { 0b00_010_000 }, 0);
             // Write MDR0
-            SPIBus.Write(ChipSelect, new byte[] { 0b00_001_000, MDR0 }, 0);
+            SPIBus.Write(ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 0);
             // Write MDR1
-            SPIBus.Write(ChipSelect, new byte[] { 0b00_010_000, MDR1 }, 0);
+            SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 0);
         }
 
-        /// <summary>
-        /// Configures device with a default configuration
-        /// </summary>
+        /// <summary> Configures device with a default configuration </summary>
         public void Configure()
         {
             Configuration DefaultConfig = new Configuration()
@@ -99,6 +92,9 @@ namespace Scarlet.Components.Sensors
 
                 // MDR1
                 CounterMode = CounterMode.BYTE_4,
+
+                CountEnable = true,
+
                 FlagOnIDX = false,
                 FlagOnCMP = false,
                 FlagOnBW = false,
@@ -108,40 +104,41 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary>
-        /// Sets the output of the 
-        /// given count enable output
-        /// (if given) to the Enable
-        /// state. Sets CountEnabled
-        /// to the given Enable state.
+        /// Sets the output of the given count enable output
+        /// (if given) to the Enable state. 
+        /// Sets CountEnabled to the given Enable state. 
+        /// Triggers the internal Enable/Disable counting functionality
         /// </summary>
-        /// <param name="Enable">Whether or not to enable the chip's CNT_EN pin</param>
+        /// <param name="Enable"> Whether or not to enable counting. </param>
         public void EnableCount(bool Enable)
         {
             CountEnable?.SetOutput(Enable);
+            // Read MDR1
+            byte MDR1 = SPIBus.Write(ChipSelect, new byte[] { 0b01_010_000 }, 1)[0];
+            // If the count enable on the chip is different, then change it
+            if (((MDR1 & 0b00001000) == 0b00001000) != Enable)
+            {
+                // Flip the CEN bit in MDR1
+                if (Enable) { MDR1 |= 0b00001000; }
+                else { MDR1 &= 0b11110111; }
+                // Write the new MDR1 to the chip
+                SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 0);
+            }
             CountEnabled = Enable;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Event"></param>
+        /// <summary> Event called on an overflow </summary>
+        /// <param name="Event"> Event to be passed in to the invoke upon overflow. </param>
         protected virtual void OnOverflow(OverflowEvent Event) { OverflowOccured?.Invoke(this, Event); }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Sender"></param>
-        /// <param name="Event"></param>
+        /// <summary> Receives external events. </summary>
+        /// <param name="Sender"> Sender of the event </param>
+        /// <param name="Event"> Sent event </param>
         public void EventTriggered(object Sender, EventArgs Event) { if (Event is OverflowEvent) { HadEvent = true; } }
 
-        /// <summary>
-        /// Tests the LS7366R device.
-        /// </summary>
-        /// <returns>Whether or not the test passed</returns>
-        public bool Test()
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary> Tests the LS7366R device. </summary>
+        /// <returns> Whether or not the test passed </returns>
+        public bool Test() { throw new NotImplementedException(); }
 
         /// <summary>
         /// Loads the buffer data into the chip's
@@ -175,16 +172,15 @@ namespace Scarlet.Components.Sensors
             Count = IntOut; // Take over/under-flows into consideration here?
         }
 
-        /// <summary>
-        /// Structure for the configuration of
-        /// the device.
-        /// </summary>
+        /// <summary> Structure for the configuration of the device. </summary>
         public struct Configuration
         {
             public QuadMode QuadMode;
             public CountMode CountMode;
             public IndexConfig IndexConfig;
             public CounterMode CounterMode;
+
+            public bool CountEnable;
 
             public bool DivideClkBy2;
             public bool SynchronousIndex;
@@ -195,9 +191,7 @@ namespace Scarlet.Components.Sensors
             public bool FlagOnCY;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary> Quadrature mode for encoder counting </summary>
         public enum QuadMode
         {
             NON_QUAD,
@@ -206,9 +200,7 @@ namespace Scarlet.Components.Sensors
             X4_QUAD
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary> Encoder counter count mode </summary>
         public enum CountMode
         {
             FREE_RUNNING,
@@ -217,9 +209,7 @@ namespace Scarlet.Components.Sensors
             MOD_N
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary> Index setup </summary>
         public enum IndexConfig
         {
             DISABLE,
@@ -228,9 +218,7 @@ namespace Scarlet.Components.Sensors
             LOAD_OTR
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary> Number of bytes to count </summary>
         public enum CounterMode
         {
             BYTE_4,
@@ -243,8 +231,7 @@ namespace Scarlet.Components.Sensors
 
     /// <summary>
     /// Event to store overflow events.
-    /// Includes overflow and underflow
-    /// fields.
+    /// Includes overflow and underflow fields.
     /// </summary>
     public class OverflowEvent : EventArgs
     {
