@@ -149,15 +149,11 @@ namespace Scarlet.Filters
         }
 
         /// <summary>
-        /// Returns false due to the complex nature
-        /// of the Kalman filter, a steady state
-        /// is difficult to compute
+        /// Returns false due to the complex nature of the Kalman filter, 
+        /// since a steady state is difficult to compute.
         /// </summary>
-        /// <returns>False due to Kalman filter complexity</returns>
-        public bool IsSteadyState()
-        {
-            return false;
-        }
+        /// <returns> False due to Kalman filter complexity</returns>
+        public bool IsSteadyState() { return false; }
 
         public T GetOutput() { return this.Output; }
     }

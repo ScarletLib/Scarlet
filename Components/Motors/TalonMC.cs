@@ -45,9 +45,7 @@ namespace Scarlet.Components.Motors
             this.SetSpeed(0);
         }
 
-        /// <summary>
-        /// Sets the speed on a thread for filtering.
-        /// </summary>
+        /// <summary> Sets the speed on a thread for filtering.</summary>
         private void SetSpeedThread()
         {
             float Output = this.Filter.GetOutput();

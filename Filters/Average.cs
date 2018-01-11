@@ -88,11 +88,8 @@ namespace Scarlet.Filters
             }
         }
 
-        /// <summary>
-        /// Computes whether or not the average filter
-        /// is in steady state or not.
-        /// </summary>
-        /// <returns>Whether or not filter is in steady state</returns>
+        /// <summary> Computes whether or not the average filter is in steady state or not.</summary>
+        /// <returns> Whether or not filter is in steady state</returns>
         public bool IsSteadyState()
         {
             return NumCyclesAverageSame >= FilterCount;
