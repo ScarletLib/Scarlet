@@ -26,6 +26,7 @@ namespace Scarlet.Filters
         private int FilterCount,        // Size of the average array
                     Index,              // Current index of the average array
                     Iterations;         // Number of iterations in the filter
+        private int NumCyclesAverageSame; // Number of cycles that the average has stayed the same
 
         /// <summary> Construct an average filter with given roll-length. </summary>
         /// <param name="FilterCount"> Roll length for the average filter. </param>
@@ -62,8 +63,12 @@ namespace Scarlet.Filters
             this.AverageArray[this.Index] = dynamicInput; 
             // Increment index. Go back to zero if index + 1 == filterCount
             this.Index = (this.Index + 1) % this.FilterCount; // Increment index. Go back to zero if index + 1 == filterCount
+            // Keep temporary track of the last output
+            T LastOutput = this.Output;
             // Divide output by either number of iterations or filter length
-            this.Output = this.CurSum / (Math.Min(this.Iterations, this.FilterCount)); 
+            this.Output = this.CurSum / (Math.Min(this.Iterations, this.FilterCount));
+            // Add one to the count if the average was the same after this cycle, otherwise reset it
+            if ((dynamic)LastOutput == (dynamic)this.Output) { NumCyclesAverageSame++; } else { NumCyclesAverageSame = 0; }
         }
 
         /// <summary> Rate is irrelevant to average filter, so this is no different than using Feed(Input). </summary>
@@ -81,6 +86,16 @@ namespace Scarlet.Filters
             {
                 this.AverageArray[i] = 0;
             }
+        }
+
+        /// <summary>
+        /// Computes whether or not the average filter
+        /// is in steady state or not.
+        /// </summary>
+        /// <returns>Whether or not filter is in steady state</returns>
+        public bool IsSteadyState()
+        {
+            return NumCyclesAverageSame >= FilterCount;
         }
 
         public T GetOutput() { return this.Output; }
