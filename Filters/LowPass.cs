@@ -38,7 +38,7 @@ namespace Scarlet.Filters
 
         /// <summary> Constructs a low pass filter with time constant <c>LPFk</c>. </summary>
         /// <param name="LPFk"> Low Pass Filter Time Constant. </param>
-        /// <param name="SteadyStateEpsilon">Allowable difference in output to be considered a steady state system.</param>
+        /// <param name="SteadyStateEpsilon"> Allowable difference in output to be considered a steady state system. </param>
         public LowPass(double LPFk = 0.25, double SteadyStateEpsilon = 0)
         {
             if (!UtilData.IsNumericType(typeof(T)))

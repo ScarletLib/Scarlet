@@ -16,12 +16,10 @@ namespace Scarlet.Components.Motors
         private bool Stopped;
         public float TargetSpeed { get; private set; }
 
-        /// <summary>
-        /// Initializes a Talon Motor controller
-        /// </summary>
-        /// <param name="PWMOut">PWM output to control the motor controller</param>
-        /// <param name="MaxSpeed">Max speed in range -1.0 to 1.0 of motor controller</param>
-        /// <param name="SpeedFilter">Filter to use with MC. Good for ramp-up/down protection and other applications</param>
+        /// <summary> Initializes a Talon Motor controller </summary>
+        /// <param name="PWMOut"> PWM output to control the motor controller </param>
+        /// <param name="MaxSpeed"> Max speed in range -1.0 to 1.0 of motor controller </param>
+        /// <param name="SpeedFilter"> Flter to use with MC. Good for ramp-up protection and other applications </param>
         public TalonMC(IPWMOutput PWMOut, float MaxSpeed, IFilter<float> SpeedFilter = null)
         {
             this.OngoingSpeedThreads = 0;
@@ -45,7 +43,7 @@ namespace Scarlet.Components.Motors
             this.SetSpeed(0);
         }
 
-        /// <summary> Sets the speed on a thread for filtering.</summary>
+        /// <summary> Sets the speed on a thread for filtering. </summary>
         private void SetSpeedThread()
         {
             float Output = this.Filter.GetOutput();
@@ -58,8 +56,8 @@ namespace Scarlet.Components.Motors
             OngoingSpeedThreads--;
         }
 
-        /// <summary> Creates a new thread for setting speed during motor filtering output</summary>
-        /// <returns> A new thread for changing the motor speed.</returns>
+        /// <summary> Creates a new thread for setting speed during motor filtering output </summary>
+        /// <returns> A new thread for changing the motor speed. </returns>
         private Thread SetSpeedThreadFactory()
         { 
             return new Thread(new ThreadStart(SetSpeedThread));
@@ -94,7 +92,7 @@ namespace Scarlet.Components.Motors
         /// Sets the speed directly given an input from -1.0 to 1.0
         /// Takes into consideration motor stop signal and max speed restriction.
         /// </summary>
-        /// <param name="Speed"> Speed from -1.0 to 1.0</param>
+        /// <param name="Speed"> Speed from -1.0 to 1.0 </param>
         private void SetSpeedDirectly(float Speed)
         {
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }

@@ -15,21 +15,19 @@ namespace Scarlet.Filters
         /// rate. Typically if not using Rate the implementation of this
         /// method will call just Feed(Input) and ignore rate.
         /// </summary>
-        /// <param name="Input"> Filter input</param>
-        /// <param name="Rate"> Rate input</param>
+        /// <param name="Input"> Filter input </param>
+        /// <param name="Rate"> Rate input </param>
         void Feed(T Input, T Rate);
 
-        /// <summary> Feeds the filter with a given input.</summary>
-        /// <param name="Input"> Filter input</param>
+        /// <summary> Feeds the filter with a given input. </summary>
+        /// <param name="Input"> Filter input </param>
         void Feed(T Input); // Feeds filter with just an input.
         
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
+        /// <summary> Gets output from filter. </summary>
+        /// <returns> Filter Output </returns>
         T GetOutput(); // Returns the output of the filter
 
-        /// <summary> Computes whether or not the filter is in a steady state.</summary>
+        /// <summary> Computes whether or not the filter is in a steady state. </summary>
         /// <returns> The steady state </returns>
         bool IsSteadyState();
     }
