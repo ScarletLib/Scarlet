@@ -92,6 +92,7 @@
     <Compile Include="IO\Events.cs" />
     <Compile Include="IO\IAnalogueIn.cs" />
     <Compile Include="IO\IAnalogueOut.cs" />
+    <Compile Include="IO\ICANBus.cs" />
     <Compile Include="IO\IDigitalIn.cs" />
     <Compile Include="IO\IDigitalOut.cs" />
     <Compile Include="IO\II2CBus.cs" />

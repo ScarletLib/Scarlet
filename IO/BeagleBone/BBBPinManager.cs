@@ -510,6 +510,13 @@ namespace Scarlet.IO.BeagleBone
         /// <summary> Uses all of the previously created device tree overlay mappings (using the AddMapping___() functions), and generates a device tree overlay for application via the cape manager. </summary>
         /// <remarks> This is probably the longest function I've ever written. It's reasonably simple to follwo though, there's just a lot of output it needs to be able to generate. </remarks>
         /// <returns> A list of lines to save to a file, which can then be compiled into a DTBO and applied as an overlay. </returns>
+        /// Fragment IDs:
+        /// GPIO: 0, 1
+        /// PWM: 2, 10, 11, 12, 13, 14, 15
+        /// I2C: 3, 20, 21
+        /// SPI: 4, 30, 31
+        /// ADC: 5
+        /// CAN: 6, 40, 41
         static List<string> GenerateDeviceTree()
         {
             List<string> Output = new List<string>();
@@ -536,7 +543,10 @@ namespace Scarlet.IO.BeagleBone
             Dictionary<BBBPin, PinAssignment> SPIDev0 = new Dictionary<BBBPin, PinAssignment>();
             Dictionary<BBBPin, PinAssignment> SPIDev1 = new Dictionary<BBBPin, PinAssignment>();
 
-            // Build exclusive-use list
+            Dictionary<BBBPin, PinAssignment> CANDev0 = new Dictionary<BBBPin, PinAssignment>();
+            Dictionary<BBBPin, PinAssignment> CANDev1 = new Dictionary<BBBPin, PinAssignment>();
+
+            // Build device lists and create exclusive-use list
             if (PWMMappings != null)
             {
                 lock (PWMMappings)
@@ -660,6 +670,22 @@ namespace Scarlet.IO.BeagleBone
 
                     // Add SPI pins to the exclusive-use list
                     // TODO: See if this is needed.
+                }
+            }
+
+            if (CANMappings != null)
+            {
+                lock(CANMappings)
+                {
+                    // Sort CAN pins into devices
+                    foreach (KeyValuePair<BBBPin, PinAssignment> Entry in CANMappings)
+                    {
+                        switch(CANBBB.PinToCANBus(Entry.Key))
+                        {
+                            case 0: CANDev0.Add(Entry.Key, Entry.Value); continue;
+                            case 1: CANDev1.Add(Entry.Key, Entry.Value); continue;
+                        }
+                    }
                 }
             }
 
@@ -1016,6 +1042,75 @@ namespace Scarlet.IO.BeagleBone
                     Output.Add("        };");
                     Output.Add("    };");
                     Output.Add("    ");
+                }
+            }
+
+            // Output CAN device fragments
+            if(CANMappings != null)
+            {
+                lock(CANMappings)
+                {
+                    Output.Add("    fragment@6 {");
+                    Output.Add("        target = <&am33xx_pinmux>;");
+                    Output.Add("        __overlay__ {");
+                    if (CANDev0.Count > 0)
+                    {
+                        Output.Add("            scarlet_dcan0: pinmux_scarlet_dcan0_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in CANDev0.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    if (CANDev1.Count > 0)
+                    {
+                        Output.Add("            scarlet_dcan1: pinmux_scarlet_dcan1_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in CANDev1.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    Output.Add("        };");
+                    Output.Add("    };");
+                    Output.Add("    ");
+
+                    if (CANDev0.Count > 0)
+                    {
+                        Output.Add("    fragment@40 {");
+                        Output.Add("        target = <&dcan0>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            #address-cells = <1>;");
+                        Output.Add("            #size-cells = <0>;");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_dcan0>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                    if (CANDev1.Count > 0)
+                    {
+                        Output.Add("    fragment@41 {");
+                        Output.Add("        target = <&dcan1>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            #address-cells = <1>;");
+                        Output.Add("            #size-cells = <0>;");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_dcan1>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
                 }
             }
 
