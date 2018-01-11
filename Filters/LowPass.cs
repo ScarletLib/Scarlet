@@ -78,11 +78,8 @@ namespace Scarlet.Filters
         /// <summary> Resets the low pass filter to the default value of <c>T</c> </summary>
         public void Reset() { this.LastValue = default(T); }
 
-        /// <summary>
-        /// Computes whether or not the
-        /// low pass filter is in steady state
-        /// </summary>
-        /// <returns>Returns whether or not the filter is in steady state</returns>
+        /// <summary> Computes whether or not the low pass filter is in steady state</summary>
+        /// <returns> Returns whether or not the filter is in steady state</returns>
         public bool IsSteadyState()
         {
             // System is in steady state if the output of the filter and the input
