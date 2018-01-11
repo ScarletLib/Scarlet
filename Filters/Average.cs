@@ -45,6 +45,7 @@ namespace Scarlet.Filters
             this.FilterCount = FilterCount;
             this.AverageArray = new dynamic[this.FilterCount];
             this.InitializeArray(); // Initialize average array to defaults
+            this.NumCyclesAverageSame = 0;
         }
 
         /// <summary> Feeds a value into the filter. </summary>
@@ -52,15 +53,15 @@ namespace Scarlet.Filters
         public void Feed(T Input)
         {
             // Increase number of iterations by 1
-            this.Iterations++; 
+            this.Iterations++;
             // Store input as a dynamic type since we know T is a numeric
-            dynamic dynamicInput = Input; 
+            dynamic dynamicInput = Input;
             // Subtract current array index value from sum
             this.CurSum -= this.AverageArray[this.Index];
             // Add current value to sum
-            this.CurSum += dynamicInput; 
+            this.CurSum += dynamicInput;
             // Store curent value in old spot
-            this.AverageArray[this.Index] = dynamicInput; 
+            this.AverageArray[this.Index] = dynamicInput;
             // Increment index. Go back to zero if index + 1 == filterCount
             this.Index = (this.Index + 1) % this.FilterCount; // Increment index. Go back to zero if index + 1 == filterCount
             // Keep temporary track of the last output
@@ -74,10 +75,7 @@ namespace Scarlet.Filters
         /// <summary> Rate is irrelevant to average filter, so this is no different than using Feed(Input). </summary>
         /// <param name="Input"> Value to feed into the filer. </param>
         /// <param name="Rate"> Ignored </param>
-        public void Feed(T Input, T Rate)
-        {
-            this.Feed(Input); // Average filter is independent of rate
-        }
+        public void Feed(T Input, T Rate) { this.Feed(Input); }
 
         /// <summary> Initializes dynamic number array to all zeros. </summary>
         private void InitializeArray()
@@ -90,10 +88,7 @@ namespace Scarlet.Filters
 
         /// <summary> Computes whether or not the average filter is in steady state </summary>
         /// <returns> Whether or not filter is in steady state </returns>
-        public bool IsSteadyState()
-        {
-            return NumCyclesAverageSame >= FilterCount;
-        }
+        public bool IsSteadyState() { return NumCyclesAverageSame >= FilterCount; }
 
         public T GetOutput() { return this.Output; }
     }
