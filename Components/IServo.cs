@@ -11,8 +11,8 @@ namespace Scarlet.Components
         /// <summary> Updates the position of the servo </summary>
         void SetPosition(int NewPosition);
 
-        /// <summary> Stops the servo immediately. </summary>
-        void Stop();
+        /// <summary> Enables or disables the motor immediately. </summary>
+        void SetEnabled(bool Enabled);
 
         /// <summary> Used to send events to servos. </summary>
         void EventTriggered(object Sender, EventArgs Event);

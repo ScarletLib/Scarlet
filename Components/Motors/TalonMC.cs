@@ -8,21 +8,20 @@ namespace Scarlet.Components.Motors
 {
     public class TalonMC : IMotor
     {
-        private IFilter<float> Filter;
+        private IFilter<float> Filter; // Filter for speed output
         private readonly IPWMOutput PWMOut;
-        private readonly float MaxSpeed;
+        private readonly float MaxSpeed; 
 
-        private int OngoingSpeedThreads;
-        private bool Stopped;
-        public float TargetSpeed { get; private set; }
+        private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
+        private bool Stopped; // Whether or not the motor is stopped
+        public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
 
         /// <summary> Initializes a Talon Motor controller </summary>
         /// <param name="PWMOut"> PWM output to control the motor controller </param>
-        /// <param name="MaxSpeed"> Max speed in range -1.0 to 1.0 of motor controller </param>
-        /// <param name="SpeedFilter"> Flter to use with MC. Good for ramp-up protection and other applications </param>
+        /// <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+        /// <param name="SpeedFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
         public TalonMC(IPWMOutput PWMOut, float MaxSpeed, IFilter<float> SpeedFilter = null)
         {
-            this.OngoingSpeedThreads = 0;
             this.PWMOut = PWMOut;
             this.MaxSpeed = MaxSpeed;
             this.Filter = SpeedFilter;
@@ -32,12 +31,18 @@ namespace Scarlet.Components.Motors
 
         public void EventTriggered(object Sender, EventArgs Event) { }
 
-        /// <summary> Immediately stops the motor, bypassing the Filter. </summary>
-        public void Stop()
+        /// <summary> 
+        /// Immediately sets the enabled status of the motor. 
+        /// If false, resets TargetSpeed to 0 and stops the motor.
+        /// </summary>
+        public void SetEnabled(bool Enabled)
         {
-            this.TargetSpeed = 0;
-            this.Stopped = true;
-            this.SetSpeed(0);
+            this.Stopped = Enabled;
+            if (!Enabled)
+            {
+                this.TargetSpeed = 0;
+                this.SetSpeed(0);
+            }
         }
 
         /// <summary> Sets the speed on a thread for filtering. </summary>
@@ -50,15 +55,12 @@ namespace Scarlet.Components.Motors
                 SetSpeedDirectly(this.Filter.GetOutput());
                 Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
             }
-            OngoingSpeedThreads--;
+            OngoingSpeedThread = false;
         }
 
         /// <summary> Creates a new thread for setting speed during motor filtering output </summary>
         /// <returns> A new thread for changing the motor speed. </returns>
-        private Thread SetSpeedThreadFactory()
-        { 
-            return new Thread(new ThreadStart(SetSpeedThread));
-        }
+        private Thread SetSpeedThreadFactory() { return new Thread(new ThreadStart(SetSpeedThread)); }
 
         /// <summary>
         /// Sets the motor speed. Output may vary from the given value under the following conditions:
@@ -73,16 +75,13 @@ namespace Scarlet.Components.Motors
             if (this.Filter != null)
             {
                 this.Filter.Feed(Speed);
-                if (!this.Filter.IsSteadyState() && OngoingSpeedThreads == 0)
+                if (!this.Filter.IsSteadyState() && !OngoingSpeedThread)
                 {
                     SetSpeedThreadFactory().Start();
-                    OngoingSpeedThreads++;
+                    OngoingSpeedThread = true;
                 }
             }
-            else
-            {
-                SetSpeedDirectly(Speed);
-            }
+            else { SetSpeedDirectly(Speed); }
         }
 
         /// <summary>

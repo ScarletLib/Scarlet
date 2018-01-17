@@ -7,8 +7,8 @@ namespace Scarlet.Components
         /// <summary> Changes the speed of the motor, subject to filtering and capping. </summary>
         void SetSpeed(float Speed);
 
-        /// <summary> Stops to motor immediately. </summary>
-        void Stop();
+        /// <summary> Enables or disables the motor immediately. </summary>
+        void SetEnabled(bool Enabled);
 
         /// <summary> Used to send events to Motors. </summary>
         void EventTriggered(object Sender, EventArgs Event);
