@@ -65,6 +65,25 @@ namespace Scarlet.Utilities
             if(OutputLevels[(int)Src] <= Sev) { ForceOutput(Sev, Src, Message); }
         }
 
+        /// <summary>
+        /// Delegate to defer Output message creation until the message actually needs
+        /// to be logged.
+        /// </summary>
+        /// <returns>The message to log</returns>
+        public delegate string MessageProvider();
+
+        /// <summary> Delegate version of Output. This should only be used if
+        /// message creation would be more expensive than the creation of the 
+        /// delegate MessageProvider.
+        /// </summary>
+        /// <param name="Severity"> How severe this message is. </param>
+        /// <param name="Src"> The system where this log entry is originating. </param>
+        /// <param name="Message"> Delegate to provide message. </param>
+        public static void Output(Severity Sev, Source Src, MessageProvider message) {
+            //repeat this code because the delegate shouldn't be called unless its log level is enabled
+            if (OutputLevels[(int)Src] <= Sev) { ForceOutput(Sev, Src, message()); }
+        }
+
         /// <summary> Same as Output, but ignores logging settings and always outputs. </summary>
         public static void ForceOutput(Severity Sev, Source Src, string Message)
         {
