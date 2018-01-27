@@ -64,7 +64,7 @@ namespace Scarlet.Filters
             // where c is the time constant and x(t) is the filter input at that time.
             dynamic _dOutput = ((_dLastOutput * (1 - this.LPFk) + _dInput * this.LPFk));
             // Set iterative variables
-            this.Output = _dOutput;
+            this.Output = (T)_dOutput;
             this.LastValue = Input;
         }
         /// <summary> Feeds filter with specified rate. Not used for average filter. </summary>
