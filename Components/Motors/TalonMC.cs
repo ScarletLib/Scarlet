@@ -71,9 +71,9 @@ namespace Scarlet.Components.Motors
         {
             if (this.Filter != null)
             {
-                this.Filter.Feed(Speed);
                 if (!this.Filter.IsSteadyState() && !OngoingSpeedThread)
                 {
+                    this.Filter.Feed(Speed);
                     SetSpeedThreadFactory().Start();
                     OngoingSpeedThread = true;
                 }
