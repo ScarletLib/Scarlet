@@ -108,14 +108,10 @@ namespace UnitTest
             // Test to ensure that output duty cycle rises
             // (Which is controlled on another thread)
             float LastDC = TestPWMOutput.DutyCycle;
-            Log.SetGlobalOutputLevel(Log.Severity.FATAL);
-            Log.Destination = Log.WriteDestination.FILE;
-            Log.Begin();
             Watch.Reset();
             Watch.Start();
             while (Watch.ElapsedMilliseconds < 2000)
             {
-                Log.ForceOutput(Log.Severity.DEBUG, Log.Source.MOTORS, TestPWMOutput.DutyCycle.ToString());
                 float DC = TestPWMOutput.DutyCycle;
                 Assert.IsTrue(DC >= LastDC);
                 if (TestFilter.IsSteadyState()) { Assert.AreEqual(DC, LastDC); }

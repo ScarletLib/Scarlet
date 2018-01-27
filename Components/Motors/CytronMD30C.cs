@@ -31,6 +31,7 @@ namespace Scarlet.Components.Motors
             this.PWMOut.SetEnabled(true);
             this.GPIOOut = GPIOOut;
             this.GPIOOut.SetOutput(false);
+            this.SetSpeedDirectly(0.0f);
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }
@@ -78,14 +79,15 @@ namespace Scarlet.Components.Motors
         {
             if (this.Filter != null)
             {
-                this.Filter.Feed(Speed);
                 if (!this.Filter.IsSteadyState() && !OngoingSpeedThread)
                 {
+                    this.Filter.Feed(Speed);
                     SetSpeedThreadFactory().Start();
                     OngoingSpeedThread = true;
                 }
             }
             else { SetSpeedDirectly(Speed); }
+            this.TargetSpeed = Speed;
         }
 
         /// <summary>
