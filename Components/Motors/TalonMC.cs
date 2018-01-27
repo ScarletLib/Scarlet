@@ -23,10 +23,11 @@ namespace Scarlet.Components.Motors
         public TalonMC(IPWMOutput PWMOut, float MaxSpeed, IFilter<float> SpeedFilter = null)
         {
             this.PWMOut = PWMOut;
-            this.MaxSpeed = MaxSpeed;
+            this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
             this.PWMOut.SetFrequency(333);
             this.PWMOut.SetEnabled(true);
+            this.SetSpeedDirectly(0.0f);
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }
@@ -38,11 +39,7 @@ namespace Scarlet.Components.Motors
         public void SetEnabled(bool Enabled)
         {
             this.Stopped = Enabled;
-            if (!Enabled)
-            {
-                this.TargetSpeed = 0;
-                this.SetSpeed(0);
-            }
+            if (!Enabled) { this.SetSpeed(0); }
         }
 
         /// <summary> Sets the speed on a thread for filtering. </summary>
@@ -82,6 +79,7 @@ namespace Scarlet.Components.Motors
                 }
             }
             else { SetSpeedDirectly(Speed); }
+            this.TargetSpeed = Speed;
         }
 
         /// <summary>
