@@ -93,17 +93,34 @@ namespace UnitTest
         public void TestThreadValidity()
         {
             TestablePWMOutput TestPWMOutput = new TestablePWMOutput();
-            LowPass<float> TestFilter = new LowPass<float>();
+            LowPass<float> TestFilter = new LowPass<float>(SteadyStateEpsilon: 0.1);
             TalonMC TestTalon = new TalonMC(TestPWMOutput, 0.5f, TestFilter);
 
             // Low Pass should run continuously because it was not given an epsilon above
             // Here we will make sure it doesn't block
             Stopwatch Watch = new Stopwatch();
+            Watch.Reset();
             Watch.Start();
             TestTalon.SetSpeed(1.0f);
             Watch.Stop();
-            Assert.IsTrue(Watch.ElapsedMilliseconds < Constants.DEFAULT_MIN_THREAD_SLEEP);
-            
+            // Allow 150ms delay for setting talon speed
+            Assert.IsTrue(Watch.ElapsedMilliseconds < 150);
+            // Test to ensure that output duty cycle rises
+            // (Which is controlled on another thread)
+            float LastDC = TestPWMOutput.DutyCycle;
+            Log.SetGlobalOutputLevel(Log.Severity.FATAL);
+            Log.Destination = Log.WriteDestination.FILE;
+            Log.Begin();
+            Watch.Reset();
+            Watch.Start();
+            while (Watch.ElapsedMilliseconds < 2000)
+            {
+                Log.ForceOutput(Log.Severity.DEBUG, Log.Source.MOTORS, TestPWMOutput.DutyCycle.ToString());
+                float DC = TestPWMOutput.DutyCycle;
+                Assert.IsTrue(DC >= LastDC);
+                if (TestFilter.IsSteadyState()) { Assert.AreEqual(DC, LastDC); }
+                LastDC = DC;
+            }
         }
     }
 }
