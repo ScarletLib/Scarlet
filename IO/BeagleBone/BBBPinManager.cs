@@ -457,7 +457,7 @@ namespace Scarlet.IO.BeagleBone
                     break;
                 case ApplicationMode.APPLY_REGARDLESS:
                     AttemptOverlayChanges = true;
-                    New = false;
+                    New = true;
                     break;
                 case ApplicationMode.REMOVE_AND_APPLY:
                     RemovePinSettings();
