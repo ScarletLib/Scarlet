@@ -362,7 +362,7 @@ namespace Scarlet.IO.BeagleBone
 
             if (UARTMappings == null) { UARTMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(true, !UARTBBB.PinIsTX(SelectedPin), ResistorState.NONE, Mode));
-            lock (I2CMappings)
+            lock (UARTMappings)
             {
                 if (UARTMappings.ContainsKey(SelectedPin))
                 {
@@ -1262,7 +1262,7 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
-                        Output.Add("            pinctrl-0 = <&scarlet_uart1_pins>");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart1_pins>;");
                         Output.Add("        };");
                         Output.Add("    };");
                         Output.Add("    ");
@@ -1274,7 +1274,7 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
-                        Output.Add("            pinctrl-0 = <&scarlet_uart2_pins>");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart2_pins>;");
                         Output.Add("        };");
                         Output.Add("    };");
                         Output.Add("    ");
@@ -1286,7 +1286,7 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
-                        Output.Add("            pinctrl-0 = <&scarlet_uart3_pins>");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart3_pins>;");
                         Output.Add("        };");
                         Output.Add("    };");
                         Output.Add("    ");
@@ -1298,7 +1298,7 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
-                        Output.Add("            pinctrl-0 = <&scarlet_uart4_pins>");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart4_pins>;");
                         Output.Add("        };");
                         Output.Add("    };");
                         Output.Add("    ");
