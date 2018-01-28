@@ -48,11 +48,12 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TestablePWMOutput.cs" />
-    <Compile Include="TestClientAndServer.cs" />
-    <Compile Include="TestPacketBuffer.cs" />
+    <Compile Include="FilterTesting\TestLowPass.cs" />
+    <Compile Include="MotorTesting\TestablePWMOutput.cs" />
+    <Compile Include="NetworkTesting\TestClientAndServer.cs" />
+    <Compile Include="NetworkTesting\TestPacketBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestTalonMC.cs" />
+    <Compile Include="MotorTesting\TestTalonMC.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -63,6 +64,7 @@
       <Name>Scarlet</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -113,8 +113,8 @@ namespace UnitTest
             while (Watch.ElapsedMilliseconds < 2000)
             {
                 float DC = TestPWMOutput.DutyCycle;
-                Assert.IsTrue(DC >= LastDC);
                 if (TestFilter.IsSteadyState()) { Assert.AreEqual(DC, LastDC); }
+                else { Assert.IsTrue(DC > LastDC); }
                 LastDC = DC;
             }
         }
