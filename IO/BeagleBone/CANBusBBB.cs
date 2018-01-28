@@ -14,7 +14,7 @@ namespace Scarlet.IO.BeagleBone
             if (En1) { CANBus1 = new CANBusBBB(new BBBPin[] { BBBPin.P9_26, BBBPin.P9_24 }); }
         }
 
-        /// <summary> Converts a pin number to the corresponding CAN bus ID. </summary>
+        /// <summary> Converts a pin number to the corresponding CAN bus ID. 255 if invalid. </summary>
         static internal byte PinToCANBus(BBBPin Pin)
         {
             switch (Pin)

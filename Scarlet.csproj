@@ -88,6 +88,7 @@
     <Compile Include="Components\Sensors\VEML6070.cs" />
     <Compile Include="IO\BeagleBone\ScarletSPIPortFS.cs" />
     <Compile Include="IO\BeagleBone\SPIBusBBB.cs" />
+    <Compile Include="IO\BeagleBone\UARTBusBBB.cs" />
     <Compile Include="IO\Enums.cs" />
     <Compile Include="IO\Events.cs" />
     <Compile Include="IO\IAnalogueIn.cs" />
