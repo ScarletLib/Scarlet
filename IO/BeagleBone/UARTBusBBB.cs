@@ -166,7 +166,21 @@ namespace Scarlet.IO.BeagleBone
 
         internal UARTBusBBB(BBBPin TX, BBBPin RX)
         {
-            this.Port = new SerialPortFS(SerialPortEnum.UART_1, SerialPortOpenModeEnum.OPEN_NONBLOCK);
+            SerialPortEnum PortNum = SerialPortEnum.UART_NONE;
+            switch(TX)
+            {
+                case BBBPin.P9_24:
+                case BBBPin.P9_26: PortNum = SerialPortEnum.UART_1; break;
+
+                case BBBPin.P9_21:
+                case BBBPin.P9_22: PortNum = SerialPortEnum.UART_2; break;
+
+                case BBBPin.P9_42: PortNum = SerialPortEnum.UART_4; break;
+
+                case BBBPin.P9_13:
+                case BBBPin.P9_11: PortNum = SerialPortEnum.UART_5; break;
+            }
+            this.Port = new SerialPortFS(PortNum, SerialPortOpenModeEnum.OPEN_NONBLOCK);
             if (!this.Port.PortIsOpen) { throw new Exception("Could not open UART port."); }
         }
 

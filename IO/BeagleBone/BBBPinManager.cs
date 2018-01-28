@@ -14,6 +14,7 @@ namespace Scarlet.IO.BeagleBone
         private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings, CANMappings, UARTMappings;
         private static Dictionary<BBBPin, int> ADCMappings;
         private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2, EnableCAN0, EnableCAN1;
+        private static bool[] EnableUARTBuses = new bool[4];
 
         #region Adding Mappings
         /// <summary>
@@ -359,9 +360,10 @@ namespace Scarlet.IO.BeagleBone
 
             byte Bus = UARTBBB.PinToUARTBus(SelectedPin);
             if (Bus == 255) { throw new InvalidOperationException("This pin is not valid for UART."); }
+            EnableUARTBuses[Bus - 1] = true;
 
             if (UARTMappings == null) { UARTMappings = new Dictionary<BBBPin, PinAssignment>(); }
-            PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(true, !UARTBBB.PinIsTX(SelectedPin), ResistorState.NONE, Mode));
+            PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(true, !UARTBBB.PinIsTX(SelectedPin), ResistorState.PULL_DOWN, Mode));
             lock (UARTMappings)
             {
                 if (UARTMappings.ContainsKey(SelectedPin))
@@ -517,6 +519,7 @@ namespace Scarlet.IO.BeagleBone
             SPIBBB.Initialize(EnableSPI0, EnableSPI1);
             PWMBBB.Initialize(EnablePWM0, EnablePWM1, EnablePWM2);
             CANBBB.Initialize(EnableCAN0, EnableCAN1);
+            UARTBBB.Initialize(EnableUARTBuses);
         }
 
         /// <summary>
@@ -1258,7 +1261,7 @@ namespace Scarlet.IO.BeagleBone
                     if (UARTDev1.Count > 0)
                     {
                         Output.Add("    fragment@50 {");
-                        Output.Add("        target = <&uart2>;");
+                        Output.Add("        target = <&uart1>;");
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
@@ -1270,7 +1273,7 @@ namespace Scarlet.IO.BeagleBone
                     if (UARTDev2.Count > 0)
                     {
                         Output.Add("    fragment@51 {");
-                        Output.Add("        target = <&uart3>;");
+                        Output.Add("        target = <&uart2>;");
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
@@ -1282,7 +1285,7 @@ namespace Scarlet.IO.BeagleBone
                     if (UARTDev3.Count > 0)
                     {
                         Output.Add("    fragment@52 {");
-                        Output.Add("        target = <&uart4>;");
+                        Output.Add("        target = <&uart3>;");
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
@@ -1294,7 +1297,7 @@ namespace Scarlet.IO.BeagleBone
                     if (UARTDev4.Count > 0)
                     {
                         Output.Add("    fragment@53 {");
-                        Output.Add("        target = <&uart5>;");
+                        Output.Add("        target = <&uart4>;");
                         Output.Add("        __overlay__ {");
                         Output.Add("            status = \"okay\";");
                         Output.Add("            pinctrl-names = \"default\";");
