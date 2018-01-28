@@ -78,7 +78,7 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P9_21, new PinData(0x954, 85, 3, GpioEnum.GPIO_3, 0) },
             { BBBPin.P9_22, new PinData(0x950, 84, 2, GpioEnum.GPIO_2, 0) },
             { BBBPin.P9_23, new PinData(0x844, 17, 49, GpioEnum.GPIO_49, 0) },
-            { BBBPin.P9_24, new PinData(0x984, 97, 15, GpioEnum.GPIO_15, 0) },
+            { BBBPin.P9_24, new PinData(0x984, 97, 15, GpioEnum.GPIO_15, 0) }, // 
             { BBBPin.P9_25, new PinData(0x9AC, 107, 117, GpioEnum.GPIO_117, 2) },
             { BBBPin.P9_26, new PinData(0x980, 96, 14, GpioEnum.GPIO_14, 0) },
             { BBBPin.P9_27, new PinData(0x9A4, 105, 115, GpioEnum.GPIO_115, 0) },
@@ -87,7 +87,7 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P9_30, new PinData(0x998, 102, 112, GpioEnum.GPIO_112, 2) },
             { BBBPin.P9_31, new PinData(0x990, 100, 110, GpioEnum.GPIO_110, 0) },
             // Pins P9_33 to P9_40 are ADC inputs, and don't have addresses.
-            { BBBPin.P9_41, new PinData(0x984, 97, 20, GpioEnum.GPIO_20, 0) },
+            { BBBPin.P9_41, new PinData(0x9B4, 97, 20, GpioEnum.GPIO_20, 0) },
             { BBBPin.P9_42, new PinData(0x964, 89, 7, GpioEnum.GPIO_7, 0) }
         };
 
