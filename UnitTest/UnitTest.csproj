@@ -50,8 +50,8 @@
   <ItemGroup>
     <Compile Include="FilterTesting\TestLowPass.cs" />
     <Compile Include="MotorTesting\TestablePWMOutput.cs" />
-    <Compile Include="NetworkTesting\TestClientAndServer.cs" />
-    <Compile Include="NetworkTesting\TestPacketBuffer.cs" />
+    <Compile Include="TestClientAndServer.cs" />
+    <Compile Include="TestPacketBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MotorTesting\TestTalonMC.cs" />
   </ItemGroup>
