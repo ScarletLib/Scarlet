@@ -73,14 +73,11 @@ namespace Scarlet.Components.Motors
         /// <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
         public void SetSpeed(float Speed)
         {
-            if (this.Filter != null)
+            if (this.Filter != null && !this.Filter.IsSteadyState() && !OngoingSpeedThread)
             {
-                if (!this.Filter.IsSteadyState() && !OngoingSpeedThread)
-                {
-                    this.Filter.Feed(Speed);
-                    SetSpeedThreadFactory().Start();
-                    OngoingSpeedThread = true;
-                }
+                this.Filter.Feed(Speed);
+                SetSpeedThreadFactory().Start();
+                OngoingSpeedThread = true;
             }
             else { SetSpeedDirectly(Speed); }
             this.TargetSpeed = Speed;

@@ -25,7 +25,7 @@ namespace Scarlet.Components.Motors
         public CytronMD30C(IPWMOutput PWMOut, IDigitalOut GPIOOut, float MaxSpeed, IFilter<float> SpeedFilter = null)
         {
             this.PWMOut = PWMOut;
-            this.MaxSpeed = MaxSpeed;
+            this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
             this.PWMOut.SetFrequency(5000);
             this.PWMOut.SetEnabled(true);
@@ -42,7 +42,7 @@ namespace Scarlet.Components.Motors
         /// </summary>
         public void SetEnabled(bool Enabled)
         {
-            this.Stopped = Enabled;
+            this.Stopped = !Enabled;
             if (!Enabled)
             {
                 this.TargetSpeed = 0;
@@ -56,8 +56,12 @@ namespace Scarlet.Components.Motors
             float Output = this.Filter.GetOutput();
             while (!this.Filter.IsSteadyState())
             {
-                this.Filter.Feed(this.TargetSpeed);
-                SetSpeedDirectly(this.Filter.GetOutput());
+                if (Stopped) { SetSpeedDirectly(0); }
+                else
+                {
+                    this.Filter.Feed(this.TargetSpeed);
+                    SetSpeedDirectly(this.Filter.GetOutput());
+                }
                 Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
             }
             OngoingSpeedThread = false;
@@ -77,14 +81,11 @@ namespace Scarlet.Components.Motors
         /// <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
         public void SetSpeed(float Speed)
         {
-            if (this.Filter != null)
+            if (this.Filter != null && !this.Filter.IsSteadyState() && !OngoingSpeedThread)
             {
-                if (!this.Filter.IsSteadyState() && !OngoingSpeedThread)
-                {
-                    this.Filter.Feed(Speed);
-                    SetSpeedThreadFactory().Start();
-                    OngoingSpeedThread = true;
-                }
+                this.Filter.Feed(Speed);
+                SetSpeedThreadFactory().Start();
+                OngoingSpeedThread = true;
             }
             else { SetSpeedDirectly(Speed); }
             this.TargetSpeed = Speed;
