@@ -18,15 +18,15 @@ namespace Scarlet.IO.BeagleBone
 
     public class I2CBusBBB : II2CBus
     {
-        private I2CPortFS Port;
+        private ScarletI2CPortFS Port;
 
         /// <summary> This should only be initialized from I2CBBB. </summary>
         internal I2CBusBBB(byte ID)
         {
             switch (ID)
             {
-                case 1: this.Port = new I2CPortFS(I2CPortEnum.I2CPORT_1); break;
-                case 2: this.Port = new I2CPortFS(I2CPortEnum.I2CPORT_2); break;
+                case 1: this.Port = new ScarletI2CPortFS(I2CPortEnum.I2CPORT_1); break;
+                case 2: this.Port = new ScarletI2CPortFS(I2CPortEnum.I2CPORT_2); break;
                 default: throw new ArgumentOutOfRangeException("Only I2C ports 1 and 2 are supported.");
             }
         }
