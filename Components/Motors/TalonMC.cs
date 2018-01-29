@@ -38,7 +38,7 @@ namespace Scarlet.Components.Motors
         /// </summary>
         public void SetEnabled(bool Enabled)
         {
-            this.Stopped = Enabled;
+            this.Stopped = !Enabled;
             if (!Enabled) { this.SetSpeed(0); }
         }
 
@@ -48,8 +48,12 @@ namespace Scarlet.Components.Motors
             float Output = this.Filter.GetOutput();
             while(!this.Filter.IsSteadyState())
             {
-                this.Filter.Feed(this.TargetSpeed);
-                SetSpeedDirectly(this.Filter.GetOutput());
+                if (Stopped) { SetSpeedDirectly(0); }
+                else
+                {
+                    this.Filter.Feed(this.TargetSpeed);
+                    SetSpeedDirectly(this.Filter.GetOutput());
+                }
                 Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
             }
             OngoingSpeedThread = false;

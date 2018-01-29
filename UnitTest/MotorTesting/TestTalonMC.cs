@@ -45,8 +45,18 @@ namespace UnitTest
             Assert.AreEqual(TestPWMOutput.DutyCycle, 0.5f);
             Assert.AreEqual(TestPWMOutput2.DutyCycle, 0.5f);
 
+            // Tested these conditions by setting OngoingSpeedThread to public
+            // then set it back.
+            //Assert.IsFalse(PositiveMaxSpeedTalon.OngoingSpeedThread);
+            //Assert.IsFalse(NegativeMaxSpeedTalon.OngoingSpeedThread);
+
             PositiveMaxSpeedTalon.SetSpeed(-1.0f);
             NegativeMaxSpeedTalon.SetSpeed(1.0f);
+            
+            // Tested these conditions by setting OngoingSpeedThread to public
+            // then set it back.
+            //Assert.IsFalse(PositiveMaxSpeedTalon.OngoingSpeedThread);
+            //Assert.IsFalse(NegativeMaxSpeedTalon.OngoingSpeedThread);
 
             Assert.AreEqual(-1 * PositiveMaxSpeedTalon.TargetSpeed, NegativeMaxSpeedTalon.TargetSpeed);
             Assert.AreEqual(PositiveMaxSpeedTalon.TargetSpeed, -1.0f);
@@ -113,8 +123,22 @@ namespace UnitTest
             while (Watch.ElapsedMilliseconds < 2000)
             {
                 float DC = TestPWMOutput.DutyCycle;
-                if (TestFilter.IsSteadyState()) { Assert.AreEqual(DC, LastDC); }
-                else { Assert.IsTrue(DC > LastDC); }
+                if (TestFilter.IsSteadyState())
+                {
+                    Assert.AreEqual(DC, LastDC);
+
+                    // Tested these conditions by setting OngoingSpeedThread to public
+                    // then set it back.
+                    //Assert.IsFalse(TestTalon.OngoingSpeedThread);
+                }
+                else
+                {
+
+                    // Tested these conditions by setting OngoingSpeedThread to public
+                    // then set it back.
+                    //Assert.IsTrue(TestTalon.OngoingSpeedThread);
+                    Assert.IsTrue(DC > LastDC);
+                }
                 LastDC = DC;
             }
         }
