@@ -17,15 +17,4 @@ namespace Scarlet.Utilities
         public const int DEFAULT_MIN_THREAD_SLEEP = 15; // milliseconds
     }
 
-    public static class UtilConstants
-    {
-        public static string SEARCH_NOT_FOUND_STR = "*-+{}SEARCH_NOT_FOUND?/\\";
-    }
-
-    public enum SearchType
-    {
-        BreadthFirst,
-        DepthFirst,
-        SingleFolder,
-    }
 }

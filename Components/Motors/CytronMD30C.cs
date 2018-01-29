@@ -46,7 +46,7 @@ namespace Scarlet.Components.Motors
             if (!Enabled)
             {
                 this.TargetSpeed = 0;
-                this.SetSpeed(0);
+                this.SetSpeedDirectly(0);
             }
         }
 

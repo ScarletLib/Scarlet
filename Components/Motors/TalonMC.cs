@@ -39,7 +39,7 @@ namespace Scarlet.Components.Motors
         public void SetEnabled(bool Enabled)
         {
             this.Stopped = !Enabled;
-            if (!Enabled) { this.SetSpeed(0); }
+            if (!Enabled) { this.SetSpeedDirectly(0); }
         }
 
         /// <summary> Sets the speed on a thread for filtering. </summary>
