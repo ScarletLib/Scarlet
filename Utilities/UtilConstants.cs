@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Utilities
 {
-    public static class UtilConstants
+    /// <summary> Class to store constants </summary>
+    public class Constants
     {
-        public static string SEARCH_NOT_FOUND_STR = "*-+{}SEARCH_NOT_FOUND?/\\";
+        // PHYSICAL CONSTANTS
+        public const float GRAVITY = 9.80655f; // meters per second per second
+        public const float EARTH_RADIUS = 6371000; // meters
+
+        // OPERATIONAL CONSTANTS
+        public const int DEFAULT_MIN_THREAD_SLEEP = 15; // milliseconds
     }
 
-    public enum SearchType
-    {
-        BreadthFirst,
-        DepthFirst,
-        SingleFolder,
-    }
 }
