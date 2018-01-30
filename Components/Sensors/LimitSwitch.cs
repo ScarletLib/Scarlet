@@ -11,6 +11,7 @@ namespace Scarlet.Components.Sensors
         private readonly bool Invert;
         private volatile bool HadEvent, NewState;
         public event EventHandler<LimitSwitchToggle> SwitchToggle;
+        public bool State { get => (this.Invert ? !Input.GetInput() : Input.GetInput()); }
 
         public LimitSwitch(IDigitalIn Input, bool Invert = false)
         {
