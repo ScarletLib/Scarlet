@@ -9,6 +9,7 @@ using Scarlet.Filters;
 using Scarlet.IO;
 using System.Diagnostics;
 using Scarlet.Utilities;
+using System.Threading;
 
 namespace UnitTest
 {
@@ -84,18 +85,22 @@ namespace UnitTest
             TalonMC TestMotor = new TalonMC(TestPWMOutput, 0.4f, TestLPF);
 
             TestMotor.SetSpeed(0.5f);
+            Thread.Sleep(500);
+
+            Assert.AreEqual(0.7f, TestPWMOutput.DutyCycle);
 
             Assert.AreEqual(0.5f, TestMotor.TargetSpeed);
 
             TestMotor.SetEnabled(false);
 
-            Assert.AreEqual(0.0f, TestMotor.TargetSpeed);
+            Assert.AreEqual(0.5f, TestMotor.TargetSpeed);
             Assert.AreEqual(0.5f, TestPWMOutput.DutyCycle);
 
             TestMotor.SetEnabled(true);
 
-            Assert.AreEqual(0.0f, TestMotor.TargetSpeed);
-            Assert.AreEqual(0.5f, TestPWMOutput.DutyCycle);
+            Assert.AreEqual(0.5f, TestMotor.TargetSpeed);
+            Thread.Sleep(500);
+            Assert.AreEqual(0.7f, TestPWMOutput.DutyCycle);
             
         }
 
