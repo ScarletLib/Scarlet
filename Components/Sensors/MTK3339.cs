@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Text;
 using System.Threading;
-using Scarlet;
-using Scarlet.Components;
 using Scarlet.IO;
-using Scarlet.IO.BeagleBone;
 
 namespace Scarlet.Components.Sensors
 {
@@ -25,7 +21,7 @@ namespace Scarlet.Components.Sensors
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.MTK3339"/> class. 
         /// Sets it to send GPRMC and GPGGA every 200 milliseconds. 
         /// </summary>
-        /// <param name="UART"> The UART bus to read from and write to.  </param>
+        /// <param name="UART"> The UART bus to read from and write to. </param>
         public MTK3339(IUARTBus UART)
         {
             this.UART = UART;
@@ -82,7 +78,6 @@ namespace Scarlet.Components.Sensors
         /// <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
         public Tuple<float, float> GetCoords()
         {
-
             string[] Info = Read();
             if (Info[0] == "$GPGGA")
             {
