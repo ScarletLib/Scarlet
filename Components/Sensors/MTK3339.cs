@@ -78,9 +78,7 @@ namespace Scarlet.Components.Sensors
             return GpsResult.Split(',');
         }
 
-        /// <summary>
-        /// Gets the GPS coordinates of this GPS. 
-        /// </summary>
+        /// <summary> Gets the GPS coordinates of this GPS. </summary>
         /// <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
         public Tuple<float, float> GetCoords()
         {
@@ -101,7 +99,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Converts a string number to a degree value. </summary>
-        /// <returns>The to deg.</returns>
+        /// <returns>The degree value.</returns>
         /// <param name="Val"> The string value.</param>
         private float RawToDeg(string Val)
         {
@@ -111,9 +109,7 @@ namespace Scarlet.Components.Sensors
             return Deg + Min / 60.0f;
         }
 
-        /// <summary>
-        /// Writes a string to the UART as a string of bytes. 
-        /// </summary>
+        /// <summary> Writes a string to the UART as a string of bytes. </summary>
         /// <param name="s">The string to write.</param>
         private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
     }
