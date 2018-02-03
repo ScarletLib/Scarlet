@@ -9,10 +9,11 @@ namespace Scarlet.IO.BeagleBone
         public static SPIBusBBB SPIBus1 { get; private set; }
 
         /// <summary> Prepares the given SPI ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
-        static internal void Initialize(bool Enable0, bool Enable1)
+        static internal void Initialize(bool[] EnableBuses)
         {
-            if (Enable0) { SPIBus0 = new SPIBusBBB(0); }
-            if (Enable1) { SPIBus1 = new SPIBusBBB(1); }
+            if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to SPIBBB.Initialize."); }
+            if (EnableBuses[0]) { SPIBus0 = new SPIBusBBB(0); }
+            if (EnableBuses[1]) { SPIBus1 = new SPIBusBBB(1); }
         }
     }
 
@@ -30,7 +31,7 @@ namespace Scarlet.IO.BeagleBone
                 default: throw new ArgumentOutOfRangeException("Only SPI ports 0 and 1 are supported.");
             }
             this.Port.SetMode(SPIModeEnum.SPI_MODE_0);
-            this.Port.SetDefaultSpeedInHz(500000); // TODO: Determine appropriate speed.
+            this.Port.SetDefaultSpeedInHz(100000);
         }
 
         /// <summary> Simultaneously writes/reads data to/from the device. </summary>

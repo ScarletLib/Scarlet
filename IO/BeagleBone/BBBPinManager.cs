@@ -13,7 +13,10 @@ namespace Scarlet.IO.BeagleBone
     {
         private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings, CANMappings, UARTMappings;
         private static Dictionary<BBBPin, int> ADCMappings;
-        private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2, EnableCAN0, EnableCAN1;
+        private static bool[] EnableI2CBuses = new bool[2];
+        private static bool[] EnableSPIBuses = new bool[2];
+        private static bool[] EnablePWMBuses = new bool[3];
+        private static bool[] EnableCANBuses = new bool[2];
         private static bool[] EnableUARTBuses = new bool[4];
 
         #region Adding Mappings
@@ -73,9 +76,9 @@ namespace Scarlet.IO.BeagleBone
 
             switch (PWMBBB.PinToPWMID(SelectedPin))
             {
-                case BBBCSIO.PWMPortEnum.PWM0_A: case BBBCSIO.PWMPortEnum.PWM0_B: EnablePWM0 = true; break;
-                case BBBCSIO.PWMPortEnum.PWM1_A: case BBBCSIO.PWMPortEnum.PWM1_B: EnablePWM1 = true; break;
-                case BBBCSIO.PWMPortEnum.PWM2_A: case BBBCSIO.PWMPortEnum.PWM2_B: EnablePWM2 = true; break;
+                case BBBCSIO.PWMPortEnum.PWM0_A: case BBBCSIO.PWMPortEnum.PWM0_B: EnablePWMBuses[0] = true; break;
+                case BBBCSIO.PWMPortEnum.PWM1_A: case BBBCSIO.PWMPortEnum.PWM1_B: EnablePWMBuses[1] = true; break;
+                case BBBCSIO.PWMPortEnum.PWM2_A: case BBBCSIO.PWMPortEnum.PWM2_B: EnablePWMBuses[2] = true; break;
             }
 
             if (PWMMappings == null) { PWMMappings = new Dictionary<BBBPin, PinAssignment>(); }
@@ -135,6 +138,9 @@ namespace Scarlet.IO.BeagleBone
             if (CANMappings != null && CANMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for I2C Data."); }
             if (UARTMappings != null && UARTMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for I2C Clock."); }
             if (UARTMappings != null && UARTMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for I2C Data."); }
+
+            if (ClockPin == BBBPin.P9_17 || ClockPin == BBBPin.P9_24) { EnableI2CBuses[0] = true; }
+            if (ClockPin == BBBPin.P9_19 || ClockPin == BBBPin.P9_21) { EnableI2CBuses[1] = true; }
 
             if (I2CMappings == null) { I2CMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment ClockMap = new PinAssignment(ClockPin, Pin.GetPinMode(false, true, ResistorState.PULL_UP, ClockMode));
@@ -208,18 +214,16 @@ namespace Scarlet.IO.BeagleBone
             if (UARTMappings != null && MOSI != BBBPin.NONE && UARTMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for SPI MOSI."); }
             if (UARTMappings != null && UARTMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for SPI Clock."); }
 
-
             if (Clock == BBBPin.P9_22) // Port 0
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_18 && MISO == BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_21 && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                EnableSPI0 = true;
+                
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                EnableSPI1 = true;
             }
             else { throw new InvalidOperationException("SPI Clock pin selected is invalid. Make sure MISO, MOSI, and clock are valid selections and part of the same port."); }
 
@@ -229,6 +233,9 @@ namespace Scarlet.IO.BeagleBone
             PinAssignment MISOMap = null;
             if (MOSI != BBBPin.NONE) { MOSIMap = new PinAssignment(MOSI, Pin.GetPinMode(true, false, ResistorState.PULL_UP, MOSIMode)); }
             if (MISO != BBBPin.NONE) { MISOMap = new PinAssignment(MISO, Pin.GetPinMode(true, true, ResistorState.PULL_UP, MISOMode)); }
+
+            if (Clock == BBBPin.P9_22) { EnableSPIBuses[0] = true; }
+            if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) { EnableSPIBuses[1] = true; }
 
             lock (SPIMappings)
             {
@@ -270,7 +277,7 @@ namespace Scarlet.IO.BeagleBone
         /// <exception cref="InvalidOperationException"> If the given pin cannot be used for chip-select at this time. Reason will be given. </exception>
         public static void AddMappingSPI_CS(BBBPin ChipSelect)
         {
-            AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP); // TODO: Switch this to be in SPI overlay section instead of GPIO to make it clear.
+            AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP);
         }
 
         /// <summary>
@@ -313,8 +320,8 @@ namespace Scarlet.IO.BeagleBone
 
             switch (CANBBB.PinToCANBus(TX))
             {
-                case 0: EnableCAN0 = true; break;
-                case 1: EnableCAN1 = true; break;
+                case 0: EnableCANBuses[0] = true; break;
+                case 1: EnableCANBuses[1] = true; break;
             }
 
             if (CANMappings == null) { CANMappings = new Dictionary<BBBPin, PinAssignment>(); }
@@ -515,10 +522,10 @@ namespace Scarlet.IO.BeagleBone
             if(WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
 
             // Start relevant components.
-            I2CBBB.Initialize(EnableI2C1, EnableI2C2);
-            SPIBBB.Initialize(EnableSPI0, EnableSPI1);
-            PWMBBB.Initialize(EnablePWM0, EnablePWM1, EnablePWM2);
-            CANBBB.Initialize(EnableCAN0, EnableCAN1);
+            I2CBBB.Initialize(EnableI2CBuses);
+            SPIBBB.Initialize(EnableSPIBuses);
+            PWMBBB.Initialize(EnablePWMBuses);
+            CANBBB.Initialize(EnableCANBuses);
             UARTBBB.Initialize(EnableUARTBuses);
         }
 
@@ -692,7 +699,6 @@ namespace Scarlet.IO.BeagleBone
                             string PinName = OnePin.Pin.ToString("F").Replace('_', '.');
                             ExclusiveUseList.Add(PinName);
                         }
-                        EnableI2C1 = true;
                     }
                     if (I2CDev2.Count > 0)
                     {
@@ -702,7 +708,6 @@ namespace Scarlet.IO.BeagleBone
                             string PinName = OnePin.Pin.ToString("F").Replace('_', '.');
                             ExclusiveUseList.Add(PinName);
                         }
-                        EnableI2C2 = true;
                     }
                 }
             }
