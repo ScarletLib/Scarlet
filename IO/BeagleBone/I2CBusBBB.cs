@@ -9,10 +9,11 @@ namespace Scarlet.IO.BeagleBone
         public static I2CBusBBB I2CBus2 { get; private set; }
 
         /// <summary> Prepares the given I2C ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
-        static internal void Initialize(bool Enable1, bool Enable2)
+        static internal void Initialize(bool[] EnableBuses)
         {
-            if (Enable1) { I2CBus1 = new I2CBusBBB(1); }
-            if (Enable2) { I2CBus2 = new I2CBusBBB(2); }
+            if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to I2CBBB.Initialize."); }
+            if (EnableBuses[0]) { I2CBus1 = new I2CBusBBB(1); }
+            if (EnableBuses[1]) { I2CBus2 = new I2CBusBBB(2); }
         }
     }
 
