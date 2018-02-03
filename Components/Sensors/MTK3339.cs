@@ -25,7 +25,7 @@ namespace Scarlet.Components.Sensors
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.MTK3339"/> class. 
         /// Sets it to send GPRMC and GPGGA every 200 milliseconds. 
         /// </summary>
-        /// <param name="UART">The UART bus to read from and write to.</param>
+        /// <param name="UART"> The UART bus to read from and write to.  </param>
         public MTK3339(IUARTBus UART)
         {
             this.UART = UART;
@@ -48,16 +48,16 @@ namespace Scarlet.Components.Sensors
         public void UpdateState() => GetCoords();
 
         /// <summary> Queries the GPS to see if it has a fix. </summary>
-        /// <returns><c>true</c>, if fix was hased, <c>false</c> otherwise.</returns>
+        /// <returns> <c>true</c>, if fix was hased, <c>false</c> otherwise. </returns>
         public bool HasFix()
         {
             WriteString(QUERY_GPGSA);
-            string[] result = Read();
-            if (result.Length < 3) { return false; }
-            return result[2] != "1";
+            string[] Result = Read();
+            if (Result.Length < 3) { return false; }
+            return Result[2] != "1";
         }
 
-        /// <summary> Reads a NMEA sentence and splits it. </summary>
+        /// <summary> Reads an NMEA sentence and splits it. </summary>
         /// <returns> Returns the NMEA sentence split by comma. </returns>
         private string[] Read()
         {
@@ -99,8 +99,8 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Converts a string number to a degree value. </summary>
-        /// <returns>The degree value.</returns>
-        /// <param name="Val"> The string value.</param>
+        /// <returns> The degree value. </returns>
+        /// <param name="Val"> The string value. </param>
         private float RawToDeg(string Val)
         {
             string[] GPSplit = Val.Split('.');
@@ -110,7 +110,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Writes a string to the UART as a string of bytes. </summary>
-        /// <param name="s">The string to write.</param>
+        /// <param name="s"> The string to write. </param>
         private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
     }
 }
