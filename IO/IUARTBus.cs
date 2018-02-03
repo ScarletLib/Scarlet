@@ -16,6 +16,9 @@
         /// <summary> Tells you how many bytes have been received and are ready to be read. </summary>
         int BytesAvailable();
 
+        /// <summary> Clears input and output buffers. </summary>
+        void Flush();
+
         void Dispose();
 
     }

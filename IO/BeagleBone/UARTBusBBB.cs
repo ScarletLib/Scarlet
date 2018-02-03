@@ -191,6 +191,8 @@ namespace Scarlet.IO.BeagleBone
 
         public void Write(byte[] Data) { this.Port.Write(Data, Data.Length); }
 
+        public void Flush() { this.Port.Flush(); }
+
         // TODO: Implement.
         public void Dispose()
         {
