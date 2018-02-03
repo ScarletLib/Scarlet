@@ -27,6 +27,7 @@ namespace Scarlet.Components
             this.RedScale = 1;
             this.GreenScale = 1;
             this.BlueScale = 1;
+            SetOutput(0x811426);
         }
 
         /// <summary> Sets the LED's colour. </summary>
