@@ -7,98 +7,86 @@ using Scarlet.Components;
 using Scarlet.IO;
 using Scarlet.IO.BeagleBone;
 
-namespace UseRobot
+namespace Scarlet.Components.Sensors
 {
     public class MTK3339 : ISensor
     {
-        string UPDATE_200_MSEC = "$PMTK220,200*2C\r\n";
-        string MEAS_200_MSEC = "$PMTK300,200,0,0,0,0*2F\r\n";
-        string GPRMC_GPGGA = "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
-        string QUERY_GPGSA = "$PSRF103,02,01,00,01*27\r\n";
-
-        public bool Fix
-        {
-            get
-            {
-                write_string(QUERY_GPGSA);
-                string[] result = read();
-                if (result.Length < 3)
-                    return false;
-                return result[2] != "1";
-            }
-        }
+        const string UPDATE_200_MSEC = "$PMTK220,200*2C\r\n";
+        const string MEAS_200_MSEC = "$PMTK300,200,0,0,0,0*2F\r\n";
+        const string GPRMC_GPGGA = "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
+        const string QUERY_GPGSA = "$PSRF103,02,01,00,01*27\r\n";
 
         public float Latitude
         {
-            get;
-            private set;
+            get; private set;
         }
         public float Longitude
         {
-            get;
-            private set;
+            get; private set;
         }
 
-        IUARTBus uart;
+        IUARTBus UART;
 
         public MTK3339(IUARTBus uart)
         {
-            this.uart = uart;
-            write_string(GPRMC_GPGGA);
+            this.UART = uart;
+            WriteString(GPRMC_GPGGA);
             Thread.Sleep(1);
-            write_string(MEAS_200_MSEC);
+            WriteString(MEAS_200_MSEC);
             Thread.Sleep(1);
-            write_string(UPDATE_200_MSEC);
+            WriteString(UPDATE_200_MSEC);
             Thread.Sleep(1);
-            if (uart.BytesAvailable() > 0)
-                uart.Read(uart.BytesAvailable(), new byte[uart.BytesAvailable()]);
+            if (uart.BytesAvailable() > 0) { uart.Read(uart.BytesAvailable(), new byte[uart.BytesAvailable()]); }
         }
 
-        public bool Test()
+        //Returns true if the GPS has a fix and false otherwise. 
+        public bool Test() => HasFix();
+
+        public void EventTriggered(object sender, EventArgs e) => throw new NotImplementedException("MTK3339 doesn't have events");
+
+        public void UpdateState() => GetCoords();
+
+        public bool HasFix()
         {
-            return Fix;
+            WriteString(QUERY_GPGSA);
+            string[] result = Read();
+            if (result.Length < 3)
+                return false;
+            return result[2] != "1";
         }
 
-        public void EventTriggered(object sender, EventArgs e)
+        private string[] Read()
         {
-            throw new NotImplementedException("MTK3339 doesn't have events");
-        }
-
-        public void UpdateState()
-        {
-            GetCoords();
-        }
-
-        private string[] read()
-        {
-            string gps_result = "";
-            byte prev_char = 0;
-            while (prev_char != '\n')
+            string GpsResult = "";
+            byte PrevChar = 0;
+            while (PrevChar != '\n')
             {
-                if (uart.BytesAvailable() < 1)
-                    continue;
-                byte[] result = new byte[uart.BytesAvailable()];
-                uart.Read(result.Length, result);
-                gps_result += Encoding.ASCII.GetString(result);
-                prev_char = result[result.Length - 1];
+                if (UART.BytesAvailable() < 1) { continue; }
+                byte[] Result = new byte[UART.BytesAvailable()];
+                UART.Read(Result.Length, Result);
+                GpsResult += Encoding.ASCII.GetString(Result);
+                PrevChar = Result[Result.Length - 1];
             }
-            string[] gpsplit = gps_result.Split(',');
-            return gpsplit;
+            string[] GpSplit = GpsResult.Split(',');
+            return GpSplit;
         }
 
+        //Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. 
+        //Latitude is negative if the degrees are South and positive if the degrees are North.
+        //Longitude is negative if the degrees are West and positive if the degrees are East. 
         public Tuple<float, float> GetCoords()
         {
-            string[] info = read();
-            switch (info[0])
+            string[] Info = Read();
+            switch (Info[0])
             {
                 case "$GPGGA":
-                    Latitude = raw_to_deg(info[2]);
-                    string lat_dir = info[3];
-                    Longitude = raw_to_deg(info[4]);
-                    string lng_dir = info[5];
-                    if (lat_dir == "S")
+                    Latitude = RawToDeg(Info[2]);
+                    string LatDir = Info[3];
+                    Longitude = RawToDeg(Info[4]);
+                    string LngDir = Info[5];
+                    if (LatDir == "S")
                         Latitude = -Latitude;
-                    if (lng_dir == "W")
+                    if (LngDir == "W")
                         Longitude = -Longitude;
                     goto default;
                 default:
@@ -107,17 +95,14 @@ namespace UseRobot
             }
         }
 
-        private float raw_to_deg(string val)
+        private float RawToDeg(string Val)
         {
-            string[] gpsplit = val.Split('.');
-            float deg = float.Parse(gpsplit[0].Substring(0, gpsplit[0].Length - 2));
-            float min = float.Parse(gpsplit[0].Substring(gpsplit[0].Length - 2) + '.' + gpsplit[1]);
-            return deg + min / 60.0f;
+            string[] GPSplit = Val.Split('.');
+            float Deg = float.Parse(GPSplit[0].Substring(0, GPSplit[0].Length - 2));
+            float Min = float.Parse(GPSplit[0].Substring(GPSplit[0].Length - 2) + '.' + GPSplit[1]);
+            return Deg + Min / 60.0f;
         }
 
-        private void write_string(string s)
-        {
-            uart.Write(Encoding.ASCII.GetBytes(s));
-        }
+        private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
     }
 }
