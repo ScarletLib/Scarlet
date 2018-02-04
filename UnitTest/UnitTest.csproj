@@ -55,12 +55,12 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="StateStoreTest.cs" />
-    <Compile Include="TestClientAndServer.cs" />
-    <Compile Include="TestPacketBuffer.cs" />
+    <Compile Include="UtilitiesTesting\StateStoreTest.cs" />
+    <Compile Include="NetworkTesting\TestClientAndServer.cs" />
+    <Compile Include="NetworkTesting\TestPacketBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestPacketWriterAndScanner.cs" />
-    <Compile Include="TestSafePackageWriterAndScanner.cs" />
+    <Compile Include="NetworkTesting\TestPacketWriterAndScanner.cs" />
+    <Compile Include="NetworkTesting\TestSafePackageWriterAndScanner.cs" />
     <Compile Include="MotorTesting\TestTalonMC.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -89,7 +89,6 @@
   </Target>
   <Import Project="..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets" Condition="Exists('..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets')" />
   <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PreBuildEvent>cmd /c "..\..\ClearTest.bat"</PreBuildEvent>
   </PropertyGroup>
 </Project>
