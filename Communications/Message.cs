@@ -41,6 +41,12 @@ namespace Scarlet.Communications
             this.ID = ID;
         }
 
+        /// <summary> Constructs a message given data that is already split. </summary>
+        /// <param name="ID"> The packet ID, used to determine how it is handled at the recipient. </param>
+        /// <param name="Payload"> The packet's data content. Will be converted to bytes for you. </param>
+        /// <param name="Timestamp"> The timestamp of the packet. If null or invalid, the current time gets set. </param>
+        public Message(byte ID, string Payload = null, byte[] Timestamp = null) : this(ID, UtilData.ToBytes(Payload), Timestamp) { }
+
         /// <summary> Sets the timestamp. Must be 4 or more bytes (only first 4 used). </summary>
         /// <param name="Time"> The new timestamp. </param>
         public void SetTime(byte[] Time)

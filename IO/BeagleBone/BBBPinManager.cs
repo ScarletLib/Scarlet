@@ -11,9 +11,13 @@ namespace Scarlet.IO.BeagleBone
 {
     public static class BBBPinManager
     {
-        private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings;
+        private static Dictionary<BBBPin, PinAssignment> GPIOMappings, PWMMappings, I2CMappings, SPIMappings, CANMappings, UARTMappings;
         private static Dictionary<BBBPin, int> ADCMappings;
-        private static bool EnableI2C1, EnableI2C2, EnableSPI0, EnableSPI1, EnablePWM0, EnablePWM1, EnablePWM2;
+        private static bool[] EnableI2CBuses = new bool[2];
+        private static bool[] EnableSPIBuses = new bool[2];
+        private static bool[] EnablePWMBuses = new bool[3];
+        private static bool[] EnableCANBuses = new bool[2];
+        private static bool[] EnableUARTBuses = new bool[4];
 
         #region Adding Mappings
         /// <summary>
@@ -35,6 +39,8 @@ namespace Scarlet.IO.BeagleBone
             if (PWMMappings != null && PWMMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for GPIO."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for GPIO."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for GPIO."); }
+            if (CANMappings != null && CANMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for GPIO."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for GPIO."); }
 
             if (GPIOMappings == null) { GPIOMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(FastSlew, !IsOutput, Resistor, Mode));
@@ -65,12 +71,14 @@ namespace Scarlet.IO.BeagleBone
             if (GPIOMappings != null && GPIOMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for PWM."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for PWM."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for PWM."); }
+            if (CANMappings != null && CANMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for PWM."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for PWM."); }
 
-            switch(PWMBBB.PinToPWMID(SelectedPin))
+            switch (PWMBBB.PinToPWMID(SelectedPin))
             {
-                case BBBCSIO.PWMPortEnum.PWM0_A: case BBBCSIO.PWMPortEnum.PWM0_B: EnablePWM0 = true; break;
-                case BBBCSIO.PWMPortEnum.PWM1_A: case BBBCSIO.PWMPortEnum.PWM1_B: EnablePWM1 = true; break;
-                case BBBCSIO.PWMPortEnum.PWM2_A: case BBBCSIO.PWMPortEnum.PWM2_B: EnablePWM2 = true; break;
+                case BBBCSIO.PWMPortEnum.PWM0_A: case BBBCSIO.PWMPortEnum.PWM0_B: EnablePWMBuses[0] = true; break;
+                case BBBCSIO.PWMPortEnum.PWM1_A: case BBBCSIO.PWMPortEnum.PWM1_B: EnablePWMBuses[1] = true; break;
+                case BBBCSIO.PWMPortEnum.PWM2_A: case BBBCSIO.PWMPortEnum.PWM2_B: EnablePWMBuses[2] = true; break;
             }
 
             if (PWMMappings == null) { PWMMappings = new Dictionary<BBBPin, PinAssignment>(); }
@@ -126,6 +134,13 @@ namespace Scarlet.IO.BeagleBone
             if (PWMMappings != null && PWMMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for I2C Data."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for I2C Clock."); }
             if (SPIMappings != null && SPIMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for I2C Data."); }
+            if (CANMappings != null && CANMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for I2C Clock."); }
+            if (CANMappings != null && CANMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for I2C Data."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(ClockPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for I2C Clock."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(DataPin)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for I2C Data."); }
+
+            if (ClockPin == BBBPin.P9_17 || ClockPin == BBBPin.P9_24) { EnableI2CBuses[0] = true; }
+            if (ClockPin == BBBPin.P9_19 || ClockPin == BBBPin.P9_21) { EnableI2CBuses[1] = true; }
 
             if (I2CMappings == null) { I2CMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment ClockMap = new PinAssignment(ClockPin, Pin.GetPinMode(false, true, ResistorState.PULL_UP, ClockMode));
@@ -192,18 +207,23 @@ namespace Scarlet.IO.BeagleBone
             if (I2CMappings != null && MISO != BBBPin.NONE && I2CMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI MISO."); }
             if (I2CMappings != null && MOSI != BBBPin.NONE && I2CMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI MOSI."); }
             if (I2CMappings != null && I2CMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for SPI Clock."); }
+            if (CANMappings != null && MISO != BBBPin.NONE && CANMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI MISO."); }
+            if (CANMappings != null && MOSI != BBBPin.NONE && CANMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI MOSI."); }
+            if (CANMappings != null && CANMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for SPI Clock."); }
+            if (UARTMappings != null && MISO != BBBPin.NONE && UARTMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for SPI MISO."); }
+            if (UARTMappings != null && MOSI != BBBPin.NONE && UARTMappings.ContainsKey(MOSI)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for SPI MOSI."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(Clock)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for SPI Clock."); }
 
             if (Clock == BBBPin.P9_22) // Port 0
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_18 && MISO == BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_21 && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                EnableSPI0 = true;
+                
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                EnableSPI1 = true;
             }
             else { throw new InvalidOperationException("SPI Clock pin selected is invalid. Make sure MISO, MOSI, and clock are valid selections and part of the same port."); }
 
@@ -213,6 +233,9 @@ namespace Scarlet.IO.BeagleBone
             PinAssignment MISOMap = null;
             if (MOSI != BBBPin.NONE) { MOSIMap = new PinAssignment(MOSI, Pin.GetPinMode(true, false, ResistorState.PULL_UP, MOSIMode)); }
             if (MISO != BBBPin.NONE) { MISOMap = new PinAssignment(MISO, Pin.GetPinMode(true, true, ResistorState.PULL_UP, MISOMode)); }
+
+            if (Clock == BBBPin.P9_22) { EnableSPIBuses[0] = true; }
+            if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) { EnableSPIBuses[1] = true; }
 
             lock (SPIMappings)
             {
@@ -254,7 +277,109 @@ namespace Scarlet.IO.BeagleBone
         /// <exception cref="InvalidOperationException"> If the given pin cannot be used for chip-select at this time. Reason will be given. </exception>
         public static void AddMappingSPI_CS(BBBPin ChipSelect)
         {
-            AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP); // TODO: Switch this to be in SPI overlay section instead of GPIO to make it clear.
+            AddMappingGPIO(ChipSelect, true, ResistorState.PULL_UP);
+        }
+
+        /// <summary>
+        /// Adds a CAN bus mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="TX"> The pin to use for the transmit line. </param>
+        /// <param name="RX"> The pin to use for the receive line. </param>
+        /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for CAN at this time. Reason will be given. </exception>
+        public static void AddMappingsCAN(BBBPin TX, BBBPin RX)
+        {
+            byte TXMode = Pin.GetModeID(TX, BBBPinMode.CAN);
+            byte RXMode = Pin.GetModeID(RX, BBBPinMode.CAN);
+            if (TXMode == 255) { throw new InvalidOperationException("This pin cannot be used for CAN TX line."); }
+            if (RXMode == 255) { throw new InvalidOperationException("This pin cannot be used for CAN RX line."); }
+            if (!Pin.CheckPin(TX, BeagleBone.Peripherals)) { throw new InvalidOperationException("CAN TX pin cannot be used without disabling some peripherals first."); }
+            if (!Pin.CheckPin(RX, BeagleBone.Peripherals)) { throw new InvalidOperationException("CAN RX pin cannot be used without disabling some peripherals first."); }
+            if (Pin.GetOffset(TX) == 0x000) { throw new InvalidOperationException("CAN TX pin is not valid for device tree registration."); }
+            if (Pin.GetOffset(RX) == 0x000) { throw new InvalidOperationException("CAN RX pin is not valid for device tree registration."); }
+            if (TX == BBBPin.P9_20)
+            {
+                if (RX != BBBPin.P9_19) { throw new InvalidOperationException("CAN RX pin selected is invalid with the selected TX pin. Make sure that it is part of the same CAN Bus."); }
+            }
+            else if (TX == BBBPin.P9_26)
+            {
+                if (RX != BBBPin.P9_24) { throw new InvalidOperationException("CAN RX pin selected is invalid with the selected TX pin. Make sure that it is part of the same CAN Bus."); }
+            }
+            else { throw new InvalidOperationException("Given pin is not a possible CAN pin. Check the documentation for pinouts."); }
+
+            if (GPIOMappings != null && GPIOMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for CAN TX."); }
+            if (GPIOMappings != null && GPIOMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for CAN RX."); }
+            if (PWMMappings != null && PWMMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for CAN TX."); }
+            if (PWMMappings != null && PWMMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for CAN RX."); }
+            if (SPIMappings != null && SPIMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for CAN TX."); }
+            if (SPIMappings != null && SPIMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for CAN RX."); }
+            if (I2CMappings != null && I2CMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for CAN TX."); }
+            if (I2CMappings != null && I2CMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for CAN RX."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(TX)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for CAN TX."); }
+            if (UARTMappings != null && UARTMappings.ContainsKey(RX)) { throw new InvalidOperationException("This pin is already registered as UART, cannot also use for CAN RX."); }
+
+            switch (CANBBB.PinToCANBus(TX))
+            {
+                case 0: EnableCANBuses[0] = true; break;
+                case 1: EnableCANBuses[1] = true; break;
+            }
+
+            if (CANMappings == null) { CANMappings = new Dictionary<BBBPin, PinAssignment>(); }
+            PinAssignment TXMap = new PinAssignment(TX, Pin.GetPinMode(true, false, ResistorState.PULL_UP, TXMode));
+            PinAssignment RXMap = new PinAssignment(RX, Pin.GetPinMode(true, true, ResistorState.PULL_UP, RXMode));
+
+            lock (CANMappings)
+            {
+                if (CANMappings.ContainsKey(TX))
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding CAN TX pin setting. This may mean that you have a pin usage conflict.");
+                    CANMappings[TX] = TXMap;
+                }
+                else { CANMappings.Add(TX, TXMap); }
+
+                if (CANMappings.ContainsKey(RX))
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding CAN RX pin setting. This may mean that you have a pin usage conflict.");
+                    CANMappings[RX] = RXMap;
+                }
+                else { CANMappings.Add(RX, RXMap); }
+            }
+        }
+
+        /// <summary>
+        /// Adds a UART mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
+        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="SelectedPin"> The pin to use for the UART pin (RX or TX). </param>
+        /// <exception cref="InvalidOperationException"> If the given pin cannot be used for UART at this time. Reason will be given. </exception>
+        public static void AddMappingUART(BBBPin SelectedPin)
+        {
+            byte Mode = Pin.GetModeID(SelectedPin, BBBPinMode.UART);
+            if (Mode == 255) { throw new InvalidOperationException("This type of output is not supported on this pin."); }
+            if (!Pin.CheckPin(SelectedPin, BeagleBone.Peripherals)) { throw new InvalidOperationException("This pin cannot be used without disabling some peripherals first."); }
+            if (Pin.GetOffset(SelectedPin) == 0x000) { throw new InvalidOperationException("This pin is not valid for device tree registration."); }
+
+            if (GPIOMappings != null && GPIOMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for UART."); }
+            if (PWMMappings != null && PWMMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as PWM, cannot also use for UART."); }
+            if (I2CMappings != null && I2CMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as I2C, cannot also use for UART."); }
+            if (SPIMappings != null && SPIMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as SPI, cannot also use for UART."); }
+            if (CANMappings != null && CANMappings.ContainsKey(SelectedPin)) { throw new InvalidOperationException("This pin is already registered as CAN, cannot also use for UART."); }
+
+            byte Bus = UARTBBB.PinToUARTBus(SelectedPin);
+            if (Bus == 255) { throw new InvalidOperationException("This pin is not valid for UART."); }
+            EnableUARTBuses[Bus - 1] = true;
+
+            if (UARTMappings == null) { UARTMappings = new Dictionary<BBBPin, PinAssignment>(); }
+            PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(true, !UARTBBB.PinIsTX(SelectedPin), ResistorState.PULL_DOWN, Mode));
+            lock (UARTMappings)
+            {
+                if (UARTMappings.ContainsKey(SelectedPin))
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding UART pin setting. This may mean that you have a pin usage conflict.");
+                    UARTMappings[SelectedPin] = NewMap;
+                }
+                else { UARTMappings.Add(SelectedPin, NewMap); }
+            }
         }
 
         /// <summary>
@@ -310,6 +435,8 @@ namespace Scarlet.IO.BeagleBone
                (PWMMappings == null || PWMMappings.Count == 0) &&
                (I2CMappings == null || I2CMappings.Count == 0) &&
                (SPIMappings == null || SPIMappings.Count == 0) &&
+               (CANMappings == null || CANMappings.Count == 0) &&
+               (UARTMappings == null || UARTMappings.Count == 0) &&
                (ADCMappings == null || ADCMappings.Count == 0))
                 { Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application."); return; }
             if (!StateStore.Started) { throw new Exception("Please start the StateStore system first."); }
@@ -337,7 +464,7 @@ namespace Scarlet.IO.BeagleBone
                     break;
                 case ApplicationMode.APPLY_REGARDLESS:
                     AttemptOverlayChanges = true;
-                    New = false;
+                    New = true;
                     break;
                 case ApplicationMode.REMOVE_AND_APPLY:
                     RemovePinSettings();
@@ -395,9 +522,11 @@ namespace Scarlet.IO.BeagleBone
             if(WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
 
             // Start relevant components.
-            I2CBBB.Initialize(EnableI2C1, EnableI2C2);
-            SPIBBB.Initialize(EnableSPI0, EnableSPI1);
-            PWMBBB.Initialize(EnablePWM0, EnablePWM1, EnablePWM2);
+            I2CBBB.Initialize(EnableI2CBuses);
+            SPIBBB.Initialize(EnableSPIBuses);
+            PWMBBB.Initialize(EnablePWMBuses);
+            CANBBB.Initialize(EnableCANBuses);
+            UARTBBB.Initialize(EnableUARTBuses);
         }
 
         /// <summary>
@@ -444,6 +573,14 @@ namespace Scarlet.IO.BeagleBone
         /// <summary> Uses all of the previously created device tree overlay mappings (using the AddMapping___() functions), and generates a device tree overlay for application via the cape manager. </summary>
         /// <remarks> This is probably the longest function I've ever written. It's reasonably simple to follwo though, there's just a lot of output it needs to be able to generate. </remarks>
         /// <returns> A list of lines to save to a file, which can then be compiled into a DTBO and applied as an overlay. </returns>
+        /// Fragment IDs:
+        /// GPIO: 0, 1
+        /// PWM: 2, 10, 11, 12, 13, 14, 15
+        /// I2C: 3, 20, 21
+        /// SPI: 4, 30, 31
+        /// ADC: 5
+        /// CAN: 6, 40, 41
+        /// UART: 7, 50, 51, 52, 53
         static List<string> GenerateDeviceTree()
         {
             List<string> Output = new List<string>();
@@ -470,7 +607,15 @@ namespace Scarlet.IO.BeagleBone
             Dictionary<BBBPin, PinAssignment> SPIDev0 = new Dictionary<BBBPin, PinAssignment>();
             Dictionary<BBBPin, PinAssignment> SPIDev1 = new Dictionary<BBBPin, PinAssignment>();
 
-            // Build exclusive-use list
+            Dictionary<BBBPin, PinAssignment> CANDev0 = new Dictionary<BBBPin, PinAssignment>();
+            Dictionary<BBBPin, PinAssignment> CANDev1 = new Dictionary<BBBPin, PinAssignment>();
+
+            Dictionary<BBBPin, PinAssignment> UARTDev1 = new Dictionary<BBBPin, PinAssignment>();
+            Dictionary<BBBPin, PinAssignment> UARTDev2 = new Dictionary<BBBPin, PinAssignment>();
+            Dictionary<BBBPin, PinAssignment> UARTDev3 = new Dictionary<BBBPin, PinAssignment>();
+            Dictionary<BBBPin, PinAssignment> UARTDev4 = new Dictionary<BBBPin, PinAssignment>();
+
+            // Build device lists and create exclusive-use list
             if (PWMMappings != null)
             {
                 lock (PWMMappings)
@@ -554,7 +699,6 @@ namespace Scarlet.IO.BeagleBone
                             string PinName = OnePin.Pin.ToString("F").Replace('_', '.');
                             ExclusiveUseList.Add(PinName);
                         }
-                        EnableI2C1 = true;
                     }
                     if (I2CDev2.Count > 0)
                     {
@@ -564,7 +708,6 @@ namespace Scarlet.IO.BeagleBone
                             string PinName = OnePin.Pin.ToString("F").Replace('_', '.');
                             ExclusiveUseList.Add(PinName);
                         }
-                        EnableI2C2 = true;
                     }
                 }
             }
@@ -594,6 +737,40 @@ namespace Scarlet.IO.BeagleBone
 
                     // Add SPI pins to the exclusive-use list
                     // TODO: See if this is needed.
+                }
+            }
+
+            if (CANMappings != null)
+            {
+                lock(CANMappings)
+                {
+                    // Sort CAN pins into devices
+                    foreach (KeyValuePair<BBBPin, PinAssignment> Entry in CANMappings)
+                    {
+                        switch(CANBBB.PinToCANBus(Entry.Key))
+                        {
+                            case 0: CANDev0.Add(Entry.Key, Entry.Value); continue;
+                            case 1: CANDev1.Add(Entry.Key, Entry.Value); continue;
+                        }
+                    }
+                }
+            }
+
+            if (UARTMappings != null)
+            {
+                lock(UARTMappings)
+                {
+                    // Sort UART pins into devices
+                    foreach(KeyValuePair<BBBPin, PinAssignment> Entry in UARTMappings)
+                    {
+                        switch(UARTBBB.PinToUARTBus(Entry.Key))
+                        {
+                            case 1: UARTDev1.Add(Entry.Key, Entry.Value); continue;
+                            case 2: UARTDev2.Add(Entry.Key, Entry.Value); continue;
+                            case 3: UARTDev3.Add(Entry.Key, Entry.Value); continue;
+                            case 4: UARTDev4.Add(Entry.Key, Entry.Value); continue;
+                        }
+                    }
                 }
             }
 
@@ -950,6 +1127,190 @@ namespace Scarlet.IO.BeagleBone
                     Output.Add("        };");
                     Output.Add("    };");
                     Output.Add("    ");
+                }
+            }
+
+            // Output CAN device fragments
+            if(CANMappings != null)
+            {
+                lock(CANMappings)
+                {
+                    Output.Add("    fragment@6 {");
+                    Output.Add("        target = <&am33xx_pinmux>;");
+                    Output.Add("        __overlay__ {");
+                    if (CANDev0.Count > 0)
+                    {
+                        Output.Add("            scarlet_dcan0: pinmux_scarlet_dcan0_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in CANDev0.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    if (CANDev1.Count > 0)
+                    {
+                        Output.Add("            scarlet_dcan1: pinmux_scarlet_dcan1_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in CANDev1.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    Output.Add("        };");
+                    Output.Add("    };");
+                    Output.Add("    ");
+
+                    if (CANDev0.Count > 0)
+                    {
+                        Output.Add("    fragment@40 {");
+                        Output.Add("        target = <&dcan0>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            #address-cells = <1>;");
+                        Output.Add("            #size-cells = <0>;");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_dcan0>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                    if (CANDev1.Count > 0)
+                    {
+                        Output.Add("    fragment@41 {");
+                        Output.Add("        target = <&dcan1>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            #address-cells = <1>;");
+                        Output.Add("            #size-cells = <0>;");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_dcan1>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                }
+            }
+
+            // Output UART device fragments
+            if(UARTMappings != null)
+            {
+                lock(UARTMappings)
+                {
+                    Output.Add("    fragment@7 {");
+                    Output.Add("        target = <&am33xx_pinmux>;");
+                    Output.Add("        __overlay__ {");
+                    if (UARTDev1.Count > 0)
+                    {
+                        Output.Add("            scarlet_uart1_pins: pinmux_scarlet_uart1_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in UARTDev1.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    if (UARTDev2.Count > 0)
+                    {
+                        Output.Add("            scarlet_uart2_pins: pinmux_scarlet_uart2_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in UARTDev2.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    if (UARTDev3.Count > 0)
+                    {
+                        Output.Add("            scarlet_uart3_pins: pinmux_scarlet_uart3_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in UARTDev3.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    if (UARTDev4.Count > 0)
+                    {
+                        Output.Add("            scarlet_uart4_pins: pinmux_scarlet_uart4_pins {");
+                        Output.Add("                pinctrl-single,pins = <");
+                        foreach (PinAssignment PinAss in UARTDev4.Values)
+                        {
+                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            Output.Add("                    " + Offset + " " + Mode);
+                        }
+                        Output.Add("                >;");
+                        Output.Add("            };");
+                    }
+                    Output.Add("        };");
+                    Output.Add("    };");
+                    Output.Add("    ");
+
+                    if (UARTDev1.Count > 0)
+                    {
+                        Output.Add("    fragment@50 {");
+                        Output.Add("        target = <&uart1>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart1_pins>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                    if (UARTDev2.Count > 0)
+                    {
+                        Output.Add("    fragment@51 {");
+                        Output.Add("        target = <&uart2>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart2_pins>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                    if (UARTDev3.Count > 0)
+                    {
+                        Output.Add("    fragment@52 {");
+                        Output.Add("        target = <&uart3>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart3_pins>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
+                    if (UARTDev4.Count > 0)
+                    {
+                        Output.Add("    fragment@53 {");
+                        Output.Add("        target = <&uart4>;");
+                        Output.Add("        __overlay__ {");
+                        Output.Add("            status = \"okay\";");
+                        Output.Add("            pinctrl-names = \"default\";");
+                        Output.Add("            pinctrl-0 = <&scarlet_uart4_pins>;");
+                        Output.Add("        };");
+                        Output.Add("    };");
+                        Output.Add("    ");
+                    }
                 }
             }
 

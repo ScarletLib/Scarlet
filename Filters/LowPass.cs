@@ -20,6 +20,8 @@ namespace Scarlet.Filters
     public class LowPass<T> : IFilter<T> where T : IComparable
     {
         private T Output;
+        private T LastValue; // Last filter value (internal use)
+        private double SteadyStateEpsilon;
 
         private double P_LPFk;
         public double LPFk
@@ -33,11 +35,11 @@ namespace Scarlet.Filters
             }
         } // Time constant for the Low Pass Filter from 0 to 1
 
-        private T LastValue; // Last filter value (internal use)
 
         /// <summary> Constructs a low pass filter with time constant <c>LPFk</c>. </summary>
         /// <param name="LPFk"> Low Pass Filter Time Constant. </param>
-        public LowPass(double LPFk = 0.25)
+        /// <param name="SteadyStateEpsilon"> Allowable difference in output to be considered a steady state system. </param>
+        public LowPass(double LPFk = 0.25, double SteadyStateEpsilon = 0)
         {
             if (!UtilData.IsNumericType(typeof(T)))
             {
@@ -47,6 +49,7 @@ namespace Scarlet.Filters
 
             this.Output = default(T);
             this.LPFk = LPFk;
+            this.SteadyStateEpsilon = SteadyStateEpsilon;
             this.Reset();
         }
 
@@ -61,7 +64,7 @@ namespace Scarlet.Filters
             // where c is the time constant and x(t) is the filter input at that time.
             dynamic _dOutput = ((_dLastOutput * (1 - this.LPFk) + _dInput * this.LPFk));
             // Set iterative variables
-            this.Output = _dOutput;
+            this.Output = (T)_dOutput;
             this.LastValue = Input;
         }
         /// <summary> Feeds filter with specified rate. Not used for average filter. </summary>
@@ -74,6 +77,15 @@ namespace Scarlet.Filters
 
         /// <summary> Resets the low pass filter to the default value of <c>T</c> </summary>
         public void Reset() { this.LastValue = default(T); }
+
+        /// <summary> Computes whether or not the low pass filter is in steady state </summary>
+        /// <returns> Returns whether or not the filter is in steady state </returns>
+        public bool IsSteadyState()
+        {
+            // System is in steady state if the output of the filter and the input
+            // are within SteadyStateEpsilon of each other.
+            return Math.Abs((dynamic)LastValue - (dynamic)Output) <= SteadyStateEpsilon;
+        }
 
         public T GetOutput() { return this.Output; }
 

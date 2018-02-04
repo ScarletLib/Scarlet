@@ -513,6 +513,21 @@ namespace Scarlet.Communications
         }
 
         /// <summary>
+        /// Sends an error packet to the given 
+        /// endpoint via TCP.
+        /// Adds Error packet to packet send queue
+        /// </summary>
+        /// <param name="ErrorPacketID">ID for the Error Packet</param>
+        /// <param name="Endpoint">Endpoint to send the packet</param>
+        /// <param name="ErrorCode">Error code for the indicated error</param>
+        public static void SendError(byte ErrorPacketID, string Endpoint, int ErrorCode)
+        {
+            Packet ErrorPacket = new Packet(ErrorPacketID, false, Endpoint);
+            ErrorPacket.AppendData(UtilData.ToBytes(ErrorCode));
+            Send(ErrorPacket);
+        }
+
+        /// <summary>
         /// Sends packets from the queue.
         /// This must be started on a thread, as it will block until CommHandler.Stopping is true.
         /// Assumes that packets will not be removed from SendQueue anywhere but inside this method.

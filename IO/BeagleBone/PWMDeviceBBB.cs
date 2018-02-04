@@ -39,12 +39,13 @@ namespace Scarlet.IO.BeagleBone
         public static PWMDeviceBBB PWMDevice2 { get; private set; }
 
         /// <summary> Prepares the given PWM ports for use. Should only be called from BeagleBone.Initialize(). </summary>
-        static internal void Initialize(bool En0, bool En1, bool En2)
+        static internal void Initialize(bool[] EnableBuses)
         {
+            if (EnableBuses == null || EnableBuses.Length != 3) { throw new Exception("Invalid enable array given to PWMBBB.Initialize."); }
             //                                                             A1            A2                             B1            B2
-            if (En0) { PWMDevice0 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_22, BBBPin.P9_31 }, new BBBPin[] { BBBPin.P9_21, BBBPin.P9_29 }); }
-            if (En1) { PWMDevice1 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_14, BBBPin.P8_36 }, new BBBPin[] { BBBPin.P9_16, BBBPin.P8_34 }); }
-            if (En2) { PWMDevice2 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P8_19, BBBPin.P8_45 }, new BBBPin[] { BBBPin.P8_13, BBBPin.P8_46 }); }
+            if (EnableBuses[0]) { PWMDevice0 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_22, BBBPin.P9_31 }, new BBBPin[] { BBBPin.P9_21, BBBPin.P9_29 }); }
+            if (EnableBuses[1]) { PWMDevice1 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_14, BBBPin.P8_36 }, new BBBPin[] { BBBPin.P9_16, BBBPin.P8_34 }); }
+            if (EnableBuses[2]) { PWMDevice2 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P8_19, BBBPin.P8_45 }, new BBBPin[] { BBBPin.P8_13, BBBPin.P8_46 }); }
         }
 
         /// <summary> Converts a pin number to the corresponding PWM device and output number. Needed as every output is connected to 2 physical pins. </summary>

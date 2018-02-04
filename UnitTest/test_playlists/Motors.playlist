@@ -1,0 +1,1 @@
+<Playlist Version="1.0"><Add Test="UnitTest.TestTalonMC.TestOutput" /><Add Test="UnitTest.TestTalonMC.TestThreadValidity" /><Add Test="UnitTest.TestTalonMC.TestBasicOutput" /><Add Test="UnitTest.TestTalonMC.TestEnableDisable" /></Playlist>

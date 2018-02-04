@@ -11,3 +11,4 @@ packages
 
 # Scarlet: Logs
 **/Logs
+/desktop.ini

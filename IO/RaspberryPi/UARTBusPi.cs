@@ -10,6 +10,13 @@ namespace Scarlet.IO.RaspberryPi
     {
         private int DeviceID;
 
+        // TODO Fully implement.
+
+        public UARTRate BaudRate { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public UARTBitCount BitLength { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public UARTStopBits StopBits { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public UARTParity Parity { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public UARTBusPi(byte Device, int Baud)
         {
             if (Device == 0)
@@ -36,5 +43,16 @@ namespace Scarlet.IO.RaspberryPi
 
         public void Dispose() { throw new NotImplementedException(); }
 
+        public void Flush() { throw new NotImplementedException(); } // TODO: Implement.
+
+        public int Read(int Length, byte[] Buffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int BytesAvailable()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

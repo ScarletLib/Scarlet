@@ -9,24 +9,25 @@ namespace Scarlet.IO.BeagleBone
         public static I2CBusBBB I2CBus2 { get; private set; }
 
         /// <summary> Prepares the given I2C ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
-        static internal void Initialize(bool Enable1, bool Enable2)
+        static internal void Initialize(bool[] EnableBuses)
         {
-            if (Enable1) { I2CBus1 = new I2CBusBBB(1); }
-            if (Enable2) { I2CBus2 = new I2CBusBBB(2); }
+            if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to I2CBBB.Initialize."); }
+            if (EnableBuses[0]) { I2CBus1 = new I2CBusBBB(1); }
+            if (EnableBuses[1]) { I2CBus2 = new I2CBusBBB(2); }
         }
     }
 
     public class I2CBusBBB : II2CBus
     {
-        private I2CPortFS Port;
+        private ScarletI2CPortFS Port;
 
         /// <summary> This should only be initialized from I2CBBB. </summary>
         internal I2CBusBBB(byte ID)
         {
             switch (ID)
             {
-                case 1: this.Port = new I2CPortFS(I2CPortEnum.I2CPORT_1); break;
-                case 2: this.Port = new I2CPortFS(I2CPortEnum.I2CPORT_2); break;
+                case 1: this.Port = new ScarletI2CPortFS(I2CPortEnum.I2CPORT_1); break;
+                case 2: this.Port = new ScarletI2CPortFS(I2CPortEnum.I2CPORT_2); break;
                 default: throw new ArgumentOutOfRangeException("Only I2C ports 1 and 2 are supported.");
             }
         }
