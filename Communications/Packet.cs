@@ -29,7 +29,7 @@ namespace Scarlet.Communications
         /// <param name="IsUDP"> Defines whether or not packet is a UDP message. </param>
         /// <param name="Endpoint"> The destination where this packet will be sent </param>
 
-        public Packet(byte ID, bool IsUDP, string Endpoint = null) : this(new Message(ID), IsUDP, Endpoint) { }
+        public Packet(byte ID, bool IsUDP, string Endpoint = null) : this(new Message(ID, new byte[0]), IsUDP, Endpoint) { }
         
         /// <summary> Appends data to packet. </summary>
         /// <param name="Data"> Data to append to packet. </param>

@@ -12,7 +12,7 @@ namespace Scarlet.Communications
         /// <param name="IsUDP"> Whether it is a UDP packet. </param>
         public PacketWriter(byte ID, bool IsUDP = false, string Endpoint = null)
         {
-            this.Packet = new Packet(new Message(ID), IsUDP, Endpoint);
+            this.Packet = new Packet(new Message(ID, new byte[0]), IsUDP, Endpoint);
         }
 
         /// <summary> Write into an existing <see cref="Scarlet.Communications.Packet"/>. </summary>
