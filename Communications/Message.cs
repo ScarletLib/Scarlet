@@ -55,13 +55,38 @@ namespace Scarlet.Communications
             this.Timestamp = UtilMain.SubArray(Time, 0, 4);
         }
 
-        /// <summary> Appends data to the end of message. </summary>
-        /// <param name="NewData"> New Data to append to current data. </param>
+        /// <summary> Appends data to the end of <see cref="Payload"/>. If <see cref="Payload"/> is currently null, create it. </summary>
+        /// <param name="NewData"> New Data to append. </param>
         public void AppendData(byte[] NewData)
         {
-            List<byte> TempList = new List<byte>(this.Payload);
-            TempList.AddRange(NewData);
-            this.Payload = TempList.ToArray();
+            if (this.Payload == null) { this.Payload = NewData; }
+            else
+            {
+                byte[] UpdatedPayload = new byte[this.Payload.Length + NewData.Length];
+                Buffer.BlockCopy(this.Payload, 0, UpdatedPayload, 0, this.Payload.Length);
+                Buffer.BlockCopy(NewData, 0, UpdatedPayload, this.Payload.Length, NewData.Length);
+                this.Payload = UpdatedPayload;
+            }
+        }
+
+        /// <summary> Get a part of current data. </summary>
+        /// <param name="Offset"> Index to start copying. </param>
+        /// <param name="Size"> Size of data to copy. </param>
+        /// <returns> Data with index in range [Offset, Offset + Size). </returns>
+        public byte[] GetDataSlice(int Offset, int Size)
+        {
+            byte[] Data = new byte[Size];
+            Buffer.BlockCopy(this.Payload, Offset, Data, 0, Size);
+            return Data;
+        }
+
+
+        /// <summary> Get a part of current data from an offset to the end. </summary>
+        /// <param name="Offset"> Index to start copying. </param>
+        /// <returns> Data from `Offset` to the end. </returns>
+        public byte[] GetDataSlice(int Offset)
+        {
+            return GetDataSlice(Offset, this.Payload.Length - Offset);
         }
 
         /// <summary>
