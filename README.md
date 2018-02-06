@@ -1,7 +1,7 @@
 # Scarlet
 **Please read the documentation found in [our OneNote notebook](https://1drv.ms/u/s!AseFMLuUHe5LlrNT8SEuX9cTHDTddA)!**
 
-<img alt="Scarlet Logo" src="_Logo/ScarletLogo.png" size="192">
+<img alt="Scarlet Logo" src="_Logo/ScarletLogo.png" width="192">
 
 **Scarlet** is a C# robotics library, originally designed for the Husky Robotics science station for 2017-18. It is meant to be modular, flexible, cross-platform, and usable by all subsystems, and anyone else. Some current library features include:
 - Packet building, interpreting, and networking (send/receive, connection management)
