@@ -208,12 +208,12 @@ namespace Scarlet.Components.Sensors
             VECTOR_GRAVITY = Register.BNO055_GRAVITY_DATA_X_LSB_ADDR
         }
 
-        int ID;
-        byte Address;
-        OperationMode Mode;
-        II2CBus I2C;
+        private int ID;
+        private byte Address;
+        private OperationMode Mode;
+        private II2CBus I2C;
 
-        float X, Y, Z;
+        private float X, Y, Z;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via
@@ -255,7 +255,7 @@ namespace Scarlet.Components.Sensors
             return true;
         }
 
-        /// <summary> Gets the vector corresponding go the orientation of the magnetometer according to the type specified. </summary>
+        /// <summary> Gets the vector corresponding to the orientation of the magnetometer according to the type specified. </summary>
         /// <returns> The vector. </returns>
         /// <param name="VectorType"> Type of vector to be read. </param>
         public Tuple<float, float, float> GetVector(VectorType VectorType)
@@ -303,10 +303,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Does nothing. </summary>
         /// <param name="sender"> Sender. </param>
         /// <param name="e"> The EventArgs object </param>
-        public void EventTriggered(object sender, EventArgs e)
-        {
-            //Do nothing
-        }
+        public void EventTriggered(object sender, EventArgs e) { }
 
         /// <summary> Reads a byte from the specified register. </summary>
         /// <returns> The byte that was read. </returns>
