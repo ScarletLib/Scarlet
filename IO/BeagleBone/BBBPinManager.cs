@@ -216,14 +216,14 @@ namespace Scarlet.IO.BeagleBone
 
             if (Clock == BBBPin.P9_22) // Port 0
             {
-                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_18 && MISO == BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_21 && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_21) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_18) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
-                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_29) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_30) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
             }
             else { throw new InvalidOperationException("SPI Clock pin selected is invalid. Make sure MISO, MOSI, and clock are valid selections and part of the same port."); }
 
