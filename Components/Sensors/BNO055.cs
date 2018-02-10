@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using Scarlet.Components;
 using Scarlet.IO;
 
 namespace Scarlet.Components.Sensors
@@ -168,7 +167,7 @@ namespace Scarlet.Components.Sensors
         /// <summary>
         /// The power mode of the BNO055. 
         /// </summary>
-        private enum Powermode
+        private enum PowerMode
         {
             POWER_MODE_NORMAL = 0X00,
             POWER_MODE_LOWPOWER = 0X01,
@@ -217,7 +216,7 @@ namespace Scarlet.Components.Sensors
         float X, Y, Z;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:UseRobot.BNO055"/> class, which will communicate via
+        /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via
         /// the given I2C bus. 
         /// </summary>
         /// <param name="I2C"> The I2C bus to communicate over. </param>
@@ -240,9 +239,7 @@ namespace Scarlet.Components.Sensors
         public bool Begin(OperationMode mode = OperationMode.OPERATION_MODE_NDOF)
         {
             try { Write8((byte)Register.BNO055_PAGE_ID_ADDR, 0); }
-            catch { goto GoAgain; }
-
-        GoAgain:
+            catch { /* Do nothing */ }
 
             SetMode(OperationMode.OPERATION_MODE_CONFIG);
             Write8((byte)Register.BNO055_PAGE_ID_ADDR, 0);
@@ -252,7 +249,7 @@ namespace Scarlet.Components.Sensors
 
             Write8((byte)Register.BNO055_SYS_TRIGGER_ADDR, 0x20);
             Thread.Sleep(750); // Minimum of 650 ms wait time for power reset
-            Write8((byte)Register.BNO055_PWR_MODE_ADDR, (byte)Powermode.POWER_MODE_NORMAL & 0xFF);
+            Write8((byte)Register.BNO055_PWR_MODE_ADDR, (byte)PowerMode.POWER_MODE_NORMAL & 0xFF);
             Write8((byte)Register.BNO055_SYS_TRIGGER_ADDR, 0x00);
             SetMode(mode);
             return true;
@@ -301,10 +298,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Reads the position according to the magnetometer and updates the class variables. </summary>
-        public void UpdateState()
-        {
-            (this.X, this.Y, this.Z) = GetVector(VectorType.VECTOR_MAGNETOMETER);
-        }
+        public void UpdateState() => (this.X, this.Y, this.Z) = GetVector(VectorType.VECTOR_MAGNETOMETER);
 
         /// <summary> Does nothing. </summary>
         /// <param name="sender"> Sender. </param>
@@ -317,17 +311,11 @@ namespace Scarlet.Components.Sensors
         /// <summary> Reads a byte from the specified register. </summary>
         /// <returns> The byte that was read. </returns>
         /// <param name="Register"> The register to read from. </param>
-        private byte Read8(byte Register)
-        {
-            return I2C.ReadRegister(Address, Register, 1)[0];
-        }
+        private byte Read8(byte Register) => I2C.ReadRegister(Address, Register, 1)[0];
 
         /// <summary> Writes the specified byte and to the Register. </summary>        
         /// <param name="Register"> Register to write to. </param>
         /// <param name="Data"> Byte to write.</param>
-        private void Write8(byte Register, byte Data)
-        {
-            I2C.WriteRegister(Address, Register, new byte[] { Data });
-        }
+        private void Write8(byte Register, byte Data) => I2C.WriteRegister(Address, Register, new byte[] { Data });
     }
 }
