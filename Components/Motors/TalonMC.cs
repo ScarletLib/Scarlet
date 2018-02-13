@@ -33,13 +33,16 @@ namespace Scarlet.Components.Motors
         public void EventTriggered(object Sender, EventArgs Event) { }
 
         /// <summary> 
-        /// Immediately sets the enabled status of the motor. 
-        /// If false, resets TargetSpeed to 0 and stops the motor.
+        /// Immediately sets the enabled status of the motor.
+        /// Stops the motor if given parameter is false.
+        /// Does not reset the target speed to zero, so beware
+        /// of resetting this to enabled.
         /// </summary>
         public void SetEnabled(bool Enabled)
         {
             this.Stopped = !Enabled;
-            if (!Enabled) { this.SetSpeedDirectly(0); }
+            if (Enabled) { this.SetSpeed(this.TargetSpeed); }
+            else { this.SetSpeedDirectly(0); }
         }
 
         /// <summary> Sets the speed on a thread for filtering. </summary>

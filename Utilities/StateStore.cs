@@ -6,20 +6,22 @@ namespace Scarlet.Utilities
 {
     public static class StateStore
     {
-        private static string FileName;
+        // Extension for file
+        private const string FileExtension = ".txt";
+
+        private static FileInfo FileInfo;
         private static Dictionary<string, string> Data;
         public static bool Started { get; private set; }
-
-        //TODO: Make this thread-safe.
 
         /// <summary> Prepares the system for use. Creates a file if it doesn't exist, or reads the configuration if it does. </summary>
         /// <param name="SystemName"> A unique identifier for this application, used as part of the filename to prevent multiple applications on one system from interfering. </param>
         public static void Start(string SystemName)
         {
-            FileName = "ScarletStore-" + SystemName + ".txt";
-            if(!File.Exists(FileName)) { File.Create(FileName).Close(); }
+            if (Started) { return; }
+            FileInfo = new FileInfo( "ScarletStore-" + SystemName + FileExtension);
+            if(!File.Exists(FileInfo.FullName)) { File.Create(FileInfo.FullName).Close(); }
             Data = new Dictionary<string, string>();
-            foreach (string Line in File.ReadAllLines(FileName))
+            foreach (string Line in File.ReadAllLines(FileInfo.FullName))
             {
                 Data.Add(Line.Split('=')[0], string.Join("=", Line.Split('=').Skip(1).ToArray()));
             }
@@ -34,27 +36,36 @@ namespace Scarlet.Utilities
             {
                 Lines.Add(Item.Key + '=' + Item.Value);
             }
-            string OldFile = FileName + "old";
-            File.Move(FileName, OldFile);
-            File.WriteAllLines(FileName, Lines);
-            File.Delete(OldFile);
+            FileInfo OldFile = new FileInfo(FileInfo.Name + "-old" + FileExtension);
+            File.Move(FileInfo.FullName, OldFile.FullName);
+            File.WriteAllLines(FileInfo.FullName, Lines);
+            File.Delete(OldFile.FullName);
         }
 
         /// <summary> Sets the specified proprty internally. Does not change the file, you must use Save() to save changes to file. </summary>
         public static void Set(string Key, string Value)
         {
-            if (!Data.ContainsKey(Key)) { Data.Add(Key, Value); }
-            else { Data[Key] = Value; }
+            lock (Data)
+            {
+                if (!Data.ContainsKey(Key)) { Data.Add(Key, Value); }
+                else { Data[Key] = Value; }
+            }
         }
 
         /// <summary> Gets the specified property, or null if it doesn't exist. </summary>
-        public static string Get(string Key) { return Data.ContainsKey(Key) ? Data[Key] : null; }
+        public static string Get(string Key)
+        {
+            lock (Data) { return Data.ContainsKey(Key) ? Data[Key] : null; }
+        }
 
         /// <summary> Gets the specified property, or if it doesn't exist, sets it to the default value and then returns that default value. </summary>
         public static string GetOrCreate(string Key, string DefaultValue)
         {
-            if (!Data.ContainsKey(Key)) { Data.Add(Key, DefaultValue); }
-            return Data[Key];
+            lock (Data)
+            {
+                if (!Data.ContainsKey(Key)) { Data.Add(Key, DefaultValue); }
+                return Data[Key];
+            }
         }
     }
 }
