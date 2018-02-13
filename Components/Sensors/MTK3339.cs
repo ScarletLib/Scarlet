@@ -83,10 +83,8 @@ namespace Scarlet.Components.Sensors
                 string LatDir = Info[3];
                 Longitude = RawToDeg(Info[4]);
                 string LngDir = Info[5];
-                if (LatDir == "S")
-                    Latitude = -Latitude;
-                if (LngDir == "W")
-                    Longitude = -Longitude;
+                if (LatDir == "S") { Latitude = -Latitude; }
+                if (LngDir == "W") { Longitude = -Longitude; }
             }
             return new Tuple<float, float>(Latitude, Longitude);
         }
