@@ -22,20 +22,21 @@ namespace UnitTest
         [TestMethod]
         public void BasicStateStoreTest()
         {
+            const string Key = "TestValue-BASIC";
             StateStore.Start("StateStoreTests");
-            StateStore.Set("TestValue-BASIC", "TestValue-1");
-            StateStore.Set("TestValue-BASIC", "TestValue-2");
-            StateStore.Set("TestValue-BASIC", "TestValue-0");
-            StateStore.Set("TestValue-BASIC", "TestValue-3");
-            StateStore.Set("TestValue-BASIC", "TestValue-4");
-            StateStore.Set("TestValue-BASIC", "TestValue-5");
-            StateStore.Set("TestValue-BASIC", "TestValue-6");
-            StateStore.Set("TestValue-BASIC", "TestValue-7");
-            StateStore.Set("TestValue-BASIC", "TestValue-8");
-            StateStore.Set("TestValue-BASIC", "TestValue-9");
-            StateStore.Set("TestValue-BASIC", "TestValue-10");
+            StateStore.Set(Key, "TestValue-1");
+            StateStore.Set(Key, "TestValue-2");
+            StateStore.Set(Key, "TestValue-0");
+            StateStore.Set(Key, "TestValue-3");
+            StateStore.Set(Key, "TestValue-4");
+            StateStore.Set(Key, "TestValue-5");
+            StateStore.Set(Key, "TestValue-6");
+            StateStore.Set(Key, "TestValue-7");
+            StateStore.Set(Key, "TestValue-8");
+            StateStore.Set(Key, "TestValue-9");
+            StateStore.Set(Key, "TestValue-10");
 
-            Assert.AreEqual("TestValue-10", StateStore.Get("TestValue"));
+            Assert.AreEqual("TestValue-10", StateStore.Get(Key));
 
             Assert.AreEqual(null, StateStore.Get("ThisValueIsNotInTheDictionary"));
 
@@ -57,6 +58,8 @@ namespace UnitTest
             Thread TestThread2 = new Thread(new ParameterizedThreadStart(SetValueForThreadTest));
             TestThread1.Start("Test0");
             TestThread2.Start("Test1");
+            TestThread1.Join();
+            TestThread2.Join();
             StateStore.Save();
             object Value1 = null;
             object Value2 = null;
