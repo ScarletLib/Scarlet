@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -35,7 +36,6 @@ namespace Scarlet.IO.BeagleBone
         // TODO: Implement CAN functionality.
         internal CANBusBBB(BBBPin[] Pins) // TX, RX
         {
-
         }
 
         public byte[] Read(byte Address, int DataLength)
