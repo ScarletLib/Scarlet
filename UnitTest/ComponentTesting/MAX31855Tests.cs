@@ -11,7 +11,7 @@ namespace UnitTest.ComponentTesting
         public void TestDataConvert()
         {
             // External (Thermocouple) temperature
-            //                                             |   Thermocouple  |R|F|   Internal   |R|Flt|
+            //                                               |   Thermocouple  |R|F|   Internal   |R|Flt|
             Assert.AreEqual(MAX31855.ConvertExternalFromRaw(0b1111_0000_0110_00_0_0_0000_0000_0000_0_000), -250F);
             Assert.AreEqual(MAX31855.ConvertExternalFromRaw(0b1111_1111_1111_00_0_0_0000_0000_0000_0_000), -1F);
             Assert.AreEqual(MAX31855.ConvertExternalFromRaw(0b1111_1111_1111_11_0_0_0000_0000_0000_0_000), -0.25F);
@@ -22,7 +22,7 @@ namespace UnitTest.ComponentTesting
             Assert.AreEqual(MAX31855.ConvertExternalFromRaw(0b0110_0100_0000_00_0_0_0000_0000_0000_0_000), 1600F);
 
             // Internal (calibration) temperature
-            //                                             |   Thermocouple  |R|F|   Internal   |R|Flt|
+            //                                               |   Thermocouple  |R|F|   Internal   |R|Flt|
             Assert.AreEqual(MAX31855.ConvertInternalFromRaw(0b0000_0000_0000_00_0_0_1100_1001_0000_0_000), -55F);
             Assert.AreEqual(MAX31855.ConvertInternalFromRaw(0b0000_0000_0000_00_0_0_1110_1100_0000_0_000), -20F);
             Assert.AreEqual(MAX31855.ConvertInternalFromRaw(0b0000_0000_0000_00_0_0_1111_1111_0000_0_000), -1F);
@@ -33,7 +33,7 @@ namespace UnitTest.ComponentTesting
             Assert.AreEqual(MAX31855.ConvertInternalFromRaw(0b0000_0000_0000_00_0_0_0111_1111_0000_0_000), 127F);
 
             // Fault detection
-            //                                          |   Thermocouple  |R|F|   Internal   |R|Flt|
+            //                                            |   Thermocouple  |R|F|   Internal   |R|Flt|
             Assert.AreEqual(MAX31855.ConvertFaultFromRaw(0b0000_0000_0000_00_0_0_0000_0000_0000_0_000), MAX31855.Fault.NONE);
             Assert.AreEqual(MAX31855.ConvertFaultFromRaw(0b0000_0000_0000_00_0_1_0000_0000_0000_0_100), MAX31855.Fault.SHORT_VCC);
             Assert.AreEqual(MAX31855.ConvertFaultFromRaw(0b0000_0000_0000_00_0_1_0000_0000_0000_0_010), MAX31855.Fault.SHORT_GND);
