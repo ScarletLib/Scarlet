@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -32,10 +33,60 @@ namespace Scarlet.IO.BeagleBone
 
     public class CANBusBBB : ICANBus
     {
+        [StructLayout(LayoutKind.Explicit)]
+        private struct CanFrame
+        {
+            [FieldOffset(0), MarshalAs(UnmanagedType.I4)]
+            int CanId;
+
+            [FieldOffset(4), MarshalAs(UnmanagedType.U1)]
+            byte CanDLC;
+
+            [FieldOffset(5), MarshalAs(UnmanagedType.U1)]
+            byte Padding;
+
+            [FieldOffset(6), MarshalAs(UnmanagedType.U1)]
+            byte Reserved0;
+
+            [FieldOffset(7), MarshalAs(UnmanagedType.U1)]
+            byte Reserved1;
+
+            //The original source forced this to 8-byte alignment with __attribute__((aligned(8)))
+            //If something breaks, maybe fix it?
+            [FieldOffset(8), MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+            byte[] Data;
+
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct SockAddrCan
+        {
+            [FieldOffset(0), MarshalAs(UnmanagedType.U2)]
+            short CanIfIndex;
+
+            [FieldOffset(2), MarshalAs(UnmanagedType.U4)]
+            uint RxID;
+
+            [FieldOffset(6), MarshalAs(UnmanagedType.U4)]
+            uint TxID;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct IFreq
+        {
+            [FieldOffset(0), MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            byte[] Name;
+
+            [FieldOffset(16), MarshalAs(UnmanagedType.ByValArray, SizeConst = 21)]
+            byte[] Useless;
+        }
+
+        private BBBPin TX, RX;
         // TODO: Implement CAN functionality.
         internal CANBusBBB(BBBPin[] Pins) // TX, RX
         {
-
+            this.TX = Pins[0];
+            this.RX = Pins[1];
         }
 
         public byte[] Read(byte Address, int DataLength)
