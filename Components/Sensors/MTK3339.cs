@@ -58,18 +58,16 @@ namespace Scarlet.Components.Sensors
         private string[] Read()
         {
             string GpsResult = "";
-            byte PrevChar = 0;
-            while (PrevChar != '\n')
+            byte[] PrevChar = new byte[1];
+            while (PrevChar[0] != '\n')
             {
                 if (UART.BytesAvailable() < 1)
                 {
                     Thread.Sleep(Utilities.Constants.DEFAULT_MIN_THREAD_SLEEP);
                     continue;
                 }
-                byte[] Result = new byte[UART.BytesAvailable()];
-                UART.Read(Result.Length, Result);
-                GpsResult += Encoding.ASCII.GetString(Result);
-                PrevChar = Result[Result.Length - 1];
+                UART.Read(1, PrevChar);
+                GpsResult += Encoding.ASCII.GetString(PrevChar);
             }
             return GpsResult.Split(',');
         }
@@ -85,10 +83,8 @@ namespace Scarlet.Components.Sensors
                 string LatDir = Info[3];
                 Longitude = RawToDeg(Info[4]);
                 string LngDir = Info[5];
-                if (LatDir == "S")
-                    Latitude = -Latitude;
-                if (LngDir == "W")
-                    Longitude = -Longitude;
+                if (LatDir == "S") { Latitude = -Latitude; }
+                if (LngDir == "W") { Longitude = -Longitude; }
             }
             return new Tuple<float, float>(Latitude, Longitude);
         }

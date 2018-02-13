@@ -33,6 +33,8 @@ namespace Scarlet.IO.BeagleBone
 
     public class CANBusBBB : ICANBus
     {
+
+
         // TODO: Implement CAN functionality.
         internal CANBusBBB(BBBPin[] Pins) // TX, RX
         {
