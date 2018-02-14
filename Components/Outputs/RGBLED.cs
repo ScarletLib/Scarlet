@@ -1,7 +1,7 @@
 ﻿using Scarlet.IO;
 using System;
 
-namespace Scarlet.Components
+namespace Scarlet.Components.Outputs
 {
     public class RGBLED
     {

@@ -66,7 +66,8 @@
     <Compile Include="Components\Motors\CytronMD30C.cs" />
     <Compile Include="Components\Motors\Servo.cs" />
     <Compile Include="Components\Motors\TalonMC.cs" />
-    <Compile Include="Components\RGBLED.cs" />
+    <Compile Include="Components\Outputs\PCA9685.cs" />
+    <Compile Include="Components\Outputs\RGBLED.cs" />
     <Compile Include="Components\Sensors\Encoder.cs" />
     <Compile Include="Components\Sensors\LimitSwitch.cs" />
     <Compile Include="Components\Sensors\MAX31855.cs" />
