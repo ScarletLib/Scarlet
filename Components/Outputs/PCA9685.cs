@@ -1,6 +1,7 @@
 ﻿using Scarlet.IO;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Scarlet.Components.Outputs
 {
@@ -151,16 +152,24 @@ namespace Scarlet.Components.Outputs
 
             // Put the oscillator in sleep mode.
             byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, FirstModeRegisterOffset, 1)[0];
-            byte ModeSettingNew = (byte)(ModeSettingPre | 0b0001_0000); // Set bit 4 (SLEEP) to 1 to shut down the oscillator.
+            byte ModeSettingNew = (byte)((ModeSettingPre & 0b0111_1111) | 0b0001_0000); // Set bit 4 (SLEEP) to 1 to shut down the oscillator, and also make sure we're not setting bit 7 (RESET).
             this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { ModeSettingNew });
-            // TODO: See if a delay is needed here.
 
             // Set the frequency prescaler register.
             this.Bus.WriteRegister(this.PartAddress, PrescaleRegister, new byte[] { PrescaleVal });
 
             // Set the SLEEP bit back to what it was.
-            this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { ModeSettingPre });
-            // TODO: See if a delay is needed here.
+            this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { (byte)(ModeSettingPre & 0b0111_1111) }); // Make sure we don't set bit 7 (RESET).
+            Thread.Sleep(1); // 0.5ms minimum
+            // If SLEEP was previously 0, we may need to RESTART.
+            if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
+            {
+                byte AfterWake = this.Bus.ReadRegister(this.PartAddress, FirstModeRegisterOffset, 1)[0];
+                if((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
+                {
+                    this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { (byte)(AfterWake & 0b1000_0000) });
+                }
+            }
         }
 
         internal void SetChannelData(int Channel, byte[] Data)
