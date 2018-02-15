@@ -92,7 +92,9 @@ namespace Scarlet.Components.Outputs
         private byte PartAddress;
         private int ExtOscFreq;
 
+        private const byte FirstModeRegisterOffset = 0x00;
         private const byte FirstLEDRegisterOffset = 0x06;
+        private const byte PrescaleRegister = 0xFE;
 
         /// <summary> </summary>
         /// <param name="Bus"> The I2C bus that the devie will communicate over. </param>
@@ -103,9 +105,11 @@ namespace Scarlet.Components.Outputs
             this.Bus = Bus;
             this.PartAddress = Address;
             this.ExtOscFreq = ExtOscFreq;
+            if (ExtOscFreq < -1 || ExtOscFreq > 50000000) { throw new ArgumentException("Ivalid oscillator frequency supplied. Must be bwetween 0 and 50 MHz, or -1 for internal oscillator."); }
             this.Outputs = new PWMOutputPCA9685[16];
             for (byte i = 0; i < this.Outputs.Length; i++) { this.Outputs[i] = new PWMOutputPCA9685(i, this); }
             SetupDevice();
+
             ReadAllStates();
         }
 
@@ -144,7 +148,19 @@ namespace Scarlet.Components.Outputs
             if(TempPrescale < 3) { TempPrescale = 3; }
             if(TempPrescale > 255) { TempPrescale = 255; }
             byte PrescaleVal = (byte)(TempPrescale);
-            // TODO: Finish setting frequency.
+
+            // Put the oscillator in sleep mode.
+            byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, FirstModeRegisterOffset, 1)[0];
+            byte ModeSettingNew = (byte)(ModeSettingPre | 0b0001_0000); // Set bit 4 (SLEEP) to 1 to shut down the oscillator.
+            this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { ModeSettingNew });
+            // TODO: See if a delay is needed here.
+
+            // Set the frequency prescaler register.
+            this.Bus.WriteRegister(this.PartAddress, PrescaleRegister, new byte[] { PrescaleVal });
+
+            // Set the SLEEP bit back to what it was.
+            this.Bus.WriteRegister(this.PartAddress, FirstModeRegisterOffset, new byte[] { ModeSettingPre });
+            // TODO: See if a delay is needed here.
         }
 
         internal void SetChannelData(int Channel, byte[] Data)
