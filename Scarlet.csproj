@@ -115,6 +115,7 @@
     <Compile Include="IO\RaspberryPi\SPIBusPi.cs" />
     <Compile Include="IO\RaspberryPi\UARTBusPi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\DataLog.cs" />
     <Compile Include="Utilities\Log.cs" />
     <Compile Include="Utilities\StateStore.cs" />
     <Compile Include="Utilities\UtilConstants.cs" />
