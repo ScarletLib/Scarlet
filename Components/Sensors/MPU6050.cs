@@ -210,7 +210,7 @@ namespace Scarlet.Components.Sensors
             return true;
         }
 
-        DataUnit GetData()
+        public DataUnit GetData()
         {
             return new DataUnit("MPU6050")
             {
