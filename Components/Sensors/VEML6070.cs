@@ -1,5 +1,6 @@
 ﻿using Scarlet.IO;
 using System;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -14,6 +15,7 @@ namespace Scarlet.Components.Sensors
         private II2CBus Bus;
         private ushort LastReading;
         private byte Speed = (byte)RefreshSpeed.REGULAR;
+        public string System { get; set; }
 
         /// <summary> Determines how often readins are taken. DOUBLE is fastest, QUARTER is slowest. </summary>
         /// <remarks>
@@ -48,7 +50,7 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets the current UV light level as of the last UpdateState() call. </summary>
         /// <returns> UV light level in μW/cm/cm, in increments of 5. </returns>
-        public int GetData() { return ConvertFromRaw(this.LastReading); }
+        public int GetReading() { return ConvertFromRaw(this.LastReading); }
 
         /// <summary> Gets the sensor's raw data as it was received at the last UpdateState() call. </summary>
         /// <returns> The bytes sent over I2C from the sensor at the last reading. </returns>
@@ -71,5 +73,14 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> This sensor does not process events. Will do nothing. </summary>
         public void EventTriggered(object Sender, EventArgs Event) { }
+
+        DataUnit GetData()
+        {
+            return new DataUnit("VEML6070")
+            {
+                { "UV", GetReading() }
+            }
+            .SetSystem(this.System);
+        }
     }
 }

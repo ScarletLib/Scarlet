@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -214,6 +215,7 @@ namespace Scarlet.Components.Sensors
         private II2CBus I2C;
 
         private float X, Y, Z;
+        public string System { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via
@@ -328,5 +330,18 @@ namespace Scarlet.Components.Sensors
         /// <param name="Register"> Register to write to. </param>
         /// <param name="Data"> Byte to write.</param>
         private void Write8(byte Register, byte Data) => I2C.WriteRegister(Address, Register, new byte[] { Data });
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("BNO055")
+            {
+                { "X", this.X },
+                { "Y", this.Y },
+                { "Z", this.Z }
+            }
+            .SetSystem(this.System);
+        }
+
+        public void SetSystem(string SystemName) => this.System = SystemName;
     }
 }

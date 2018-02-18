@@ -16,6 +16,7 @@ namespace Scarlet.Components.Sensors
         private readonly int Range;
         private readonly bool Invert;
         public event EventHandler<PotentiometerTurn> Turned;
+        public string System { get; set; }
 
         public Potentiometer(IAnalogueIn Input, int Degrees, bool Invert = false)
         {
@@ -53,6 +54,15 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> This sensor does not process events. Will do nothing. </summary>
         public void EventTriggered(object Sender, EventArgs Event) { }
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("Potentiometer")
+            {
+                { "Angle", this.Angle }
+            }
+            .SetSystem(this.System);
+        }
     }
 
     public class PotentiometerTurn : EventArgs

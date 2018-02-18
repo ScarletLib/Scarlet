@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Scarlet.Utilities
 {
@@ -39,6 +40,7 @@ namespace Scarlet.Utilities
                 FileName += ".csv";
                 string FileLocation = Path.Combine(LogFilesLocation, FileName);
                 this.Writer = new StreamWriter(@FileLocation);
+                Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + Path.Combine(LogFilesLocation, FileName) + "\".");
                 this.FileCreated = true;
             }
         }
@@ -48,27 +50,32 @@ namespace Scarlet.Utilities
         /// <param name="Data"> The data to output. Provide as much as you'd like. </param>
         public void Output(params DataUnit[] Data)
         {
-            if(!this.HeaderCreated) { CreateHeader(Data); }
+            StringBuilder Line = new StringBuilder();
+            if (!this.HeaderCreated) { CreateHeader(Data); }
             foreach (DataUnit Unit in Data)
             {
                 foreach (object Value in Unit.Values)
                 {
-                    this.Writer.Write(Value.ToString() + ",");
+                    Line.Append(Value.ToString());
+                    Line.Append(',');
                 }
             }
-            this.Writer.WriteLine(';');
+            Line.Remove(Line.Length - 1, 1); // Remove the last comma
+            this.Writer.WriteLine(Line);
         }
 
         private void CreateHeader(DataUnit[] Data)
         {
+            StringBuilder Line = new StringBuilder();
             foreach(DataUnit Unit in Data)
             {
                 foreach(string Key in Unit.Keys)
                 {
-                    this.Writer.Write(String.Format("{0}.{1}.{2},", Unit.Name, Unit.Origin, Key));
+                    Line.AppendFormat("{0}.{1}.{2},", Unit.System, Unit.Origin, Key);
                 }
             }
-            this.Writer.WriteLine(';');
+            Line.Remove(Line.Length - 1, 1); // Remove the last comma
+            this.Writer.WriteLine(Line);
             this.HeaderCreated = true;
         }
     }
@@ -78,17 +85,26 @@ namespace Scarlet.Utilities
         private Dictionary<string, object> Data = new Dictionary<string, object>();
         public Dictionary<string, object>.KeyCollection Keys { get => Data.Keys; }
         public Dictionary<string, object>.ValueCollection Values { get => Data.Values; }
-        public string Name;
+        public string System;
         public string Origin;
 
         /// <param name="SourcePurpose"> The application of the source. Something like "Ground Temperature Sensor". Used to differentiate two of the same data sources. </param>
         /// <param name="SourceType"> The source type. Something like "MAX31855" </param>
-        public DataUnit(string SourcePurpose, string SourceType)
+        public DataUnit(string SourceType)
         {
-            if (SourcePurpose.Contains('.') || SourcePurpose.Contains(',') || SourcePurpose.Contains(';') || SourcePurpose.Contains('\n') { throw new Exception("SourcePurpose cannot contain these characters: {. , ; [newline]}"); }
-            if (SourceType.Contains('.') || SourceType.Contains(',') || SourceType.Contains(';') || SourceType.Contains('\n') { throw new Exception("SourceType cannot contain these characters: {. , ; [newline]}"); }
-            this.Name = SourcePurpose;
+            if (SourceType.Contains('.') || SourceType.Contains(',') || SourceType.Contains(';') || SourceType.Contains('\n')) { throw new Exception("SourceType cannot contain these characters: {. , ; [newline]}"); }
             this.Origin = SourceType;
+        }
+
+        /// <summary> Sets the name of the system that this data source belongs to. Used in the CSV header. </summary>
+        /// <remarks> This returns itself, so that you can do something like this: DataLog.Output(MySensor.GetDataUnit().SetSystem("GNDTemp")); </remarks>
+        /// <param name="SystemName"> The name of the system where this data source belongs. Something like "GroundTemperature" </param>
+        /// <returns> Itself, so that you can inline this call. See remarks. </returns>
+        public DataUnit SetSystem(string SystemName)
+        {
+            if (SystemName.Contains('.') || SystemName.Contains(',') || SystemName.Contains(';') || SystemName.Contains('\n')) { throw new Exception("SourcePurpose cannot contain these characters: {. , ; [newline]}"); }
+            this.System = SystemName;
+            return this;
         }
 
         public void Add<DataType>(string key, DataType value)// where DataType : class

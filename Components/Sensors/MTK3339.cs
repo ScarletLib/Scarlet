@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -14,6 +15,7 @@ namespace Scarlet.Components.Sensors
 
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }
+        public string System { get; set; }
 
         private IUARTBus UART;
 
@@ -103,5 +105,16 @@ namespace Scarlet.Components.Sensors
         /// <summary> Writes a string to the UART as a string of bytes. </summary>
         /// <param name="s"> The string to write. </param>
         private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("MTK3339")
+            {
+                { "HasFix", HasFix() }, // TODO: This needs to be stored from last reading instead of re-checked.
+                { "Lat", this.Latitude},
+                { "Lon", this.Longitude}
+            }
+            .SetSystem(this.System);
+        }
     }
 }
