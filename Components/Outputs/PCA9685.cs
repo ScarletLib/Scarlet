@@ -41,8 +41,7 @@ namespace Scarlet.Components.Outputs
                 this.Config = new byte[4];
             }
 
-            // TODO: Convert to float.
-            public void SetFrequency(int Frequency) => this.Parent.SetFrequency(Frequency);
+            public void SetFrequency(float Frequency) => this.Parent.SetFrequency(Frequency);
 
             public void SetEnabled(bool Enable)
             {
