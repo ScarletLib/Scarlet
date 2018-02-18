@@ -8,7 +8,7 @@ namespace UnitTest.UtilitiesTesting
     [TestClass]
     public class DataLogTesting
     {
-        SensorData DataCont = new SensorData()
+        DataUnit DataCont = new DataUnit("Testing Structure", "DataLogTesting")
         {
             { "int", 0x811426 },
             { "float", 1.0486F },
@@ -20,7 +20,7 @@ namespace UnitTest.UtilitiesTesting
         };
 
         [TestMethod]
-        public void SensorDataStructureTest()
+        public void DataUnitTest()
         {
             Assert.AreEqual(0x811426, this.DataCont.GetValue<int>("int"));
             Assert.AreEqual(1.0486F, this.DataCont.GetValue<float>("float"));
