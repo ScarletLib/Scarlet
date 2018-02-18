@@ -72,20 +72,24 @@ namespace Scarlet.Components.Outputs
             private void SetConfig()
             {
                 // Full on/off bits
-                // TODO: Is this needed or can I just set full off with invert?
-                bool FullOn = (!this.Enabled && this.Polarity); // Full on only if we are disabled and normally high
-                bool FullOff = (!this.Enabled && !this.Polarity); // Full off only if we are disabled and normally low
+                bool FullOn = (this.Enabled && this.DutyCycle == 1); // Full on only if we are not disabled, and duty cycle is 100%.
+                bool FullOff = (!this.Enabled); // Full off only if we are disabled
                 this.Config[1] = (byte)(FullOn ? (this.Config[1] | 0b0001_0000) : (this.Config[1] & 0b1110_1111)); // Sets full on enable bit
                 this.Config[3] = (byte)(FullOff ? (this.Config[3] | 0b0001_0000) : (this.Config[3] & 0b1110_1111)); // Sets full off enable bit
 
                 // On/off counts
-                if (!this.Polarity)
+                if (!FullOn && !FullOff) // No point setting timings if they aren't going to be used
                 {
                     ushort DelayTicks = (ushort)(Math.Max((this.Delay * 4096) - 1, 0)); // The time when the state should be asserted.
                     ushort OnTicks = (ushort)(Math.Max((this.DutyCycle * 4096) - 1, 0)); // For how many ticks the output should be on.
                     ushort OffTime = (ushort)((DelayTicks + OnTicks) % 4096); // The time when the state should be negated.
+
+                    this.Config[1] = (byte)(this.Config[1] | ((DelayTicks >> 8) & 0b1111)); // ON_MSB
+                    this.Config[0] = (byte)(DelayTicks & 0b1111_1111); // ON_LSB
+
+                    this.Config[3] = (byte)(this.Config[3] | ((OffTime >> 8) & 0b1111)); // OFF_MSB
+                    this.Config[2] = (byte)(OffTime & 0b1111_1111); // OFF_LSB
                 }
-                // TODO Implement on/off count setting.
 
                 this.Parent.SetChannelData(this.Channel, this.Config);
             }
