@@ -104,6 +104,7 @@
     <Compile Include="IO\IDigitalIn.cs" />
     <Compile Include="IO\IDigitalOut.cs" />
     <Compile Include="IO\II2CBus.cs" />
+    <Compile Include="IO\IInterruptSource.cs" />
     <Compile Include="IO\IPWMOutput.cs" />
     <Compile Include="IO\ISPIBus.cs" />
     <Compile Include="IO\IUARTBus.cs" />

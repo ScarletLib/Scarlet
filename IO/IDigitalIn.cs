@@ -12,8 +12,5 @@ namespace Scarlet.IO
 
         /// <summary> Releases handles to the pin, allowing it to be used by another component or application. </summary>
         void Dispose();
-
-        /// <summary> Registers a new interrupt handler, asking for the specificed type of interrupt. </summary>
-        void RegisterInterruptHandler(EventHandler<InputInterrupt> Handler, InterruptType Type);
     }
 }
