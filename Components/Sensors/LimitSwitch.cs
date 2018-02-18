@@ -14,11 +14,13 @@ namespace Scarlet.Components.Sensors
         public bool State { get => (this.Invert ? !Input.GetInput() : Input.GetInput()); }
         public string System { get; set; } 
 
+        /// <param name="Input"> Must also implement IInterruptSource. </param>
         public LimitSwitch(IDigitalIn Input, bool Invert = false)
         {
+            if (!(Input is IInterruptSource)) { throw new Exception("LimitSwitch IDigitalIn must also be IInterruptSource."); }
             this.Input = Input;
             this.Invert = Invert;
-            Input.RegisterInterruptHandler(EventTriggered, InterruptType.ANY_EDGE);
+            ((IInterruptSource)Input).RegisterInterruptHandler(EventTriggered, InterruptType.ANY_EDGE);
         }
         
         public bool Test()

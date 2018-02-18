@@ -74,7 +74,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> This sensor does not process events. Will do nothing. </summary>
         public void EventTriggered(object Sender, EventArgs Event) { }
 
-        DataUnit GetData()
+        public DataUnit GetData()
         {
             return new DataUnit("VEML6070")
             {
