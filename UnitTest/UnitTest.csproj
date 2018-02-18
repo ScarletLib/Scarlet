@@ -48,15 +48,30 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComponentTesting\MAX31855Tests.cs" />
     <Compile Include="FilterTesting\TestLowPass.cs" />
     <Compile Include="MotorTesting\TestablePWMOutput.cs" />
-    <Compile Include="TestClientAndServer.cs" />
-    <Compile Include="TestPacketBuffer.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="UtilitiesTesting\DataLogTesting.cs" />
+    <Compile Include="UtilitiesTesting\StateStoreTest.cs" />
+    <Compile Include="NetworkTesting\TestClientAndServer.cs" />
+    <Compile Include="NetworkTesting\TestPacketBuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="NetworkTesting\TestPacketWriterAndScanner.cs" />
+    <Compile Include="NetworkTesting\TestSafePackageWriterAndScanner.cs" />
     <Compile Include="MotorTesting\TestTalonMC.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Scarlet.csproj">
@@ -75,4 +90,7 @@
     <Error Condition="!Exists('..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets'))" />
   </Target>
   <Import Project="..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets" Condition="Exists('..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets')" />
+  <PropertyGroup>
+    <PreBuildEvent>cmd /c "..\..\ClearTest.bat"</PreBuildEvent>
+  </PropertyGroup>
 </Project>

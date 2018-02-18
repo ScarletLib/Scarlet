@@ -43,6 +43,8 @@ namespace Scarlet.IO.RaspberryPi
 
         public void Dispose() { throw new NotImplementedException(); }
 
+        public void Flush() { throw new NotImplementedException(); } // TODO: Implement.
+
         public int Read(int Length, byte[] Buffer)
         {
             throw new NotImplementedException();

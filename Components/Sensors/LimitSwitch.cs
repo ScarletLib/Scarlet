@@ -12,6 +12,7 @@ namespace Scarlet.Components.Sensors
         private volatile bool HadEvent, NewState;
         public event EventHandler<LimitSwitchToggle> SwitchToggle;
         public bool State { get => (this.Invert ? !Input.GetInput() : Input.GetInput()); }
+        public string System { get; set; } 
 
         public LimitSwitch(IDigitalIn Input, bool Invert = false)
         {
@@ -50,6 +51,15 @@ namespace Scarlet.Components.Sensors
                 this.HadEvent = true;
                 this.NewState = ((InputInterrupt)Event).NewState;
             }
+        }
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("LimitSwitch")
+            {
+                { "Triggered", this.State }
+            }
+            .SetSystem(this.System);
         }
     }
 

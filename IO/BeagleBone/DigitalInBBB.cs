@@ -4,7 +4,7 @@ using System;
 
 namespace Scarlet.IO.BeagleBone
 {
-    public class DigitalInBBB : IDigitalIn
+    public class DigitalInBBB : IDigitalIn, IInterruptSource
     {
         public BBBPin Pin { get; private set; }
         private Port InputPort;

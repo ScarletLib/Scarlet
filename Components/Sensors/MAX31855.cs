@@ -14,6 +14,7 @@ namespace Scarlet.Components.Sensors
         private ISPIBus Bus;
         private IDigitalOut ChipSelect;
         private uint LastReading;
+        public string System { get; set; }
 
         /// <summary>
         /// Lists the possible reported faults.
@@ -99,5 +100,16 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> This sensor does not process events. Will do nothing. </summary>
         public void EventTriggered(object Sender, EventArgs Event) { }
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("MAX31855")
+            {
+                { "IntTemp", ConvertInternalFromRaw(this.LastReading) },
+                { "ExtTemp", ConvertExternalFromRaw(this.LastReading) },
+                { "Fault", ConvertFaultFromRaw(this.LastReading).ToString() }
+            }
+            .SetSystem(this.System);
+        }
     }
 }
