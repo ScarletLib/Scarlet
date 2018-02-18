@@ -8,7 +8,7 @@ namespace UnitTest.UtilitiesTesting
     [TestClass]
     public class DataLogTesting
     {
-        DataUnit DataCont = new DataUnit("Testing Structure", "DataLogTesting")
+        DataUnit DataCont = new DataUnit("DataLogTesting")
         {
             { "int", 0x811426 },
             { "float", 1.0486F },
