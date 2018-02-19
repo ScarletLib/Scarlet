@@ -16,11 +16,9 @@ namespace Scarlet.Components.Sensors
         private byte Address;
         private double Resistor;
 
-        private double CurrentMultiplier;
+        public double CurrentMultiplier { get; private set; }
         private ushort CalibrationVal;
         private ushort[] LastReading = new ushort[4];
-
-        private const float BUS_VOLTAGE_MULTIPLIER = 0.00125F;
 
         private enum Register
         {
@@ -62,12 +60,18 @@ namespace Scarlet.Components.Sensors
             Time8244us = 0b111
         }
 
+        // TODO: Implement alert pin configuration.
+
         /// <summary> Prepares the INA226 device for usee. </summary>
+        /// <param name="Bus"> The I2C bus the device is connected to. </param>
+        /// <param name="DeviceAddress"> The I2C address of the device. Set by hardware pin connections. </param>
         /// <param name="MaxCurrent"> The absolute maximum current that you expect to measure with this. Used to set amplifier scaling. Usually set to the connected device's max current, loike motor stall current. </param>
         /// <param name="Resistor"> The resistance of the current shunt path. This should be measured with the best possible precision, as slight error here can cause large measurement error. </param>
+        /// <param name="Avg"> How many samples you want the chip to average for voltage/current/power values. Will stabilize readings, but reduce high-frequency response (usually not needed anyways). </param>
+        /// <param name="VBusTime"> Determines how long the ADC samples to measure power supply voltage. Longer (slower) times will stabilize readings, but reduce high requency response (usually not needed anyways). </param>
+        /// <param name="VShuntTime"> Determines how long the ADC samples to measure shunt voltage drop. Longer (slower) times will stabilize readings, but reduce high requency response (usually not needed anyways). </param>
         public INA226(II2CBus Bus, byte DeviceAddress, float MaxCurrent, double Resistor, AveragingMode Avg = AveragingMode.Last1, ConversionTime VBusTime = ConversionTime.Time1100us, ConversionTime VShuntTime = ConversionTime.Time1100us)
         {
-            // TODO add comments for params
             this.Bus = Bus;
             this.Address = DeviceAddress;
             this.Resistor = Resistor;
@@ -91,44 +95,84 @@ namespace Scarlet.Components.Sensors
             Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 is using current multiplier " + this.CurrentMultiplier + " A/count.");
         }
 
+        /// <summary> Gets the VBus pin voltage at the last UpdateState() call. </summary>
+        /// <returns> The voltage, in Volts. In increments of 1.25mV. Always positive. </returns>
         public double GetBusVoltage() => ConvertBusVoltageFromRaw(this.LastReading);
 
-        public double GetCurrent() => ConvertCurrentFromRaw(this.LastReading);
+        /// <summary> Gets the voltage across the Vin+ and Vin- pins at the last UpdateState() call. </summary>
+        /// <returns> The voltage, in Volts. In increments of 2.5mV. Positive or negative. </returns>
+        public double GetShuntVoltage() => ConvertShuntVoltageFromRaw(this.LastReading);
 
-        public double GetPower() => ConvertPowerFromRaw(this.LastReading);
+        /// <summary> Gets the calculated current across the shunt resistor at the last UpdateState() call. </summary>
+        /// <returns> The current, in Amps. Increments depend on scaling, which is configured by shunt resistance and max current. </returns>
+        public double GetCurrent() => ConvertCurrentFromRaw(this.LastReading, this.CurrentMultiplier);
 
-        public static double ConvertBusVoltageFromRaw(ushort[] RawData)
+        /// <summary> Gets the calculated power going to the load at the last UpdateState() call. </summary>
+        /// <returns> The power, in Watts. Increments depend on scaling, which is configured by shunt resistance and max current. Always positive. </returns>
+        public double GetPower() => ConvertPowerFromRaw(this.LastReading, this.CurrentMultiplier);
+
+        /// <summary> Interprets the VBus pin voltage data out of the raw data. </summary>
+        /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <returns> The voltage, in Volts. In increments of 1.25mV. Always positive. </returns>
+        public static double ConvertBusVoltageFromRaw(ushort[] RawData) => RawData[1] * 0.00125D;
+
+        /// <summary> Interprets the shunt voltage drop data out of the raw data. </summary>
+        /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <returns> The voltage, in Volts. In increments of 2.5mV. Positive or negative. </returns>
+        public static double ConvertShuntVoltageFromRaw(ushort[] RawData)
         {
-            return 0;
+            if (((RawData[0] >> 15) & 0b1) == 1) // Negative number
+            {
+                ushort Result = (ushort)(RawData[0] - 1);
+                Result = (ushort)(~Result);
+                return (Result * -0.0000025D);
+            }
+            else { return RawData[0] * 0.0000025D; } // Positive
         }
 
-        public static double ConvertCurrentFromRaw(ushort[] RawData)
+        /// <summary> Interprets the calculated current data out of the raw data. </summary>
+        /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <returns> The current, in Amps. Increments depend on scaling, which is configured by shunt resistance and max current. </returns>
+        public static double ConvertCurrentFromRaw(ushort[] RawData, double CurrentMultipler)
         {
-            return 0;
+            return RawData[3] * CurrentMultipler; // TODO: Check this, as it might be negative.
         }
 
-        public static double ConvertPowerFromRaw(ushort[] RawData)
-        {
-            return 0;
-        }
+        /// <summary> Interprets the calculated power data out of the raw data. </summary>
+        /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <returns> The power, in Watts. Increments depend on scaling, which is configured by shunt resistance and max current. Always positive. </returns>
+        public static double ConvertPowerFromRaw(ushort[] RawData, double CurrentMultiplier) => RawData[2] * (CurrentMultiplier * 25);
 
+        /// <summary> The last sensor reading, as easily accessible data. </summary>
+        /// <returns>
+        /// The following data:
+        /// | Name       | Type | Remarks                      |
+        /// |============|======|==============================|
+        /// |BusVoltage  |double|Power supply voltage (V)      |
+        /// |ShuntVoltage|double|Current shunt voltage drop (V)|
+        /// |Current     |double|Calculated current (A)        |
+        /// |Power       |double|Calculated power (W)          |
+        /// </returns>
         public DataUnit GetData()
         {
             return new DataUnit("INA226")
             {
                 { "BusVoltage", GetBusVoltage() },
+                { "ShuntVoltage", GetShuntVoltage() },
                 { "Current", GetCurrent() },
                 { "Power", GetPower() }
             }
             .SetSystem(this.System);
         }
 
+        /// <summary> Checks if the chip's manufacturer register has the correct value. </summary>
         public bool Test()
         { // TODO: Check if this works as expected.
-            byte[] DieID = this.Bus.ReadRegister(this.Address, (byte)Register.DieID, 2);
-            return (DieID[0] == 0x22) && (DieID[1] == 0x60);
+            byte[] MfgID = this.Bus.ReadRegister(this.Address, (byte)Register.ManufacturerID, 2);
+            return (MfgID[0] == 0x54) && (MfgID[1] == 0x49);
         }
 
+        /// <summary> Takes a new reading from the sensor and stores it for later retrieval. </summary>
         public void UpdateState()
         {
             byte[] RawData = this.Bus.ReadRegister(this.Address, (byte)Register.ShuntVoltage, 8);
@@ -138,6 +182,7 @@ namespace Scarlet.Components.Sensors
             this.LastReading[3] = (ushort)((RawData[6] << 8) | RawData[7]);
         }
 
+        /// <summary> Events are ignored. </summary>
         public void EventTriggered(object Sender, EventArgs Event) { }
     }
 }
