@@ -17,14 +17,15 @@ namespace Scarlet.Components.Sensors
         private double Resistor;
 
         private double CurrentMultiplier;
-        private byte[] LastReading = new byte[8];
+        private ushort CalibrationVal;
+        private ushort[] LastReading = new ushort[4];
 
         private const float BUS_VOLTAGE_MULTIPLIER = 0.00125F;
 
         private enum Register
         {
             Configuration = 0x00,
-            ShultVoltage = 0x01,
+            ShuntVoltage = 0x01,
             BusVoltage = 0x02,
             Power = 0x03,
             Current = 0x04,
@@ -73,6 +74,7 @@ namespace Scarlet.Components.Sensors
             SetConfig(MaxCurrent, Avg, VBusTime, VShuntTime);
         }
 
+        /// <summary> Sets configuration and calibration registers with these settings. </summary>
         private void SetConfig(float MaxCurrent, AveragingMode Avg, ConversionTime VBusTime, ConversionTime VShuntTime)
         {
             // Sets Configuration Register
@@ -84,30 +86,58 @@ namespace Scarlet.Components.Sensors
 
             // Sets Calibration Register
             this.CurrentMultiplier = Math.Abs(MaxCurrent) / Math.Pow(2, 15);
-            ushort CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
-            this.CurrentMultiplier = (0.00512D / CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
+            this.CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
+            this.CurrentMultiplier = (0.00512D / this.CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
             Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 is using current multiplier " + this.CurrentMultiplier + " A/count.");
         }
 
-        public void EventTriggered(object Sender, EventArgs Event) { }
+        public double GetBusVoltage() => ConvertBusVoltageFromRaw(this.LastReading);
+
+        public double GetCurrent() => ConvertCurrentFromRaw(this.LastReading);
+
+        public double GetPower() => ConvertPowerFromRaw(this.LastReading);
+
+        public static double ConvertBusVoltageFromRaw(ushort[] RawData)
+        {
+            return 0;
+        }
+
+        public static double ConvertCurrentFromRaw(ushort[] RawData)
+        {
+            return 0;
+        }
+
+        public static double ConvertPowerFromRaw(ushort[] RawData)
+        {
+            return 0;
+        }
 
         public DataUnit GetData()
         {
             return new DataUnit("INA226")
             {
-
+                { "BusVoltage", GetBusVoltage() },
+                { "Current", GetCurrent() },
+                { "Power", GetPower() }
             }
             .SetSystem(this.System);
         }
 
         public bool Test()
-        {
-            return true; // TODO: Test sensor.
+        { // TODO: Check if this works as expected.
+            byte[] DieID = this.Bus.ReadRegister(this.Address, (byte)Register.DieID, 2);
+            return (DieID[0] == 0x22) && (DieID[1] == 0x60);
         }
 
         public void UpdateState()
         {
-            
+            byte[] RawData = this.Bus.ReadRegister(this.Address, (byte)Register.ShuntVoltage, 8);
+            this.LastReading[0] = (ushort)((RawData[0] << 8) | RawData[1]);
+            this.LastReading[1] = (ushort)((RawData[2] << 8) | RawData[3]);
+            this.LastReading[2] = (ushort)((RawData[4] << 8) | RawData[5]);
+            this.LastReading[3] = (ushort)((RawData[6] << 8) | RawData[7]);
         }
+
+        public void EventTriggered(object Sender, EventArgs Event) { }
     }
 }
