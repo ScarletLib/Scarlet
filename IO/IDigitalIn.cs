@@ -12,6 +12,5 @@ namespace Scarlet.IO
 
         /// <summary> Releases handles to the pin, allowing it to be used by another component or application. </summary>
         void Dispose();
-        void RegisterInterruptHandler(Action<object, InputInterrupt> getInterrupt, InterruptType aNY_EDGE);
     }
 }
