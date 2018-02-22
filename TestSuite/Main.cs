@@ -28,7 +28,7 @@ namespace Scarlet.TestSuite
                 }
                 else if (args[1].Equals("pi", StringComparison.InvariantCultureIgnoreCase))
                 {
-
+                    IOPi.Start(args);
                 }
                 else { Log.Output(Log.Severity.ERROR, Log.Source.GUI, "io command must be for pi or bbb."); }
             }
