@@ -74,6 +74,7 @@
     <Compile Include="Components\Sensors\LimitSwitch.cs" />
     <Compile Include="Components\Sensors\MAX31855.cs" />
     <Compile Include="Components\Sensors\MPU6050.cs" />
+    <Compile Include="Components\Sensors\MQ135.cs" />
     <Compile Include="Components\Sensors\MTK3339.cs" />
     <Compile Include="Components\Sensors\Potentiometer.cs" />
     <Compile Include="Controllers\PID.cs" />
