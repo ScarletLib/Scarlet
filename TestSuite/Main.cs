@@ -32,6 +32,10 @@ namespace Scarlet.TestSuite
                 }
                 else { Log.Output(Log.Severity.ERROR, Log.Source.GUI, "io command must be for pi or bbb."); }
             }
+            else if(args[0].Equals("perf", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Performance.Start(args);
+            }
         }
 
         public static void ErrorExit(string error)
@@ -60,6 +64,8 @@ namespace Scarlet.TestSuite
             //Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "      write <data>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   int <pin> <rise/fall/both>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   NOTES: pins should either be a number for Pi, or in the format P9_21 for BBB.");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "perf ___");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataUnit <num>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "More will be added!");
             Environment.Exit(0);
         }
