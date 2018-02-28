@@ -145,5 +145,10 @@ namespace Scarlet.Utilities
             }
         }
 
+        public static ushort SwapBytes(ushort Input)
+        {
+            return (ushort)(((Input & 0b1111_1111) << 8) | ((Input >> 8) & 0b1111_1111));
+        }
+
     }
 }

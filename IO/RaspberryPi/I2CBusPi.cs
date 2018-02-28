@@ -50,6 +50,18 @@ namespace Scarlet.IO.RaspberryPi
             for(int i = 1; i < NewData.Length; i++) { NewData[i] = Data[i - 1]; }
         }
 
+        public void WriteRegister16(byte Address, byte Register, ushort Data)
+        {
+            if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
+            RaspberryPi.I2CWriteRegister16(this.DeviceIDs[Address], Register, Data);
+        }
+
+        public ushort ReadRegister16(byte Address, byte Register)
+        {
+            if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
+            return RaspberryPi.I2CReadRegister16(this.DeviceIDs[Address], Register);
+        }
+
         public void Dispose()
         {
             // TODO: Implement this
