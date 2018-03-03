@@ -26,8 +26,8 @@ namespace Scarlet.Components.Motors
             this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
             this.PWMOut.SetFrequency(333);
-            this.PWMOut.SetEnabled(true);
             this.SetSpeedDirectly(0.0f);
+            this.PWMOut.SetEnabled(true);
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }
@@ -96,7 +96,7 @@ namespace Scarlet.Components.Motors
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }
             if (-Speed > this.MaxSpeed) { Speed = -this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
-            this.PWMOut.SetOutput(Speed / 3.0F + 0.66F);
+            this.PWMOut.SetOutput((Speed + 1.0f) * (0.3333333f) / (2.0f) + 0.3333333f);
         }
     }
 }
