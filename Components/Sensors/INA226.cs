@@ -86,13 +86,15 @@ namespace Scarlet.Components.Sensors
             Config |= (ushort)(((ushort)Avg << 9) & 0b0000_1110_0000_0000); // Averaging mode
             Config |= (ushort)(((ushort)VBusTime << 6) & 0b0000_0001_1100_0000); // VBus conversion time
             Config |= (ushort)(((ushort)VShuntTime << 3) & 0b0000_0000_0011_1000); // VShunt conversion time
-            this.Bus.WriteRegister(this.Address, (byte)Register.Configuration, new byte[] { (byte)((Config >> 8) & 0b1111_1111), (byte)(Config & 0b1111_1111) });
+            Config = UtilData.SwapBytes(Config);
+            this.Bus.WriteRegister16(this.Address, (byte)Register.Configuration, Config);
 
             // Sets Calibration Register
             this.CurrentMultiplier = Math.Abs(MaxCurrent) / Math.Pow(2, 15);
             this.CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
             this.CurrentMultiplier = (0.00512D / this.CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
-            Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 is using current multiplier " + this.CurrentMultiplier + " A/count.");
+            Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 is using current multiplier " + this.CurrentMultiplier + " A/count (calibration value " + this.CalibrationVal + ").");
+            this.Bus.WriteRegister16(this.Address, (byte)Register.Calibration, UtilData.SwapBytes(this.CalibrationVal));
         }
 
         /// <summary> Gets the VBus pin voltage at the last UpdateState() call. </summary>
@@ -167,19 +169,20 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Checks if the chip's manufacturer register has the correct value. </summary>
         public bool Test()
-        { // TODO: Check if this works as expected.
-            byte[] MfgID = this.Bus.ReadRegister(this.Address, (byte)Register.ManufacturerID, 2);
-            return (MfgID[0] == 0x54) && (MfgID[1] == 0x49);
+        {
+            ushort MfgID = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.ManufacturerID));
+            if (MfgID != 0x5449) { Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 mfg check returned 0x" + MfgID.ToString("X4") + " (expecting 0x5449)."); }
+            return MfgID == 0x5449;
         }
 
         /// <summary> Takes a new reading from the sensor and stores it for later retrieval. </summary>
         public void UpdateState()
         {
-            byte[] RawData = this.Bus.ReadRegister(this.Address, (byte)Register.ShuntVoltage, 8);
-            this.LastReading[0] = (ushort)((RawData[0] << 8) | RawData[1]);
-            this.LastReading[1] = (ushort)((RawData[2] << 8) | RawData[3]);
-            this.LastReading[2] = (ushort)((RawData[4] << 8) | RawData[5]);
-            this.LastReading[3] = (ushort)((RawData[6] << 8) | RawData[7]);
+            this.LastReading[0] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.ShuntVoltage));
+            this.LastReading[1] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.BusVoltage));
+            this.LastReading[2] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Power));
+            this.LastReading[3] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Current));
+            //Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 data retrieval returned " + this.LastReading[0].ToString("X4") + "," + this.LastReading[1].ToString("X4") + "," + this.LastReading[2].ToString("X4") + "," + this.LastReading[3].ToString("X4"));
         }
 
         /// <summary> Events are ignored. </summary>
