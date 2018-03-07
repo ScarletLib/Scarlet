@@ -206,17 +206,26 @@ namespace Scarlet.Components.Outputs
             this.Bus.WriteRegister(this.PartAddress, PrescaleRegister, new byte[] { PrescaleVal });
 
             // Set the SLEEP bit back to what it was.
-            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0111_1111) }); // Make sure we don't set bit 7 (RESET).
+            byte NewMode = (byte)((ModeSettingPre & 0b0110_1111) | (this.ExtOscFreq != -1 ? 0b0001_0000 : 0));
+            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(NewMode) }); // Make sure we don't set bit 7 (RESET).
             Thread.Sleep(1); // 0.5ms minimum
+
+            // Restart
+            //this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre | 0b1000_0000) });
+            Thread.Sleep(1); // 0.5ms minimum
+
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Registers along the way: 0x" + ModeSettingPre.ToString("X2") + ", 0x" + ModeSettingNew.ToString("X2") + ", 0x" + NewMode.ToString("X2"));
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 final MODE1 register value: 0x" + this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0].ToString("X2"));
+
             // If SLEEP was previously 0, we may need to RESTART.
-            if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
+            /*if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
             {
                 byte AfterWake = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
                 if((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
                 {
                     this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(AfterWake & 0b1000_0000) });
                 }
-            }
+            }*/
         }
 
         /// <summary> Switches the PCA9685 to use the external oscillator. This can only be disabled via a power cycle or software reset. </summary>
