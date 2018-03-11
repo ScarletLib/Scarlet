@@ -123,6 +123,15 @@ namespace Scarlet.IO.RaspberryPi
             Ext_I2CWrite(DeviceID, Data);
         }
 
+        [DllImport(WIRING_PI_LIB, EntryPoint = "wiringPiI2CReadReg8")]
+        private static extern int Ext_I2CReadReg8(int DeviceID, int Register);
+        internal static byte I2CReadRegister8(int DeviceID, byte Register) => (byte)Ext_I2CReadReg8(DeviceID, Register);
+
+        [DllImport(WIRING_PI_LIB, EntryPoint = "wiringPiI2CWriteReg8")]
+        private static extern int Ext_I2CWriteReg8(int DeviceID, int Register, int Data);
+        internal static void I2CWriteRegister8(int DeviceID, byte Register, byte Data) => Ext_I2CWriteReg8(DeviceID, Register, Data);
+
+
         [DllImport(WIRING_PI_LIB, EntryPoint = "wiringPiI2CReadReg16")]
         private static extern int Ext_I2CReadReg16(int DeviceID, int Register);
         internal static ushort I2CReadRegister16(int DeviceID, byte Register) => (ushort)Ext_I2CReadReg16(DeviceID, Register);
