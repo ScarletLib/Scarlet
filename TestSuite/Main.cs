@@ -36,6 +36,10 @@ namespace Scarlet.TestSuite
             {
                 Performance.Start(args);
             }
+            else if(args[0].Equals("utils", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Utils.Start(args);
+            }
         }
 
         public static void ErrorExit(string error)
@@ -66,6 +70,8 @@ namespace Scarlet.TestSuite
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   NOTES: pins should either be a number for Pi, or in the format P9_21 for BBB.");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "perf ___");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataUnit <num>");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "utils ___");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataLog");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "More will be added!");
             Environment.Exit(0);
         }
