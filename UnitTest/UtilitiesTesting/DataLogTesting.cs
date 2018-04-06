@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scarlet.Utilities;
 using System.Collections.Generic;
+using System.IO;
 
 namespace UnitTest.UtilitiesTesting
 {
@@ -42,6 +43,14 @@ namespace UnitTest.UtilitiesTesting
             {
                 Console.WriteLine(String.Format("key \"{0}\" has value \"{1}\".", Item.Key, Item.Value));
             }
+        }
+
+        [TestMethod]
+        public void DataLogTestDeleteDuringUse()
+        {
+            DataLog DUT = new DataLog("DataLogUnitTest");
+            DUT.Output(DataCont);
+            Assert.ThrowsException<IOException>(delegate { File.Delete(DUT.LogFilePath); });
         }
     }
 }

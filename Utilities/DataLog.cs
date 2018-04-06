@@ -17,9 +17,19 @@ namespace Scarlet.Utilities
         private bool FileCreated = false;
         private bool HeaderCreated = false;
 
-        public DataLog(string Filename)
+        public string LogFilePath { get; private set; }
+        public bool AutoFlush;
+
+        /// <summary>
+        /// Constructs a DataLog system, which is used to log given data into a CSV file.
+        /// Particularly useful for applications like logging sensor data over time.
+        /// </summary>
+        /// <param name="Filename">Name of the file to log to (a date and timestamp will be directly appended to this).</param>
+        /// <param name="AutoFlush">If true, output will be flushed on every call to Output(), otherwise use Flush() to manually flush.</param>
+        public DataLog(string Filename, bool AutoFlush = true)
         {
             this.Filename = Filename;
+            this.AutoFlush = AutoFlush;
             CreateLogFile();
         }
 
@@ -39,7 +49,8 @@ namespace Scarlet.Utilities
                 }
                 FileName += ".csv";
                 string FileLocation = Path.Combine(LogFilesLocation, FileName);
-                this.Writer = new StreamWriter(@FileLocation);
+                this.Writer = new StreamWriter(@FileLocation) { AutoFlush = this.AutoFlush };
+                LogFilePath = Path.Combine(LogFilesLocation, FileName);
                 Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + Path.Combine(LogFilesLocation, FileName) + "\".");
                 this.FileCreated = true;
             }
@@ -78,6 +89,22 @@ namespace Scarlet.Utilities
             this.Writer.WriteLine(Line);
             this.HeaderCreated = true;
         }
+
+        /// <summary> Manually flushes the output to the file. If AutoFlush is true, this is ignored. </summary>
+        public void Flush() { if (!AutoFlush) { this.Writer.Flush(); } }
+
+        /// <summary> Deletes all DataLog CSV files except any that are currently in-use </summary>
+        public static void DeleteAll()
+        {
+            Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "Deleting old DataLog files...");
+            try
+            {
+                string[] FileList = Directory.GetFiles(LogFilesLocation);
+                foreach (string FilePath in FileList) { File.Delete(FilePath); }
+            }
+            catch (IOException) { } // Do Nothing if file is in use or directory doesn't exist
+        }
+
     }
 
     public class DataUnit : IEnumerable
@@ -88,7 +115,6 @@ namespace Scarlet.Utilities
         public string System;
         public string Origin;
 
-        /// <param name="SourcePurpose"> The application of the source. Something like "Ground Temperature Sensor". Used to differentiate two of the same data sources. </param>
         /// <param name="SourceType"> The source type. Something like "MAX31855" </param>
         public DataUnit(string SourceType)
         {
