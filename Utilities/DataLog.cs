@@ -16,10 +16,21 @@ namespace Scarlet.Utilities
 
         private bool FileCreated = false;
         private bool HeaderCreated = false;
+        private bool FileOpened = false;
 
-        public DataLog(string Filename)
+        public string LogFilePath { get; private set; }
+        public bool AutoFlush;
+
+        /// <summary>
+        /// Constructs a DataLog system, which is used to log given data into a CSV file.
+        /// Particularly useful for applications like logging sensor data over time.
+        /// </summary>
+        /// <param name="Filename">Name of the file to log to (a date and timestamp will be directly appended to this).</param>
+        /// <param name="AutoFlush">If true, output will be flushed on every call to Output(), otherwise use Flush() to manually flush.</param>
+        public DataLog(string Filename, bool AutoFlush = true)
         {
             this.Filename = Filename;
+            this.AutoFlush = AutoFlush;
             CreateLogFile();
         }
 
@@ -38,10 +49,11 @@ namespace Scarlet.Utilities
                     Iterations++;
                 }
                 FileName += ".csv";
-                string FileLocation = Path.Combine(LogFilesLocation, FileName);
-                this.Writer = new StreamWriter(@FileLocation);
-                Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + Path.Combine(LogFilesLocation, FileName) + "\".");
+                LogFilePath = Path.Combine(LogFilesLocation, FileName);
+                this.Writer = new StreamWriter(@LogFilePath) { AutoFlush = this.AutoFlush };
+                Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + LogFilePath + "\".");
                 this.FileCreated = true;
+                this.FileOpened = true;
             }
         }
 
@@ -50,6 +62,7 @@ namespace Scarlet.Utilities
         /// <param name="Data"> The data to output. Provide as much as you'd like. </param>
         public void Output(params DataUnit[] Data)
         {
+            CheckOpened();
             StringBuilder Line = new StringBuilder();
             if (!this.HeaderCreated) { CreateHeader(Data); }
             foreach (DataUnit Unit in Data)
@@ -66,18 +79,48 @@ namespace Scarlet.Utilities
 
         private void CreateHeader(DataUnit[] Data)
         {
+            CheckOpened();   
             StringBuilder Line = new StringBuilder();
             foreach(DataUnit Unit in Data)
             {
                 foreach(string Key in Unit.Keys)
                 {
-                    Line.AppendFormat("{0}.{1}.{2},", Unit.System, Unit.Origin, Key);
+                    Line.AppendFormat("{0}.{1}.{2},", (Unit.System ?? "UntitledSystem"), Unit.Origin, Key);
                 }
             }
             Line.Remove(Line.Length - 1, 1); // Remove the last comma
             this.Writer.WriteLine(Line);
             this.HeaderCreated = true;
         }
+
+        /// <summary> Manually flushes the output to the file. If AutoFlush is true, this is ignored. </summary>
+        public void Flush() { if (!AutoFlush && !FileOpened) { this.Writer.Flush(); } }
+
+        private void CheckOpened() { if (!FileOpened) { throw new Exception("Attempting to write to closed file..."); } }
+
+        /// <summary> Deletes all DataLog CSV files with the same given Filename except any that are currently in-use. </summary>
+        public void DeleteAll()
+        {
+            Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "Deleting old DataLog files...");
+            try
+            {
+                IEnumerable<string> FileList = Directory.EnumerateFiles(LogFilesLocation);
+                foreach (string FilePath in FileList)
+                {
+                    if (FilePath.StartsWith(LogFilesLocation + "\\" + Filename) && FilePath.EndsWith(".csv")) { File.Delete(FilePath); }
+                }
+            }
+            catch (IOException) { } // Do Nothing if file is in use or directory doesn't exist
+        }
+
+        /// <summary> Flush the output and stop writing. </summary>
+        public void CloseFile()
+        {
+            this.Writer.Flush();
+            this.Writer.Close();
+            this.FileOpened = false;
+        }
+
     }
 
     public class DataUnit : IEnumerable
@@ -88,7 +131,6 @@ namespace Scarlet.Utilities
         public string System;
         public string Origin;
 
-        /// <param name="SourcePurpose"> The application of the source. Something like "Ground Temperature Sensor". Used to differentiate two of the same data sources. </param>
         /// <param name="SourceType"> The source type. Something like "MAX31855" </param>
         public DataUnit(string SourceType)
         {
