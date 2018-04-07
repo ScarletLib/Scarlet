@@ -145,5 +145,12 @@ namespace Scarlet.Utilities
             }
         }
 
+        /// <summary> Takes a 16bit number, and swaps the locations of the first and last 8b. E.g. 0x54EC would become 0xEC54. </summary>
+        /// Intended for use with 16b I2C devices that expect the byte order reversed.
+        public static ushort SwapBytes(ushort Input)
+        {
+            return (ushort)(((Input & 0b1111_1111) << 8) | ((Input >> 8) & 0b1111_1111));
+        }
+
     }
 }
