@@ -69,6 +69,11 @@ namespace Scarlet.Components.Outputs
                 SetConfig();
             }
 
+            public void Reset()
+            {
+                this.Config = new byte[] { 0x00, 0x00, 0x00, 0x10 };
+            }
+
             private void SetConfig()
             {
                 // Full on/off bits
@@ -84,10 +89,10 @@ namespace Scarlet.Components.Outputs
                     ushort OnTicks = (ushort)(Math.Max((this.DutyCycle * 4096) - 1, 0)); // For how many ticks the output should be on.
                     ushort OffTime = (ushort)((DelayTicks + OnTicks) % 4096); // The time when the state should be negated.
 
-                    this.Config[1] = (byte)(this.Config[1] | ((DelayTicks >> 8) & 0b1111)); // ON_MSB
+                    this.Config[1] = (byte)((this.Config[1] & 0b1111_0000) | ((DelayTicks >> 8) & 0b1111)); // ON_MSB
                     this.Config[0] = (byte)(DelayTicks & 0b1111_1111); // ON_LSB
 
-                    this.Config[3] = (byte)(this.Config[3] | ((OffTime >> 8) & 0b1111)); // OFF_MSB
+                    this.Config[3] = (byte)((this.Config[3] & 0b1111_0000) | ((OffTime >> 8) & 0b1111)); // OFF_MSB
                     this.Config[2] = (byte)(OffTime & 0b1111_1111); // OFF_LSB
                 }
 
@@ -216,11 +221,16 @@ namespace Scarlet.Components.Outputs
 
             //TODO Disabled
             // Set the SLEEP bit back to what it was.
-            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0110_1111) }); // Make sure we don't set bit 7 (RESET).
+            byte NewMode = (byte)((ModeSettingPre & 0b0110_1111) | (this.ExtOscFreq != -1 ? 0b0001_0000 : 0));
+            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(NewMode) }); // Make sure we don't set bit 7 (RESET).
+            Thread.Sleep(1); // 0.5ms minimum
+
+            // Restart
+            //this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre | 0b1000_0000) });
             Thread.Sleep(1); // 0.5ms minimum
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode now: 0x" + this.Bus.ReadRegister(this.PartAddress, (byte)Mode1Register, 1)[0].ToString("X1"));
             // If SLEEP was previously 0, we may need to RESTART.
-            if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
+            /*if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
             {
                 byte AfterWake = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
                 if((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
@@ -230,7 +240,7 @@ namespace Scarlet.Components.Outputs
                     Thread.Sleep(10);
                     SetupDevice();
                 }
-            }
+            }*/
         }
 
         /// <summary> Switches the PCA9685 to use the external oscillator. This can only be disabled via a power cycle or software reset. </summary>

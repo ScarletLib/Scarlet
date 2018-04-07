@@ -10,11 +10,15 @@ namespace Scarlet.IO
         /// <summary>Writes data to the specified register to the given device by address over the I2C bus.</summary>
         void WriteRegister(byte Address, byte Register, byte[] Data);
 
+        void WriteRegister16(byte Address, byte Register, ushort Data);
+
         /// <summary>Reads the specified amount of data from the device by address.</summary>
         byte[] Read(byte Address, int DataLength);
 
         /// <summary>Reads the specified amount of data from the specified register from the device by address.</summary>
         byte[] ReadRegister(byte Address, byte Register, int DataLength);
+
+        ushort ReadRegister16(byte Address, byte Register);
 
         /// <summary>Cleans up the bus object, freeing resources.</summary>
         void Dispose();
