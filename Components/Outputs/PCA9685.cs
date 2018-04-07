@@ -123,6 +123,10 @@ namespace Scarlet.Components.Outputs
         private byte PartAddress;
         private int ExtOscFreq;
 
+        private OutputInvert InvertMode;
+        private OutputDriverMode DriverMode;
+        private OutputDisableBehaviour DisableMode;
+
         private const byte Mode1Register = 0x00;
         private const byte Mode2Register = 0x01;
         private const byte FirstLEDRegister = 0x06;
@@ -148,28 +152,33 @@ namespace Scarlet.Components.Outputs
             this.Outputs = new PWMOutputPCA9685[16];
             for (byte i = 0; i < this.Outputs.Length; i++) { this.Outputs[i] = new PWMOutputPCA9685(i, this); }
             this.AllOutputs = new PWMOutputPCA9685(255, this);
-            SetupDevice(InvertMode, DriverMode, DisableMode);
+            this.InvertMode = InvertMode;
+            this.DriverMode = DriverMode;
+            this.DisableMode = DisableMode;
+            SetupDevice();
             ReadAllStates();
         }
 
-        private void SetupDevice(OutputInvert InvertMode, OutputDriverMode DriverMode, OutputDisableBehaviour DisableMode)
+        private void SetupDevice()
         {
             // Enable register auto-increment to make reads/writes much faster
             byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode register pre: 0x" + ModeSettingPre.ToString("X1"));
             byte ModeSettingNew = (byte)((ModeSettingPre & 0b0111_1111) | 0b0010_0000); // Set bit 5 (AI) to 1 to enable auto-increment, but don't set bit 7 (RESET).
             this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { ModeSettingNew });
 
             // Set the output modes
             byte Mode2 = 0b0000_0000;
-            Mode2 |= (byte)(((byte)InvertMode & 0b1) << 4);
-            Mode2 |= (byte)(((byte)DriverMode & 0b1) << 2);
-            Mode2 |= (byte)((byte)DisableMode & 0b11);
+            Mode2 |= (byte)(((byte)this.InvertMode & 0b1) << 4);
+            Mode2 |= (byte)(((byte)this.DriverMode & 0b1) << 2);
+            Mode2 |= (byte)((byte)this.DisableMode & 0b11);
             this.Bus.WriteRegister(this.PartAddress, Mode2Register, new byte[] { Mode2 });
         }
 
         internal void ReadAllStates()
         {
             byte[] OutputData = this.Bus.ReadRegister(this.PartAddress, FirstLEDRegister, 64);
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 states: " + UtilMain.BytesToNiceString(OutputData, true));
             if (OutputData == null || OutputData.Length != 64) { throw new Exception("Reading PCA9685 output state data did not return the correct amount of bytes (64)."); }
             for (int i = 0; i < 16; i++)
             {
@@ -205,16 +214,21 @@ namespace Scarlet.Components.Outputs
             // Set the frequency prescaler register.
             this.Bus.WriteRegister(this.PartAddress, PrescaleRegister, new byte[] { PrescaleVal });
 
+            //TODO Disabled
             // Set the SLEEP bit back to what it was.
-            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0111_1111) }); // Make sure we don't set bit 7 (RESET).
+            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0110_1111) }); // Make sure we don't set bit 7 (RESET).
             Thread.Sleep(1); // 0.5ms minimum
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode now: 0x" + this.Bus.ReadRegister(this.PartAddress, (byte)Mode1Register, 1)[0].ToString("X1"));
             // If SLEEP was previously 0, we may need to RESTART.
             if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
             {
                 byte AfterWake = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
                 if((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
                 {
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Rebooting PCA9685.");
                     this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(AfterWake & 0b1000_0000) });
+                    Thread.Sleep(10);
+                    SetupDevice();
                 }
             }
         }
