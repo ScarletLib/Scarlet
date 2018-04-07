@@ -48,10 +48,9 @@ namespace Scarlet.Utilities
                     Iterations++;
                 }
                 FileName += ".csv";
-                string FileLocation = Path.Combine(LogFilesLocation, FileName);
-                this.Writer = new StreamWriter(@FileLocation) { AutoFlush = this.AutoFlush };
                 LogFilePath = Path.Combine(LogFilesLocation, FileName);
-                Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + Path.Combine(LogFilesLocation, FileName) + "\".");
+                this.Writer = new StreamWriter(@LogFilePath) { AutoFlush = this.AutoFlush };
+                Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "DataLog created at \"" + LogFilePath + "\".");
                 this.FileCreated = true;
             }
         }
@@ -80,9 +79,11 @@ namespace Scarlet.Utilities
             StringBuilder Line = new StringBuilder();
             foreach(DataUnit Unit in Data)
             {
+                string UnitSystemName = Unit.System;
+                if (Unit.System == null) { UnitSystemName = "UntitledSystem"; }
                 foreach(string Key in Unit.Keys)
                 {
-                    Line.AppendFormat("{0}.{1}.{2},", Unit.System, Unit.Origin, Key);
+                    Line.AppendFormat("{0}.{1}.{2},", UnitSystemName, Unit.Origin, Key);
                 }
             }
             Line.Remove(Line.Length - 1, 1); // Remove the last comma
@@ -99,7 +100,7 @@ namespace Scarlet.Utilities
             Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "Deleting old DataLog files...");
             try
             {
-                string[] FileList = Directory.GetFiles(LogFilesLocation);
+                IEnumerable<string> FileList = Directory.EnumerateFiles(LogFilesLocation, "*.csv");
                 foreach (string FilePath in FileList) { File.Delete(FilePath); }
             }
             catch (IOException) { } // Do Nothing if file is in use or directory doesn't exist
