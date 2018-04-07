@@ -60,13 +60,15 @@ namespace UnitTest.UtilitiesTesting
         {
             DataLog DUT = new DataLog("TestFile");
             DUT.DeleteAll();
-            DataUnit DataUnitWait = new DataUnit("TestDataUnit")
+            for (int i = 0; i < 10; i++)
             {
-                { "a", 10 },
-                { "b", 20 },
-                { "c", 30 }
-            }.SetSystem("TestSystem");
-            for (int i = 0; i < 10; i++) { DUT.Output(DataUnitWait); }
+                DUT.Output(new DataUnit("TestDataUnit")
+                {
+                    { "a", "∫" },
+                    { "b", 20 },
+                    { "c", i }
+                }.SetSystem("TestSystem"));
+            }
             DUT.DeleteAll(); // Test deleting all the log files
             DUT.CloseFile(); // Close the file to regain access permission
             Assert.IsTrue(File.Exists(DUT.LogFilePath));
@@ -75,14 +77,14 @@ namespace UnitTest.UtilitiesTesting
             string[] ExpectedLines = new string[] 
             {
                 "TestSystem.TestDataUnit.a,TestSystem.TestDataUnit.b,TestSystem.TestDataUnit.c",
-                "10,20,30", "10,20,30", "10,20,30", "10,20,30", "10,20,30",
-                "10,20,30", "10,20,30", "10,20,30", "10,20,30", "10,20,30"
+                "∫,20,0", "∫,20,1", "∫,20,2", "∫,20,3", "∫,20,4",
+                "∫,20,5", "∫,20,6", "∫,20,7", "∫,20,8", "∫,20,9"
             };
             for (int i = 0; i < Lines.Length; i++)
             {
                 Assert.AreEqual(Lines[i], ExpectedLines[i]); // Test contents are correct
             }
-            Assert.ThrowsException<Exception>(delegate { DUT.Output(DataUnitWait); }); // Try to output to the file (which was closed)
+            Assert.ThrowsException<Exception>(delegate { DUT.Output(DataCont); }); // Try to output to the file (which was closed)
             Assert.AreEqual(File.ReadAllLines(DUT.LogFilePath).Length, LineCnt); // Ensure it didn't write
             DUT.DeleteAll(); // Delete the file
             Assert.IsFalse(File.Exists(DUT.LogFilePath)); // Make sure it was deleted
