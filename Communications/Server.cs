@@ -109,6 +109,7 @@ namespace Scarlet.Communications
         /// <summary> Sends signal to all components of Server to stop, then waits for everything to shut down. </summary>
         public static void Stop()
         {
+            if (!Initialized) { return; } // We never even started
             Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Server.");
             Stopping = true;
             WatchdogManager.Stop();

@@ -63,5 +63,18 @@ namespace Scarlet.IO.BeagleBone
         }
 
         public void Dispose() { } // TODO: Implement.
+
+        public void WriteRegister16(byte Address, byte Register, ushort Data)
+        {
+            // TODO: See if this works.
+            WriteRegister(Address, Register, new byte[] { (byte)(Data >> 8 & 0b1111_1111), (byte)(Data & 0b1111_1111) });
+        }
+
+        public ushort ReadRegister16(byte Address, byte Register)
+        {
+            // TODO: See if this works.
+            byte[] Data = ReadRegister(Address, Register, 2);
+            return (ushort)(Data[0] | Data[1] << 8);
+        }
     }
 }

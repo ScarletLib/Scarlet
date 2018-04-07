@@ -89,10 +89,10 @@ namespace Scarlet.IO.BeagleBone
 
         /// <summary> Sets the clock frequency of this PWM device. Note that this gets applied to both outputs. </summary>
         /// <param name="Frequency"> The new frequency, in Hz. </param>
-        public void SetFrequency(int Frequency)
+        public void SetFrequency(float Frequency)
         {
-            if (this.OutputA.Port != null) { this.OutputA.Port.FrequencyHz = (uint)Frequency; }
-            else if (this.OutputB.Port != null) { this.OutputB.Port.FrequencyHz = (uint)Frequency; }
+            if (this.OutputA.Port != null) { this.OutputA.Port.FrequencyHz = (uint)Math.Round(Frequency); }
+            else if (this.OutputB.Port != null) { this.OutputB.Port.FrequencyHz = (uint)Math.Round(Frequency); }
             else { throw new InvalidOperationException("Cannot change frequency of device before initialization."); }
 
             if (this.OutputA.Port != null) { this.OutputA.ResetOutput(); }
@@ -199,7 +199,7 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary> Sets the device's (both output A and B) clock frequency to the given one, in Hz. </summary>
-        public void SetFrequency(int Frequency) { this.Parent.SetFrequency(Frequency); }
+        public void SetFrequency(float Frequency) { this.Parent.SetFrequency(Frequency); }
 
         /// <summary> Sets the output to the given duty cycle. Must be between 0.0 and 1.0. </summary>
         public void SetOutput(float DutyCycle)
