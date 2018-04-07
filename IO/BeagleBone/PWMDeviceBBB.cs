@@ -73,6 +73,31 @@ namespace Scarlet.IO.BeagleBone
             }
             return PWMPortEnum.PWM_NONE;
         }
+
+        public static PWMOutputBBB GetFromPin(BBBPin Pin)
+        {
+            switch (Pin)
+            {
+                case BBBPin.P9_22:
+                case BBBPin.P9_31: return PWMDevice0.OutputA;
+
+                case BBBPin.P9_21:
+                case BBBPin.P9_29: return PWMDevice0.OutputB;
+
+                case BBBPin.P9_14:
+                case BBBPin.P8_36: return PWMDevice1.OutputA;
+
+                case BBBPin.P9_16:
+                case BBBPin.P8_34: return PWMDevice1.OutputB;
+
+                case BBBPin.P8_19:
+                case BBBPin.P8_45: return PWMDevice2.OutputA;
+
+                case BBBPin.P8_13:
+                case BBBPin.P8_46: return PWMDevice2.OutputB;
+            }
+            return null;
+        }
     }
 
     public class PWMDeviceBBB
