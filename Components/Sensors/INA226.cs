@@ -65,7 +65,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Prepares the INA226 device for usee. </summary>
         /// <param name="Bus"> The I2C bus the device is connected to. </param>
         /// <param name="DeviceAddress"> The I2C address of the device. Set by hardware pin connections. </param>
-        /// <param name="MaxCurrent"> The absolute maximum current that you expect to measure with this. Used to set amplifier scaling. Usually set to the connected device's max current, loike motor stall current. </param>
+        /// <param name="MaxCurrent"> The absolute maximum current that you expect to measure with this. Used to set amplifier scaling. Usually set to the connected device's max current, like motor stall current. </param>
         /// <param name="Resistor"> The resistance of the current shunt path. This should be measured with the best possible precision, as slight error here can cause large measurement error. </param>
         /// <param name="Avg"> How many samples you want the chip to average for voltage/current/power values. Will stabilize readings, but reduce high-frequency response (usually not needed anyways). </param>
         /// <param name="VBusTime"> Determines how long the ADC samples to measure power supply voltage. Longer (slower) times will stabilize readings, but reduce high requency response (usually not needed anyways). </param>
