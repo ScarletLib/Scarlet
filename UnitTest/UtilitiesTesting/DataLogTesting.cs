@@ -52,5 +52,20 @@ namespace UnitTest.UtilitiesTesting
             DUT.Output(DataCont);
             Assert.ThrowsException<IOException>(delegate { File.Delete(DUT.LogFilePath); });
         }
+
+        [TestMethod]
+        public void DataLogBasicUseTest()
+        {
+            DataLog.DeleteAll();
+            DataLog DUT = new DataLog("test");
+            DataUnit DataUnitWait = new DataUnit("test")
+            {
+                { "a", 10 },
+                { "b", 20 },
+                { "c", 30 }
+            }.SetSystem("TestSystem");
+            for (int i = 0; i < 10; i++) { DUT.Output(DataUnitWait); }
+            DataLog.DeleteAll();
+        }
     }
 }
