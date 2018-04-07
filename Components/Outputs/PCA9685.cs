@@ -148,6 +148,7 @@ namespace Scarlet.Components.Outputs
         /// <remarks> During setup, there will be quite a bit of communication with the device (70+ bytes). </remarks>
         /// <param name="Address"> The I2C address set via the device's physical address pins. </param>
         /// <param name="ExtOscFreq"> If there is an external oscillator, set the frequency here. If there isn't, set to -1. </param>
+        /// <exception cref="ArgumentException"> If invalid oscillator frequency is provided. </exception>
         public PCA9685(II2CBus Bus, byte Address, int ExtOscFreq = -1, OutputInvert InvertMode = OutputInvert.Regular, OutputDriverMode DriverMode = OutputDriverMode.TotemPole, OutputDisableBehaviour DisableMode = OutputDisableBehaviour.Low)
         {
             this.Bus = Bus;
