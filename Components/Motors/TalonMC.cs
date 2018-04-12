@@ -96,7 +96,7 @@ namespace Scarlet.Components.Motors
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }
             if (-Speed > this.MaxSpeed) { Speed = -this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
-            this.PWMOut.SetOutput((Speed + 1.0f) * (0.3333333f) / (2.0f) + 0.3333333f);
+            this.PWMOut.SetOutput((Speed + 3.0f) / 6.0f);
         }
     }
 }
