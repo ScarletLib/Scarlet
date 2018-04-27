@@ -121,7 +121,7 @@ namespace Scarlet.Components.Motors
             List<byte> payload = new List<byte>();
             byte ShortPacket = 2;
 
-            packet.Add(ShortPacket);
+            packet.Add(ShortPacket); // Start byte
             
             if (CANForwardId >= 0)
             {
@@ -129,21 +129,21 @@ namespace Scarlet.Components.Motors
                 payload.Add((byte) CANForwardId);
             }
 
-
             payload.Add((byte) PacketId.SET_DUTY);
             // Duty Cycle (100000 mysterious magic number from https://github.com/VTAstrobotics/VESC_BBB_UART/blob/master/bldc_interface.c)
             payload.AddRange(UtilData.ToBytes(Speed * 100000));
 
             packet.Add((byte) payload.Count); // Length of payload
-            packet.AddRange(payload);
+            packet.AddRange(payload); // Payload
 
             ushort checksum = UtilData.Crc16.ComputeChecksum(payload.ToArray());
-            packet.AddRange(UtilData.ToBytes(checksum));
+            packet.AddRange(UtilData.ToBytes(checksum)); // Checksum
 
             packet.Add(3); // Stop byte
 
             return packet.ToArray();
         }
+
         private enum PacketId : byte
         {
             FW_VERSION,
