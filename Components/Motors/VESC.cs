@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Scarlet.Components.Motors
 {
-    class VESC : IMotor
+    public class VESC : IMotor
     {
         private IFilter<float> Filter; // Filter for speed output
         private readonly IUARTBus UARTBus;
@@ -144,6 +144,7 @@ namespace Scarlet.Components.Motors
             return packet.ToArray();
         }
 
+        #region enums
         private enum PacketId : byte
         {
             FW_VERSION,
@@ -183,6 +184,7 @@ namespace Scarlet.Components.Motors
             SET_CHUCK_DATA,
             CUSTOM_APP_DATA
         }
+        #endregion
     }
 
 }
