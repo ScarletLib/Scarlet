@@ -131,12 +131,12 @@ namespace Scarlet.Components.Motors
 
             payload.Add((byte) PacketId.SET_DUTY);
             // Duty Cycle (100000 mysterious magic number from https://github.com/VTAstrobotics/VESC_BBB_UART/blob/master/bldc_interface.c)
-            payload.AddRange(UtilData.ToBytes(Speed * 100000));
+            payload.AddRange(UtilData.ToBytes((Int32) Speed * 100000));
 
             packet.Add((byte) payload.Count); // Length of payload
             packet.AddRange(payload); // Payload
 
-            ushort checksum = UtilData.Crc16.ComputeChecksum(payload.ToArray());
+            ushort checksum = UtilData.CRC16(payload.ToArray());
             packet.AddRange(UtilData.ToBytes(checksum)); // Checksum
 
             packet.Add(3); // Stop byte
