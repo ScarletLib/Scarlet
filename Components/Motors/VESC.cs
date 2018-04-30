@@ -131,7 +131,7 @@ namespace Scarlet.Components.Motors
 
             payload.Add((byte) PacketId.SET_DUTY);
             // Duty Cycle (100000 mysterious magic number from https://github.com/VTAstrobotics/VESC_BBB_UART/blob/master/bldc_interface.c)
-            payload.AddRange(UtilData.ToBytes((Int32) Speed * 100000));
+            payload.AddRange(UtilData.ToBytes((Int32)(Speed * 100000.0)));
 
             packet.Add((byte) payload.Count); // Length of payload
             packet.AddRange(payload); // Payload
