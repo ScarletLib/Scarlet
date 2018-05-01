@@ -120,7 +120,11 @@ namespace Scarlet.IO.BeagleBone
             set => this.Port.StopBits = ((value == UARTStopBits.STOPBITS_1) ? System.IO.Ports.StopBits.One : System.IO.Ports.StopBits.Two);
         }
         
-
+        /// <summary>
+        /// Communication with serial devices that are represented in the Unix filesystem.
+        /// These are devices connected over USB as opposed to directly on the Beaglebone UART pins.
+        /// </summary>
+        /// <param name="DevicePath"> Unix path to file representing the serial connection to device (e.g.: /dev/ttyACM0) </param>
         public UARTFileBusBBB(string DevicePath)
         {
             this.Port = new SerialPort(DevicePath);

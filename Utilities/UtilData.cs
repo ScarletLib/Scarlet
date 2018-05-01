@@ -153,15 +153,15 @@ namespace Scarlet.Utilities
         }
 
         /// <summary> Computes a CRC-16 checksum from given payload. </summary>
-        /// <param name="payload"> Payload of which to compute the checksum </param>
-        public static ushort CRC16(byte[] payload)
+        /// <param name="Payload"> Payload of which to compute the checksum </param>
+        public static ushort CRC16(byte[] Payload)
         {
             int i;
             int cksum = 0;
 
-            for (i = 0; i < payload.Length; i++)
+            for (i = 0; i < Payload.Length; i++)
             {
-                cksum = crc16_table[(((cksum >> 8) ^ payload[i]) & 0xFF)] ^ (cksum << 8);
+                cksum = crc16_table[(((cksum >> 8) ^ Payload[i]) & 0xFF)] ^ (cksum << 8);
             }
 
             return (ushort)cksum;

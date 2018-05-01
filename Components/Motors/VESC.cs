@@ -11,17 +11,17 @@ namespace Scarlet.Components.Motors
     {
         private IFilter<float> Filter; // Filter for speed output
         private readonly IUARTBus UARTBus;
-        private readonly int CANForwardId;
+        private readonly int CANForwardID;
         private readonly float MaxSpeed;
 
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
         private bool Stopped; // Whether or not the motor is stopped
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
 
-        /// <summary> Initializes a Talon Motor controller </summary>
+        /// <summary> Initializes a VESC Motor controller </summary>
         /// <param name="UARTBus"> UART output to control the motor controller </param>
         /// <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
-        /// <param name="CANForwardId"> CAN ID of the motor controller (-1 to disable CAN forwarding) </param>
+        /// <param name="CANForwardID"> CAN ID of the motor controller (-1 to disable CAN forwarding) </param>
         /// <param name="SpeedFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
         public VESC(IUARTBus UARTBus, float MaxSpeed, int CANForwardId = -1, IFilter<float> SpeedFilter = null)
         {
@@ -30,7 +30,7 @@ namespace Scarlet.Components.Motors
             this.UARTBus.BitLength = UARTBitCount.BITS_8;
             this.UARTBus.StopBits = UARTStopBits.STOPBITS_1;
             this.UARTBus.Parity = UARTParity.PARITY_NONE;
-            this.CANForwardId = CANForwardId;
+            this.CANForwardID = CANForwardId;
             this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
             this.SetSpeedDirectly(0.0f);
@@ -102,87 +102,78 @@ namespace Scarlet.Components.Motors
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }
             if (-Speed > this.MaxSpeed) { Speed = -this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
-            UARTBus.Write(ConstructPacket(Speed));
+            this.SendSpeed(Speed);
         }
 
-
         /// <summary>
-        /// Generates the packet for the motor controller:
+        /// Sends the speed between -1.0 and 1.0 to the motor controller
+        /// </summary>
+        /// <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        private void SendSpeed(float Speed)
+        {
+            List<byte> payload = new List<byte>();
+            payload.Add((byte)PacketID.SET_DUTY);
+            // Duty Cycle (100000.0 mysterious magic number from https://github.com/VTAstrobotics/VESC_BBB_UART/blob/master/bldc_interface.c)
+            payload.AddRange(UtilData.ToBytes((Int32)(Speed * 100000.0)));
+            this.UARTBus.Write(ConstructPacket(payload));
+        }
+
+        /// <summary> Tell the motor controller that there is a listener on the other end. </summary>
+        /// <remarks> Makes the motor stop. </remarks>
+        public void SendAlive()
+        {
+            List<byte> payload = new List<byte>();
+            payload.Add((byte)PacketID.ALIVE);
+            this.UARTBus.Write(ConstructPacket(payload));
+        }
+
+        /// <summary> Generates the packet for the motor controller: </summary>
+        /// <remarks>
         /// One Start byte (value 2 for short packets and 3 for long packets)
         /// One or two bytes specifying the packet length
         /// The payload of the packet
         /// Two bytes with a CRC checksum on the payload
         /// One stop byte (value 3)
-        /// </summary>
+        /// </remarks>
         /// <param name="Speed"> Speed from -1.0 to 1.0 </param>
-        private byte[] ConstructPacket(float Speed)
+        private byte[] ConstructPacket(List<byte> Payload)
         {
-            List<byte> packet = new List<byte>();
-            List<byte> payload = new List<byte>();
-            byte ShortPacket = 2;
+            List<byte> Packet = new List<byte>();
 
-            packet.Add(ShortPacket); // Start byte
-            
-            if (CANForwardId >= 0)
+            Packet.Add(2); // Start byte (short packet - payload <= 256 bytes)
+
+            if (this.CANForwardID >= 0)
             {
-                payload.Add((byte) PacketId.FORWARD_CAN);
-                payload.Add((byte) CANForwardId);
+                Payload.Add((byte)PacketID.FORWARD_CAN);
+                Payload.Add((byte)CANForwardID);
             }
 
-            payload.Add((byte) PacketId.SET_DUTY);
-            // Duty Cycle (100000 mysterious magic number from https://github.com/VTAstrobotics/VESC_BBB_UART/blob/master/bldc_interface.c)
-            payload.AddRange(UtilData.ToBytes((Int32)(Speed * 100000.0)));
+            Packet.Add((byte)Payload.Count); // Length of payload
+            Packet.AddRange(Payload); // Payload
 
-            packet.Add((byte) payload.Count); // Length of payload
-            packet.AddRange(payload); // Payload
+            ushort Checksum = UtilData.CRC16(Payload.ToArray());
+            Packet.AddRange(UtilData.ToBytes(Checksum)); // Checksum
 
-            ushort checksum = UtilData.CRC16(payload.ToArray());
-            packet.AddRange(UtilData.ToBytes(checksum)); // Checksum
+            Packet.Add(3); // Stop byte
 
-            packet.Add(3); // Stop byte
-
-            return packet.ToArray();
+            return Packet.ToArray();
         }
 
         #region enums
-        private enum PacketId : byte
+        private enum PacketID : byte
         {
-            FW_VERSION,
-            JUMP_TO_BOOTLOADER,
-            ERASE_NEW_APP,
-            WRITE_NEW_APP_DATA,
-            GET_VALUES,
-            SET_DUTY,
-            SET_CURRENT,
-            SET_CURRENT_BRAKE,
-            SET_RPM,
-            SET_POS,
-            SET_DETECT,
-            SET_SERVO_POS,
-            SET_MCCONF,
-            GET_MCCONF,
-            GET_MCCONF_DEFAULT,
-            SET_APPCONF,
-            GET_APPCONF,
-            GET_APPCONF_DEFAULT,
-            SAMPLE_PRINT,
-            TERMINAL_CMD,
-            PRINT,
-            ROTOR_POSITION,
-            EXPERIMENT_SAMPLE,
-            DETECT_MOTOR_PARAM,
-            DETECT_MOTOR_R_L,
-            DETECT_MOTOR_FLUX_LINKAGE,
-            DETECT_ENCODER,
-            DETECT_HALL_FOC,
-            REBOOT,
-            ALIVE,
-            GET_DECODED_PPM,
-            GET_DECODED_ADC,
-            GET_DECODED_CHUK,
-            FORWARD_CAN,
-            SET_CHUCK_DATA,
-            CUSTOM_APP_DATA
+            // Full enum list here: https://github.com/vedderb/bldc_uart_comm_stm32f4_discovery/blob/master/datatypes.h
+            FW_VERSION = 0,
+            GET_VALUES = 4,
+            SET_DUTY = 5,
+            SET_CURRENT = 6,
+            SET_CURRENT_BRAKE = 7,
+            SET_RPM = 8,
+            SET_POS = 9,
+            SET_DETECT = 10,
+            REBOOT = 28,
+            ALIVE = 29,
+            FORWARD_CAN = 33
         }
         #endregion
     }
