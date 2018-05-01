@@ -77,11 +77,11 @@ namespace Scarlet.Utilities
         /// <param name="SrcMax"> Maximum of the original range. </param>
         /// <param name="DstMin"> Minimum of the destination range. </param>
         /// <param name="DstMax"> Maximum of the destination range. </param>
-        public static float LinearMap(float Value, float SrcMin, float SrcMax, float DstMin, float DstMax)
+        public static double LinearMap(double Value, double SrcMin, double SrcMax, double DstMin, double DstMax)
         {
-            float srcSpan = SrcMax - SrcMin;
-            float dstSpan = DstMax - DstMin;
-            float scaled = (Value - SrcMin) / srcSpan;
+            double srcSpan = SrcMax - SrcMin;
+            double dstSpan = DstMax - DstMin;
+            double scaled = (Value - SrcMin) / srcSpan;
             return DstMin + (scaled * dstSpan);
         }
 
