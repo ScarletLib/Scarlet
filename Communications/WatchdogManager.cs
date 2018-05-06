@@ -44,8 +44,7 @@ namespace Scarlet.Communications
                 // Initialize data structures
                 WatchdogManager.Watchdogs = new Dictionary<string, Watchdog>();
                 // Construct the watchdog packet (UDP)
-                WatchdogManager.WatchdogPacket = new Packet(Constants.WATCHDOG_PING, true);
-                WatchdogManager.WatchdogPacket.AppendData(Utilities.UtilData.ToBytes(MyName));
+                WatchdogManager.WatchdogPacket = new PacketWriter(Constants.WATCHDOG_PING, true).Put(MyName).Packet;
                 // If Watchdog sender is a client, solely add the server to the watchdogs
                 if (IsClient) { Watchdogs.Add("Server", new Watchdog("Server")); }
                 // Start the send thread
@@ -106,8 +105,7 @@ namespace Scarlet.Communications
             // Check if a client attempts to add a watchdog
             if (IsClient) { throw new InvalidOperationException("Clients cannot add watchdogs"); }
             // Construct the client's watchdog packet
-            Packet WatchdogPacket = new Packet(Constants.WATCHDOG_PING, true, Endpoint);
-            WatchdogPacket.AppendData(Utilities.UtilData.ToBytes(Endpoint));
+            Packet WatchdogPacket = new PacketWriter(Constants.WATCHDOG_PING, true, Endpoint).Put(Endpoint).Packet;
             // Append to the dictionary so long as it isn't already there
             // (otherwise and exception will be thrown)
             if (!Watchdogs.ContainsKey(Endpoint))

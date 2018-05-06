@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scarlet.Utilities;
+using System;
 
 namespace Scarlet.Components
 {
@@ -9,6 +10,12 @@ namespace Scarlet.Components
 
         /// <summary> Updates the state of the sensor, usually done by getting a new reading. </summary>
         void UpdateState();
+
+        /// <summary> Gets the sensor's data in a format that can be used for easy storage. </summary>
+        DataUnit GetData();
+
+        /// <summary> The sensor's purpose, like "GroundTemp". i.e. What does it measure? </summary>
+        string System { get; set; }
 
         /// <summary> Used to send events to sensors. </summary>
         void EventTriggered(object Sender, EventArgs Event);

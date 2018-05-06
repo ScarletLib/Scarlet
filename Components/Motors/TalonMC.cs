@@ -10,7 +10,7 @@ namespace Scarlet.Components.Motors
     {
         private IFilter<float> Filter; // Filter for speed output
         private readonly IPWMOutput PWMOut;
-        private readonly float MaxSpeed; 
+        private readonly float MaxSpeed;
 
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
         private bool Stopped; // Whether or not the motor is stopped
@@ -25,28 +25,31 @@ namespace Scarlet.Components.Motors
             this.PWMOut = PWMOut;
             this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
+            this.SetSpeedDirectly(0.0f);
             this.PWMOut.SetFrequency(333);
             this.PWMOut.SetEnabled(true);
-            this.SetSpeedDirectly(0.0f);
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }
 
         /// <summary> 
-        /// Immediately sets the enabled status of the motor. 
-        /// If false, resets TargetSpeed to 0 and stops the motor.
+        /// Immediately sets the enabled status of the motor.
+        /// Stops the motor if given parameter is false.
+        /// Does not reset the target speed to zero, so beware
+        /// of resetting this to enabled.
         /// </summary>
         public void SetEnabled(bool Enabled)
         {
             this.Stopped = !Enabled;
-            if (!Enabled) { this.SetSpeedDirectly(0); }
+            if (Enabled) { this.SetSpeed(this.TargetSpeed); }
+            else { this.SetSpeedDirectly(0); }
         }
 
         /// <summary> Sets the speed on a thread for filtering. </summary>
         private void SetSpeedThread()
         {
             float Output = this.Filter.GetOutput();
-            while(!this.Filter.IsSteadyState())
+            while (!this.Filter.IsSteadyState())
             {
                 if (Stopped) { SetSpeedDirectly(0); }
                 else
@@ -91,9 +94,9 @@ namespace Scarlet.Components.Motors
         private void SetSpeedDirectly(float Speed)
         {
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }
-            if (Speed * -1 > this.MaxSpeed) { Speed = -1 * this.MaxSpeed; }
+            if (-Speed > this.MaxSpeed) { Speed = -this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
-            this.PWMOut.SetOutput((Speed / 2) + 0.5F);
+            this.PWMOut.SetOutput((Speed + 3.0f) / 6.0f);
         }
     }
 }

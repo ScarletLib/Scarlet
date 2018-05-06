@@ -1,6 +1,9 @@
 ﻿using System;
+<<<<<<< HEAD
 using System.Collections.Generic;
 using System.Linq;
+=======
+>>>>>>> upstream/CAN
 using System.Runtime.InteropServices;
 
 namespace Scarlet.IO.BeagleBone
@@ -40,6 +43,7 @@ namespace Scarlet.IO.BeagleBone
 
     public class CANBusBBB : ICANBus
     {
+<<<<<<< HEAD
         [StructLayout(LayoutKind.Explicit)]
         private struct CANFrame
         {
@@ -74,6 +78,13 @@ namespace Scarlet.IO.BeagleBone
         {
             int Result = InitCan(Name);
             if (Result < 0) { throw new Exception("Error while opening socket"); }
+=======
+
+
+        // TODO: Implement CAN functionality.
+        internal CANBusBBB(BBBPin[] Pins) // TX, RX
+        {
+>>>>>>> upstream/CAN
         }
 
         public byte[] Read(byte Address, int DataLength)

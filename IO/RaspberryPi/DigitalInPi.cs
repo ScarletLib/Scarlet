@@ -2,7 +2,7 @@
 
 namespace Scarlet.IO.RaspberryPi
 {
-    public class DigitalInPi : IDigitalIn
+    public class DigitalInPi : IDigitalIn, IInterruptSource
     {
         public int PinNumber { get; private set; }
         private bool RisingInit, FallingInit, AnyInit;

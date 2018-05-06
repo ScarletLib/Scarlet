@@ -12,12 +12,15 @@ namespace Scarlet.Components.Sensors
         private volatile bool HadEvent, NewState;
         public event EventHandler<LimitSwitchToggle> SwitchToggle;
         public bool State { get => (this.Invert ? !Input.GetInput() : Input.GetInput()); }
+        public string System { get; set; } 
 
+        /// <param name="Input"> Must also implement IInterruptSource. </param>
         public LimitSwitch(IDigitalIn Input, bool Invert = false)
         {
+            if (!(Input is IInterruptSource)) { throw new Exception("LimitSwitch IDigitalIn must also be IInterruptSource."); }
             this.Input = Input;
             this.Invert = Invert;
-            Input.RegisterInterruptHandler(EventTriggered, InterruptType.ANY_EDGE);
+            ((IInterruptSource)Input).RegisterInterruptHandler(EventTriggered, InterruptType.ANY_EDGE);
         }
         
         public bool Test()
@@ -50,6 +53,15 @@ namespace Scarlet.Components.Sensors
                 this.HadEvent = true;
                 this.NewState = ((InputInterrupt)Event).NewState;
             }
+        }
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("LimitSwitch")
+            {
+                { "Triggered", this.State }
+            }
+            .SetSystem(this.System);
         }
     }
 

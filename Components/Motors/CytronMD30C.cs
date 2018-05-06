@@ -28,10 +28,10 @@ namespace Scarlet.Components.Motors
             this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
             this.PWMOut.SetFrequency(5000);
+            this.SetSpeedDirectly(0.0f);
             this.PWMOut.SetEnabled(true);
             this.GPIOOut = GPIOOut;
             this.GPIOOut.SetOutput(false);
-            this.SetSpeedDirectly(0.0f);
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }

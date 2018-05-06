@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -214,6 +215,7 @@ namespace Scarlet.Components.Sensors
         private II2CBus I2C;
 
         private float X, Y, Z;
+        public string System { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via
@@ -256,7 +258,15 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Gets the vector corresponding to the orientation of the magnetometer according to the type specified. </summary>
-        /// <returns> The vector. </returns>
+        /// <returns> 
+        /// The vector. 
+        /// If VECTOR_ACCELEROMETER was passed, the vector is the 3-axis acceleration in mG.
+        /// If VECTOR_MAGNETOMETER was passed, the vector is the Magnetic Field Strength vector in uT.
+        /// If VECTOR_GYROSCOPE was passed, the vector is Angular Velocity Vector in Degrees / sec.
+        /// If VECTOR_EULER was passed, the vector is the orientation as (Roll, Pitch, Yaw) in degrees
+        /// If VECTOR_LINEARACCEL was passed, returns the linear acceleration vector mG.
+        /// If VECTOR_GRAVITY was passed, returns the gravitational acceleration vector in mG.
+        /// </returns>/            
         /// <param name="VectorType"> Type of vector to be read. </param>
         public Tuple<float, float, float> GetVector(VectorType VectorType)
         {
@@ -293,12 +303,18 @@ namespace Scarlet.Components.Sensors
         public bool Test()
         {
             Begin();
-            var (X, Y, Z) = this.GetVector(VectorType.VECTOR_MAGNETOMETER);
-            return (X != 0.0f || Y != 0.0f || Z != 0.0f);
+            Tuple<float, float, float> XYZ = this.GetVector(VectorType.VECTOR_MAGNETOMETER);
+            return (XYZ.Item1 != 0.0f || XYZ.Item2 != 0.0f || XYZ.Item3 != 0.0f);
         }
 
         /// <summary> Reads the position according to the magnetometer and updates the class variables. </summary>
-        public void UpdateState() => (this.X, this.Y, this.Z) = GetVector(VectorType.VECTOR_MAGNETOMETER);
+        public void UpdateState()
+        {
+            Tuple<float, float, float> XYZ = GetVector(VectorType.VECTOR_MAGNETOMETER);
+            this.X = XYZ.Item1;
+            this.Y = XYZ.Item2;
+            this.Z = XYZ.Item3;
+        }
 
         /// <summary> Does nothing. </summary>
         /// <param name="sender"> Sender. </param>
@@ -314,5 +330,18 @@ namespace Scarlet.Components.Sensors
         /// <param name="Register"> Register to write to. </param>
         /// <param name="Data"> Byte to write.</param>
         private void Write8(byte Register, byte Data) => I2C.WriteRegister(Address, Register, new byte[] { Data });
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("BNO055")
+            {
+                { "X", this.X },
+                { "Y", this.Y },
+                { "Z", this.Z }
+            }
+            .SetSystem(this.System);
+        }
+
+        public void SetSystem(string SystemName) => this.System = SystemName;
     }
 }

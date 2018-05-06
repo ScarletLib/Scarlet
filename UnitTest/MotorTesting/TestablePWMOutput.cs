@@ -9,7 +9,7 @@ namespace UnitTest
 {
     public class TestablePWMOutput : IPWMOutput
     {
-        public int Frequency { get; private set; }
+        public float Frequency { get; private set; }
         public float DutyCycle { get; private set; }
         public bool Enabled { get; private set; }
 
@@ -18,6 +18,8 @@ namespace UnitTest
         public void SetEnabled(bool Enable) { this.Enabled = Enable; }
 
         public void SetFrequency(int Frequency) { this.Frequency = Frequency; }
+
+        public void SetFrequency(float Frequency) { this.Frequency = Frequency; }
 
         public void SetOutput(float DutyCycle) { this.DutyCycle = DutyCycle; }
     }

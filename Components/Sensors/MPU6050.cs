@@ -1,9 +1,6 @@
 ﻿using Scarlet.IO;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -15,6 +12,7 @@ namespace Scarlet.Components.Sensors
         private MPUData LastReading;
         private static double[] AccelSensitivity = new double[] { 2.0, 4.0, 8.0, 16.0 };
         private static double[] GyroSensitivity = new double[] { 250.0, 500.0, 1000.0, 2000.0 };
+        public string System { get; set; }
 
         public MPU6050(II2CBus Bus, byte DeviceID)
         {
@@ -77,13 +75,13 @@ namespace Scarlet.Components.Sensors
             EnableSelfTest(true);
 
             UpdateState();
-            MPUData SelfTestResponse = GetData();
+            MPUData SelfTestResponse = GetReading();
 
             // Disable self test
             EnableSelfTest(false);
 
             UpdateState();
-            MPUData RawTest = GetData();
+            MPUData RawTest = GetReading();
 
             // Check each field for self test deviation
             bool ReturnValue = true;
@@ -115,7 +113,7 @@ namespace Scarlet.Components.Sensors
             LastReading.GyroZ = ((GZ[0] << 8) | GZ[1]) / GyroSensitivity[Configuration.GyroSensitivity];
         }
 
-        public MPUData GetData() { return LastReading; }
+        public MPUData GetReading() { return LastReading; }
 
         public double GetInternalTemp()
         {
@@ -212,6 +210,19 @@ namespace Scarlet.Components.Sensors
             return true;
         }
 
+        public DataUnit GetData()
+        {
+            return new DataUnit("MPU6050")
+            {
+                { "AccelX", this.LastReading.AccelX },
+                { "AccelY", this.LastReading.AccelY },
+                { "AccelZ", this.LastReading.AccelZ },
+                { "GyroX", this.LastReading.GyroX },
+                { "GyroY", this.LastReading.GyroY },
+                { "GyroZ", this.LastReading.GyroZ }
+            }
+            .SetSystem(this.System);
+        }
     }
 
 }

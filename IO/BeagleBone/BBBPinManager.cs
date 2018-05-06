@@ -216,14 +216,14 @@ namespace Scarlet.IO.BeagleBone
 
             if (Clock == BBBPin.P9_22) // Port 0
             {
-                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_18 && MISO == BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_21 && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_21) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_18) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
-                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_30) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_29) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MISO != BBBPin.NONE && MISO != BBBPin.P9_29) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
+                if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_30) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
             }
             else { throw new InvalidOperationException("SPI Clock pin selected is invalid. Make sure MISO, MOSI, and clock are valid selections and part of the same port."); }
 
@@ -444,16 +444,21 @@ namespace Scarlet.IO.BeagleBone
             string PrevNum = StateStore.GetOrCreate("Scarlet-DevTreeNum", "0");
             string PrevHash = StateStore.GetOrCreate("Scarlet-DevTreeHash", "NONE");
 
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Generating device tree...");
             List<string> DeviceTree = GenerateDeviceTree();
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Last run was #" + PrevNum + ", hash " + PrevHash);
             bool New = PrevHash != DeviceTree.GetHashCode().ToString();
             if (New) { StateStore.Set("Scarlet-DevTreeNum", (int.Parse(PrevNum) + 1).ToString()); }
             FileName += StateStore.Get("Scarlet-DevTreeNum");
             StateStore.Set("Scarlet-DevTreeHash", DeviceTree.GetHashCode().ToString());
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Now on " + FileName);
             StateStore.Save();
             string OutputDTFile = FileName + ".dts";
 
             // Save the device tree to file
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Saving to DTS file...");
             File.WriteAllLines(OutputDTFile, DeviceTree);
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "DTS file saved.");
 
             bool AttemptOverlayChanges = false;
             bool WarnAboutApplication = false;
@@ -475,6 +480,7 @@ namespace Scarlet.IO.BeagleBone
                     break;
             }
 
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "AttemptChanges: " + AttemptOverlayChanges + ", new: " + New);
             if (AttemptOverlayChanges)
             {
                 if (New)
@@ -488,15 +494,18 @@ namespace Scarlet.IO.BeagleBone
                     Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Compiling device tree...");
                     Compile.Start();
                     Compile.WaitForExit();
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Compilation done.");
 
                     // Remove previous device tree
                     RemovePinSettings();
 
                     // Copy the compiled file to the firmware folder, removing the existing one
                     // Command: cp Scarlet-DT-00A0.dtbo /lib/firmware
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Copying compile tree to lib folder...");
                     if (!File.Exists(CompiledDTFile)) { throw new FileNotFoundException("Failed to get compiled device tree!"); }
                     if (File.Exists("/lib/firmware/" + CompiledDTFile)) { File.Delete("/lib/firmware/" + CompiledDTFile); }
                     File.Copy(CompiledDTFile, "/lib/firmware/" + CompiledDTFile, true);
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Copying done.");
 
                     // Delete the compiled tree file in execution folder
                     File.Delete(CompiledDTFile);
@@ -505,11 +514,13 @@ namespace Scarlet.IO.BeagleBone
                 // Command: echo Scarlet-DT > /sys/devices/platform/bone_capemgr/slots
                 try
                 {
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Applying device tree overlay...");
                     using (StreamWriter SlotWriter = File.AppendText("/sys/devices/platform/bone_capemgr/slots"))
                     {
                         SlotWriter.WriteLine(FileName);
                         SlotWriter.Flush();
                     }
+                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Done applying.");
                 }
                 catch(IOException Exc)
                 {
@@ -522,11 +533,13 @@ namespace Scarlet.IO.BeagleBone
             if(WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
 
             // Start relevant components.
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Initializing components...");
             I2CBBB.Initialize(EnableI2CBuses);
             SPIBBB.Initialize(EnableSPIBuses);
             PWMBBB.Initialize(EnablePWMBuses);
             CANBBB.Initialize(EnableCANBuses);
             UARTBBB.Initialize(EnableUARTBuses);
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "BBB ready!");
         }
 
         /// <summary>
@@ -536,6 +549,7 @@ namespace Scarlet.IO.BeagleBone
         private static void RemovePinSettings()
         {
             List<int> ToRemove = FindScarletOverlays();
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Removing overlays: " + ToRemove);
             StreamWriter SlotManager = File.AppendText("/sys/devices/platform/bone_capemgr/slots");
             // Command: echo -[NUM] > /sys/devices/platform/bone_capemgr/slots
             ToRemove.ForEach(Num => SlotManager.Write('-' + Num + Environment.NewLine));
@@ -737,6 +751,8 @@ namespace Scarlet.IO.BeagleBone
 
                     // Add SPI pins to the exclusive-use list
                     // TODO: See if this is needed.
+                    // TODO: Yes it is. If the universal cape is loaded, our overlay will appear to load fine, but the pins won't function.
+                    //       To prevent this, we can make ours exclusive-use, which will throw an error during application, making the user fix the issue.
                 }
             }
 

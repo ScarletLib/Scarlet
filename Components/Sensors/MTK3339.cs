@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
@@ -14,6 +15,7 @@ namespace Scarlet.Components.Sensors
 
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }
+        public string System { get; set; }
 
         private IUARTBus UART;
 
@@ -58,18 +60,16 @@ namespace Scarlet.Components.Sensors
         private string[] Read()
         {
             string GpsResult = "";
-            byte PrevChar = 0;
-            while (PrevChar != '\n')
+            byte[] PrevChar = new byte[1];
+            while (PrevChar[0] != '\n')
             {
                 if (UART.BytesAvailable() < 1)
                 {
                     Thread.Sleep(Utilities.Constants.DEFAULT_MIN_THREAD_SLEEP);
                     continue;
                 }
-                byte[] Result = new byte[UART.BytesAvailable()];
-                UART.Read(Result.Length, Result);
-                GpsResult += Encoding.ASCII.GetString(Result);
-                PrevChar = Result[Result.Length - 1];
+                UART.Read(1, PrevChar);
+                GpsResult += Encoding.ASCII.GetString(PrevChar);
             }
             return GpsResult.Split(',');
         }
@@ -85,10 +85,8 @@ namespace Scarlet.Components.Sensors
                 string LatDir = Info[3];
                 Longitude = RawToDeg(Info[4]);
                 string LngDir = Info[5];
-                if (LatDir == "S")
-                    Latitude = -Latitude;
-                if (LngDir == "W")
-                    Longitude = -Longitude;
+                if (LatDir == "S") { Latitude = -Latitude; }
+                if (LngDir == "W") { Longitude = -Longitude; }
             }
             return new Tuple<float, float>(Latitude, Longitude);
         }
@@ -107,5 +105,16 @@ namespace Scarlet.Components.Sensors
         /// <summary> Writes a string to the UART as a string of bytes. </summary>
         /// <param name="s"> The string to write. </param>
         private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("MTK3339")
+            {
+                { "HasFix", HasFix() }, // TODO: This needs to be stored from last reading instead of re-checked.
+                { "Lat", this.Latitude},
+                { "Lon", this.Longitude}
+            }
+            .SetSystem(this.System);
+        }
     }
 }
