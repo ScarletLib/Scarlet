@@ -16,8 +16,6 @@ namespace Scarlet.Components.Motors
             this.PWMOut.SetFrequency(50); // TODO: Set this to an actual value, and check if this overrides others.
         }
 
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         public void SetEnabled(bool Enabled)
         {
             if (!Enabled) { SetPosition(this.Position); }

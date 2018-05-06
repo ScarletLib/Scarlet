@@ -9,8 +9,5 @@ namespace Scarlet.Components
 
         /// <summary> Enables or disables the motor immediately. </summary>
         void SetEnabled(bool Enabled);
-
-        /// <summary> Used to send events to Motors. </summary>
-        void EventTriggered(object Sender, EventArgs Event);
     }
 }

@@ -30,8 +30,6 @@ namespace Scarlet.Components.Motors
             this.PWMOut.SetEnabled(true);
         }
 
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         /// <summary> 
         /// Immediately sets the enabled status of the motor.
         /// Stops the motor if given parameter is false.
