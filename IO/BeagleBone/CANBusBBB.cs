@@ -1,9 +1,4 @@
 ﻿using System;
-<<<<<<< HEAD
-using System.Collections.Generic;
-using System.Linq;
-=======
->>>>>>> upstream/CAN
 using System.Runtime.InteropServices;
 
 namespace Scarlet.IO.BeagleBone
@@ -13,17 +8,12 @@ namespace Scarlet.IO.BeagleBone
         public static CANBusBBB CANBus0 { get; private set; }
         public static CANBusBBB CANBus1 { get; private set; }
 
-        static CANBBB()
-        {
-            Initialize(new bool[] { true, false });
-        }
-
         /// <summary> Prepares the given CAN buses for use. Should only be called from BeagleBone.Initialize(). </summary>
         static internal void Initialize(bool[] EnableBuses)
         {
             if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to CANBBB.Initialize."); }
-            if (EnableBuses[0]) { CANBus0 = new CANBusBBB("can0"); }
-            if (EnableBuses[1]) { CANBus1 = new CANBusBBB("can1"); }
+            if (EnableBuses[0]) { CANBus0 = new CANBusBBB(0); }
+            if (EnableBuses[1]) { CANBus1 = new CANBusBBB(1); }
         }
 
         /// <summary> Converts a pin number to the corresponding CAN bus ID. 255 if invalid. </summary>
@@ -43,7 +33,6 @@ namespace Scarlet.IO.BeagleBone
 
     public class CANBusBBB : ICANBus
     {
-<<<<<<< HEAD
         [StructLayout(LayoutKind.Explicit)]
         private struct CANFrame
         {
@@ -69,39 +58,42 @@ namespace Scarlet.IO.BeagleBone
         }
 
         [DllImport("libcan", SetLastError = true)]
-        private static extern int InitCan([MarshalAs(UnmanagedType.LPStr)] string CanName);
+        private static extern int InitCan(int CanNum);
 
         [DllImport("libcan", SetLastError = true)]
-        private static extern int Send(int ID, [MarshalAs(UnmanagedType.LPArray)] byte[] Payload, uint Length);
+        private static extern int Send(int ID, [MarshalAs(UnmanagedType.LPArray)] byte[] Payload, uint Length, int CanNum);
 
-        internal CANBusBBB(string Name) // TX, RX
+        [DllImport("libcan", SetLastError = true)]
+        private static extern CANFrame Read(int CanNum);
+
+        [DllImport("libcan", SetLastError = true)]
+        private static extern int Close(int CanNum);
+
+        private int CanNum;
+
+        internal CANBusBBB(int CanNum)
         {
-            int Result = InitCan(Name);
+            this.CanNum = CanNum;
+            int Result = InitCan(CanNum);
             if (Result < 0) { throw new Exception("Error while opening socket"); }
-=======
-
-
-        // TODO: Implement CAN functionality.
-        internal CANBusBBB(BBBPin[] Pins) // TX, RX
-        {
->>>>>>> upstream/CAN
         }
 
-        public byte[] Read(byte Address, int DataLength)
+        public Tuple<uint, byte[]> Read()
         {
-            byte[] Buffer = new byte[DataLength];
-            int BytesRead = read(Socket, Buffer, DataLength);
-            return Buffer;
+            CANFrame Frame = Read(CanNum);
+            byte[] Payload = new byte[Frame.DataLength];
+            Array.Copy(Frame.Data, Payload, Frame.DataLength);
+            return new Tuple<uint, byte[]>(Frame.CANID, Payload);
         }
 
         public void Write(byte ID, byte[] Data)
         {
-            Send(ID, Data, (uint)Data.Length);
+            Send(ID, Data, (uint)Data.Length, CanNum);
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            Close(CanNum);
         }
     }
 }

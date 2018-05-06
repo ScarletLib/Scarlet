@@ -1,4 +1,6 @@
-﻿namespace Scarlet.IO
+﻿using System;
+
+namespace Scarlet.IO
 {
     public interface ICANBus
     {
@@ -8,7 +10,7 @@
         void Write(byte Address, byte[] Data);
 
         /// <summary> Reads the specified amount of data from the device by address. </summary>
-        byte[] Read(byte Address, int DataLength);
+        Tuple<uint, byte[]> Read();
 
         /// <summary> Cleans up the bus object, freeing resources. </summary>
         void Dispose();

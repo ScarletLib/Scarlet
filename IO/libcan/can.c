@@ -13,56 +13,67 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-int s;
-int ifindex;
+int s[2];
 
-int InitCan(const char *ifname)
+int InitCan(int cannum)
 {
-	struct ifreq ifr;
-	struct sockaddr_can addr;
-	if((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
-		return(-1);
-	printf("IFR Name: %s\n", ifname);
-	strcpy(ifr.ifr_name, ifname);
-	ioctl(s, SIOCGIFINDEX, &ifr);
-	printf("IOCTL Errno: %d\n", errno);
-	ifindex = ifr.ifr_ifindex;
-	addr.can_family = AF_CAN;
-	addr.can_ifindex = ifr.ifr_ifindex;
-	printf("%s at index %d\n", ifname, ifr.ifr_ifindex);
+    char *ifname;
+    switch(cannum)
+    {
+    case 0:
+	ifname = "can0";
+    case 1:
+	ifname = "can1";
+    default:
+	return(-1);       
+    }
 
-	if(bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		return(-2);
-	printf("Bind Errno: %d\n", errno);
-	return(1);	
+    struct ifreq ifr;
+    struct sockaddr_can addr;
+    if((s[cannum] = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+	return(-1);
+
+    strcpy(ifr.ifr_name, ifname);
+    ioctl(s, SIOCGIFINDEX, &ifr);
+
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    if(bind(s[cannum], (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	return(-2);
+	
+    return(1);	
 }
 
-int Send(int id, uint8_t *payload, uint32_t len)
+int Send(int id, uint8_t *payload, uint32_t len, int cannum)
 {
-	struct can_frame frame;
-	frame.can_id = id;
-	int nbytes = 0;
-	while(len)
-	{
-		int size = 8;
-		if(len < 8)
-			size = len;
-		memcpy(frame.data, payload, size);
-		frame.can_dlc = size;
-		payload += size;
-		len -= size;
-		nbytes += write(s, &frame, sizeof(struct can_frame));
-		printf("Write errno: %d\n", errno);
-		
-	}
-	if(nbytes < 0)
-		nbytes = -1;
-	return(nbytes);
+    struct can_frame frame;
+    frame.can_id = id;
+    int nbytes = 0;
+    while(len)
+    {
+	int size = 8;
+	if(len < 8)
+	    size = len;
+	memcpy(frame.data, payload, size);
+	frame.can_dlc = size;
+	payload += size;
+	len -= size;
+	nbytes += write(s[cannum], &frame, sizeof(struct can_frame));		
+    }
+    if(nbytes < 0)
+	nbytes = -1;
+    return(nbytes);
 }
 
-struct can_frame Read()
+struct can_frame Read(int cannum)
 {
-	struct can_frame frame;
-	read(s, &frame, sizeof(struct can_frame));
-	return(frame);
+    struct can_frame frame;
+    read(s[cannum], &frame, sizeof(struct can_frame));
+    return(frame);
+}
+
+int Close(int cannum)
+{
+    close(s[cannum]);
 }
