@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Scarlet.IO.BeagleBone
@@ -8,7 +10,12 @@ namespace Scarlet.IO.BeagleBone
         public static CANBusBBB CANBus0 { get; private set; }
         public static CANBusBBB CANBus1 { get; private set; }
 
-        /// <summary> Prepares the given CAN busses for use. Should only be called from BeagleBone.Initialize(). </summary>
+        static CANBBB()
+        {
+            Initialize(new bool[] { true, false });
+        }
+
+        /// <summary> Prepares the given CAN buses for use. Should only be called from BeagleBone.Initialize(). </summary>
         static internal void Initialize(bool[] EnableBuses)
         {
             if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to CANBBB.Initialize."); }
@@ -36,8 +43,8 @@ namespace Scarlet.IO.BeagleBone
         [StructLayout(LayoutKind.Explicit)]
         private struct CANFrame
         {
-            [FieldOffset(0), MarshalAs(UnmanagedType.I4)]
-            public int CANID;
+            [FieldOffset(0), MarshalAs(UnmanagedType.U4)]
+            public uint CANID;
 
             [FieldOffset(4), MarshalAs(UnmanagedType.U1)]
             public byte DataLength;
@@ -55,104 +62,30 @@ namespace Scarlet.IO.BeagleBone
             //If something breaks, maybe fix it?
             [FieldOffset(8), MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
             public byte[] Data;
-
         }
 
-        [StructLayout(LayoutKind.Explicit)]
-        private struct SockAddrCAN
-        {
-            [FieldOffset(0)]
-            public ushort CANFamily;
+        [DllImport("libcan", SetLastError = true)]
+        private static extern int InitCan([MarshalAs(UnmanagedType.LPStr)] string CanName);
 
-            [FieldOffset(2), MarshalAs(UnmanagedType.U2)]
-            public int CANIFIndex;
+        [DllImport("libcan", SetLastError = true)]
+        private static extern int Send(int ID, [MarshalAs(UnmanagedType.LPArray)] byte[] Payload, uint Length);
 
-            [FieldOffset(6), MarshalAs(UnmanagedType.U4)]
-            public uint RxID;
-
-            [FieldOffset(10), MarshalAs(UnmanagedType.U4)]
-            public uint TxID;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct IFReq
-        {
-            [FieldOffset(0), MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            public byte[] Name;
-
-            [FieldOffset(16), MarshalAs(UnmanagedType.ByValArray, SizeConst = 21)]
-            public byte[] Useless;
-        }
-
-        private const int AF_CAN = 29;
-        private const int PF_CAN = 29;
-        private const int SOCK_RAW = 3;
-        private const int CAN_RAW = 1;
-        private const ulong SIOCGIFINDEX = 0x8933;
-        private string CanName;
-        private byte[] CanNameArr;
-        private int Socket;
-
-        [DllImport("libc")]
-        private static extern int socket(int Domain, int Type, int Protocol);
-
-        [DllImport("libc")]
-        private static extern int ioctl(int FD, ulong Index, ref IFReq Request);
-
-        [DllImport("libc")]
-        private static extern int bind(int SockFD, ref SockAddrCAN Addr, int AddrLen);
-
-        [DllImport("libc")]
-        private static extern int write(int FileDescriptor, ref CANFrame Frame, int Size);
-
-        [DllImport("libc")]
-        private static extern int read(int FileDescriptor, [MarshalAs(UnmanagedType.LPArray)] byte[] Buffer, int Bytes);
-
-        [DllImport("libc")]
-        private static extern int fflush(int FileDescriptor);
-
-        // TODO: Implement CAN functionality.
         internal CANBusBBB(string Name) // TX, RX
         {
-            this.Socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-            this.CanName = Name;
-            this.CanNameArr = System.Text.Encoding.ASCII.GetBytes(CanName);
-            if (Socket < 0) { throw new Exception("Error while opening socket."); }
+            int Result = InitCan(Name);
+            if (Result < 0) { throw new Exception("Error while opening socket"); }
         }
 
         public byte[] Read(byte Address, int DataLength)
         {
             byte[] Buffer = new byte[DataLength];
-            read(Socket, Buffer, DataLength);
+            int BytesRead = read(Socket, Buffer, DataLength);
             return Buffer;
         }
 
-        public void Write(byte Address, byte[] Data)
+        public void Write(byte ID, byte[] Data)
         {
-            IFReq Request = new IFReq();
-            Request.Name = new byte[16];
-            Request.Useless = new byte[21];
-            Array.Copy(CanNameArr, Request.Name, CanNameArr.Length);
-            Request.Name[CanNameArr.Length] = 0; //Make sure it's null terminated
-
-            ioctl(Socket, SIOCGIFINDEX, ref Request);
-
-            SockAddrCAN Addr = new SockAddrCAN();
-            Addr.CANFamily = AF_CAN;
-            Addr.CANIFIndex = Request.Useless[3] << 24 | Request.Useless[2] << 16 | Request.Useless[1] << 8 | Request.Useless[0];
-
-            bind(Socket, ref Addr, Marshal.SizeOf(Addr));
-
-            CANFrame Frame = new CANFrame();
-            Frame.CANID = 0x123;
-            Frame.Data = new byte[8];
-            for (int i = 0; i < Data.Length; i += 8)
-            {
-                Frame.DataLength = (byte)(Data.Length - i < 8 ? Data.Length - i : 8);
-                Array.Copy(Data, i, Frame.Data, 0, Frame.DataLength);
-                write(Socket, ref Frame, Marshal.SizeOf(Frame));
-            }
-            fflush(Socket);
+            Send(ID, Data, (uint)Data.Length);
         }
 
         public void Dispose()
