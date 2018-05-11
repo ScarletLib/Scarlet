@@ -155,6 +155,7 @@ namespace Scarlet.IO.BeagleBone
 				Frame.CANID = ID;
 				Frame.DataLength = (byte)Data.Length;
 				for (int i = 0; i < Data.Length; i++) { Frame.Data[i] = Data[i]; }
+				write(Socket, ref Frame, Data.Length);
 			}
 		}
 
