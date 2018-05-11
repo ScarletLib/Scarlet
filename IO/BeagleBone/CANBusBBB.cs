@@ -146,7 +146,7 @@ namespace Scarlet.IO.BeagleBone
 			return new Tuple<uint, byte[]>(Frame.CANID, Payload);
 		}
 
-		public void Write(byte ID, byte[] Data)
+		public void Write(uint ID, byte[] Data)
 		{
 			if (Data.Length > 8) { throw new Exception("CAN Data Length must be less than 8"); }
 			unsafe
