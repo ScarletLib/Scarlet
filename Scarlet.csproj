@@ -72,7 +72,6 @@
     <Compile Include="Components\Motors\CytronMD30C.cs" />
     <Compile Include="Components\Motors\Servo.cs" />
     <Compile Include="Components\Motors\TalonMC.cs" />
-    <Compile Include="Components\Motors\VESC.cs" />
     <Compile Include="Components\Sensors\BNO055.cs" />
     <Compile Include="Components\Sensors\INA226.cs" />
     <Compile Include="Components\Outputs\PCA9685.cs" />
@@ -102,7 +101,6 @@
     <Compile Include="IO\BeagleBone\ScarletSPIPortFS.cs" />
     <Compile Include="IO\BeagleBone\SPIBusBBB.cs" />
     <Compile Include="IO\BeagleBone\UARTBusBBB.cs" />
-    <Compile Include="IO\BeagleBone\UARTFileBusBBB.cs" />
     <Compile Include="IO\Enums.cs" />
     <Compile Include="IO\Events.cs" />
     <Compile Include="IO\IAnalogueIn.cs" />
