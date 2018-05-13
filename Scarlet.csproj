@@ -82,6 +82,7 @@
     <Compile Include="Components\Sensors\MPU6050.cs" />
     <Compile Include="Components\Sensors\MTK3339.cs" />
     <Compile Include="Components\Sensors\Potentiometer.cs" />
+    <Compile Include="Components\Sensors\VH400.cs" />
     <Compile Include="Controllers\PID.cs" />
     <Compile Include="Filters\Average.cs" />
     <Compile Include="Filters\Filter.cs" />
