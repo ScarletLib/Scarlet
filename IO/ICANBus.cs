@@ -4,8 +4,6 @@ namespace Scarlet.IO
 {
 	public interface ICANBus
 	{
-		// TODO: I have no idea if this is an appropriate implementation. This will likely changes as we actually add CAN functionality, and is just here as a skeleton.
-
 		/// <summary>
 		/// Write a payload with specified ID.
 		/// </summary>
