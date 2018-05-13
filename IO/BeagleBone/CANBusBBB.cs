@@ -129,6 +129,10 @@ namespace Scarlet.IO.BeagleBone
 			}
 		}
 
+		/// <summary>
+		/// Blocks the current thread and reads a CAN frame, returning the payload and the addres of the received CAN frame. 
+		/// </summary>
+		/// <returns>A tuple, with the first element being the ID of the received CAN frame and the second being the payload</returns>
 		public Tuple<uint, byte[]> Read()
 		{
 			CANFrame Frame = new CANFrame();
@@ -141,9 +145,14 @@ namespace Scarlet.IO.BeagleBone
 			return new Tuple<uint, byte[]>(Frame.CANID, Payload);
 		}
 
+		/// <summary>
+		/// Write a payload with specified ID.
+		/// </summary>
+		/// <param name="ID">ID of CAN Frame</param>
+		/// <param name="Data">Payload of CAN Frame. Must be at most 8 bytes.</param>
 		public void Write(uint ID, byte[] Data)
 		{
-			if (Data.Length > 8) { throw new Exception("CAN Data Length must be less than 8"); }
+			if (Data.Length > 8) { throw new Exception("CAN Data Length must be no more than 8 bytes"); }
 			unsafe
 			{
 				CANFrame Frame = new CANFrame();
@@ -154,9 +163,7 @@ namespace Scarlet.IO.BeagleBone
 			}
 		}
 
-		public void Dispose()
-		{
-			close(Socket);
-		}
+		/// <summary> Cleans up the bus object, freeing resources. </summary> 
+		public void Dispose() => close(Socket);
 	}
 }
