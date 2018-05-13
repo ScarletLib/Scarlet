@@ -130,7 +130,7 @@ namespace Scarlet.IO.BeagleBone
 		}
 
 		/// <summary>
-		/// Blocks the current thread and reads a CAN frame, returning the payload and the addres of the received CAN frame. 
+		/// Blocks the current thread and reads a CAN frame, returning the payload and the ID of the received CAN frame. 
 		/// </summary>
 		/// <returns>A tuple, with the first element being the ID of the received CAN frame and the second being the payload</returns>
 		public Tuple<uint, byte[]> Read()
