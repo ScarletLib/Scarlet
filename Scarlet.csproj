@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -22,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>
@@ -70,6 +72,7 @@
     <Compile Include="Components\Motors\CytronMD30C.cs" />
     <Compile Include="Components\Motors\Servo.cs" />
     <Compile Include="Components\Motors\TalonMC.cs" />
+    <Compile Include="Components\Motors\VESC.cs" />
     <Compile Include="Components\Sensors\BNO055.cs" />
     <Compile Include="Components\Sensors\INA226.cs" />
     <Compile Include="Components\Outputs\PCA9685.cs" />
@@ -99,6 +102,7 @@
     <Compile Include="IO\BeagleBone\ScarletSPIPortFS.cs" />
     <Compile Include="IO\BeagleBone\SPIBusBBB.cs" />
     <Compile Include="IO\BeagleBone\UARTBusBBB.cs" />
+    <Compile Include="IO\BeagleBone\UARTFileBusBBB.cs" />
     <Compile Include="IO\Enums.cs" />
     <Compile Include="IO\Events.cs" />
     <Compile Include="IO\IAnalogueIn.cs" />
