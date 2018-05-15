@@ -416,6 +416,12 @@ namespace Scarlet.IO.BeagleBone
         }
         #endregion
 
+        /// <summary>
+        /// Prepares the given CAN bus for use. Assumes device tree changes have already been made external to Scarlet.
+        /// You'll need to call ApplyPinSettings() to actually initialize the bus. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="BusID"> The bus number to prepare for use. </param>
+        /// <exception cref="InvalidOperationException"> If the given bus is unavailable. Only 0 and 1 exist on the BBB. </exception>
         public static void AddBusCAN(byte BusID)
         {
             if (BusID > 1) { throw new InvalidOperationException("Only CAN bus 0 and 1 exist."); }
@@ -428,6 +434,7 @@ namespace Scarlet.IO.BeagleBone
         /// Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while. Should only be run once per program execution.
         /// We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the OneNote page for more info.
         /// </summary>
+        /// <remarks> If no device tree overlay changes are required, calling this will initialize other systems, like the CAN buses, then do nothing. </remarks>
         /// <param name="Mode">
         /// The behaviour to use when determining what to do during application of the overlay. Please read the OneNote documentation for a more thorough explanation.
         /// NO_CHANGES: Does not apply the device tree overlay regardles
