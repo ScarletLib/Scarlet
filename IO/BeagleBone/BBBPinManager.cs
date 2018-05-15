@@ -287,6 +287,7 @@ namespace Scarlet.IO.BeagleBone
         /// <param name="TX"> The pin to use for the transmit line. </param>
         /// <param name="RX"> The pin to use for the receive line. </param>
         /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for CAN at this time. Reason will be given. </exception>
+        [Obsolete("Currently not functioning, use AddBusCAN instead.")]
         public static void AddMappingsCAN(BBBPin TX, BBBPin RX)
         {
             byte TXMode = Pin.GetModeID(TX, BBBPinMode.CAN);
@@ -415,6 +416,12 @@ namespace Scarlet.IO.BeagleBone
         }
         #endregion
 
+        public static void AddBusCAN(byte BusID)
+        {
+            if (BusID > 1) { throw new InvalidOperationException("Only CAN bus 0 and 1 exist."); }
+            EnableCANBuses[BusID] = true;
+        }
+
         public enum ApplicationMode { NO_CHANGES, APPLY_IF_NONE, REMOVE_AND_APPLY, APPLY_REGARDLESS }
 
         /// <summary>
@@ -438,7 +445,11 @@ namespace Scarlet.IO.BeagleBone
                (CANMappings == null || CANMappings.Count == 0) &&
                (UARTMappings == null || UARTMappings.Count == 0) &&
                (ADCMappings == null || ADCMappings.Count == 0))
-                { Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application."); return; }
+            {
+                Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application.");
+                InitBuses(false);
+                return;
+            }
             if (!StateStore.Started) { throw new Exception("Please start the StateStore system first."); }
             string FileName = "Scarlet-DT";
             string PrevNum = StateStore.GetOrCreate("Scarlet-DevTreeNum", "0");
@@ -532,13 +543,21 @@ namespace Scarlet.IO.BeagleBone
             }
             if(WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
 
-            // Start relevant components.
+            InitBuses(true);
+        }
+
+        private static void InitBuses(bool HadDevTreeChanges)
+        {
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Initializing components...");
-            I2CBBB.Initialize(EnableI2CBuses);
-            SPIBBB.Initialize(EnableSPIBuses);
-            PWMBBB.Initialize(EnablePWMBuses);
             CANBBB.Initialize(EnableCANBuses);
-            UARTBBB.Initialize(EnableUARTBuses);
+            if (HadDevTreeChanges)
+            {
+                I2CBBB.Initialize(EnableI2CBuses);
+                SPIBBB.Initialize(EnableSPIBuses);
+                PWMBBB.Initialize(EnablePWMBuses);
+                CANBBB.Initialize(EnableCANBuses);
+                UARTBBB.Initialize(EnableUARTBuses);
+            }
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "BBB ready!");
         }
 
