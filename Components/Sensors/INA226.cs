@@ -184,8 +184,5 @@ namespace Scarlet.Components.Sensors
             this.LastReading[3] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Current));
             //Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 data retrieval returned " + this.LastReading[0].ToString("X4") + "," + this.LastReading[1].ToString("X4") + "," + this.LastReading[2].ToString("X4") + "," + this.LastReading[3].ToString("X4"));
         }
-
-        /// <summary> Events are ignored. </summary>
-        public void EventTriggered(object Sender, EventArgs Event) { }
     }
 }

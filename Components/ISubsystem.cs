@@ -12,8 +12,5 @@ namespace Scarlet.Components
 
         /// <summary> Updates the subsystem. This should be passed through to all subcomponents. </summary>
         void UpdateState();
-
-        /// <summary> Used to send events to the Subsystem.  </summary>
-        void EventTriggered(object Sender, EventArgs Event);
     }
 }

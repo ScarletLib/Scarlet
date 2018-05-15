@@ -52,9 +52,6 @@ namespace Scarlet.Components.Sensors
 
         protected virtual void OnTurn(PotentiometerTurn Event) { Turned?.Invoke(this, Event); }
 
-        /// <summary> This sensor does not process events. Will do nothing. </summary>
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         public DataUnit GetData()
         {
             return new DataUnit("Potentiometer")

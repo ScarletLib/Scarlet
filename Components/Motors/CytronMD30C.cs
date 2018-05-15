@@ -34,8 +34,6 @@ namespace Scarlet.Components.Motors
             this.GPIOOut.SetOutput(false);
         }
 
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         /// <summary> 
         /// Immediately sets the enabled status of the motor. 
         /// If false, resets TargetSpeed to 0 and stops the motor.

@@ -71,9 +71,6 @@ namespace Scarlet.Components.Sensors
             this.LastReading = Data;
         }
 
-        /// <summary> This sensor does not process events. Will do nothing. </summary>
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         public DataUnit GetData()
         {
             return new DataUnit("VEML6070")
