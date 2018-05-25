@@ -668,22 +668,16 @@ namespace Scarlet.IO.BeagleBone
                     {
                         switch (Entry.Key)
                         {
-                            case BBBPin.P9_22:
-                            case BBBPin.P9_31: // 0_A
-                            case BBBPin.P9_21:
-                            case BBBPin.P9_29: // 0_B
+                            case BBBPin.P9_22: case BBBPin.P9_31: // 0_A
+                            case BBBPin.P9_21: case BBBPin.P9_29: // 0_B
                                 PWMDev0.Add(Entry.Key, Entry.Value); continue;
 
-                            case BBBPin.P9_14:
-                            case BBBPin.P8_36: // 1_A
-                            case BBBPin.P9_16:
-                            case BBBPin.P8_34: // 1_B
+                            case BBBPin.P9_14: case BBBPin.P8_36: // 1_A
+                            case BBBPin.P9_16: case BBBPin.P8_34: // 1_B
                                 PWMDev1.Add(Entry.Key, Entry.Value); continue;
 
-                            case BBBPin.P8_19:
-                            case BBBPin.P8_45: // 2_A
-                            case BBBPin.P8_13:
-                            case BBBPin.P8_46: // 2_B
+                            case BBBPin.P8_19: case BBBPin.P8_45: // 2_A
+                            case BBBPin.P8_13: case BBBPin.P8_46: // 2_B
                                 PWMDev2.Add(Entry.Key, Entry.Value); continue;
                         }
                     }
@@ -730,16 +724,12 @@ namespace Scarlet.IO.BeagleBone
                     {
                         switch (Entry.Key)
                         {
-                            case BBBPin.P9_17:
-                            case BBBPin.P9_24: // 1_SCL
-                            case BBBPin.P9_18:
-                            case BBBPin.P9_26: // 1_SDA
+                            case BBBPin.P9_17: case BBBPin.P9_24: // 1_SCL
+                            case BBBPin.P9_18: case BBBPin.P9_26: // 1_SDA
                                 I2CDev1.Add(Entry.Key, Entry.Value); continue;
 
-                            case BBBPin.P9_19:
-                            case BBBPin.P9_21: // 2_SCL
-                            case BBBPin.P9_20:
-                            case BBBPin.P9_22: // 2_SDA
+                            case BBBPin.P9_19: case BBBPin.P9_21: // 2_SCL
+                            case BBBPin.P9_20: case BBBPin.P9_22: // 2_SDA
                                 I2CDev2.Add(Entry.Key, Entry.Value); continue;
                         }
                     }
@@ -779,12 +769,10 @@ namespace Scarlet.IO.BeagleBone
                             case BBBPin.P9_18: // 0_D1
                             case BBBPin.P9_17: // 0_CS0
                                 SPIDev0.Add(Entry.Key, Entry.Value); continue;
-                            case BBBPin.P9_31:
-                            case BBBPin.P9_42: // 1_CLK
+                            case BBBPin.P9_31: case BBBPin.P9_42: // 1_CLK
                             case BBBPin.P9_29: // 1_D0
                             case BBBPin.P9_30: // 1_D1
-                            case BBBPin.P9_20:
-                            case BBBPin.P9_28: // 1_CS0
+                            case BBBPin.P9_20: case BBBPin.P9_28: // 1_CS0
                             case BBBPin.P9_19: // 1_CS1
                                 SPIDev1.Add(Entry.Key, Entry.Value); continue;
                         }
