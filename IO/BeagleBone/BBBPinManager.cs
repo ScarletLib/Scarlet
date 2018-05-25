@@ -19,6 +19,7 @@ namespace Scarlet.IO.BeagleBone
 		private static bool[] EnableCANBuses = new bool[2];
 		private static bool[] ExtendedCAN = new bool[2];
 		private static bool[] EnableUARTBuses = new bool[4];
+        //test
 
 		#region Adding Mappings
 		/// <summary>
