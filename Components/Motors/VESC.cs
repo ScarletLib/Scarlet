@@ -77,6 +77,7 @@ namespace Scarlet.Components.Motors
             this.MaxRPM = Math.Abs(MaxRPM);
             this.RPMFilter = RPMFilter;
             this.SetRPMDirectly(0);
+            SetSpeedThreadFactory().Start();
         }
 
         public VESC(ICANBus CANBus, float MaxSpeed, uint CANID, IFilter<sbyte> RPMFilter = null)
@@ -94,6 +95,7 @@ namespace Scarlet.Components.Motors
             this.CANID = CANID;
             this.RPMFilter = RPMFilter;
             this.SetRPMDirectly(0);
+            SetSpeedThreadFactory().Start();
         }
 
         public void EventTriggered(object Sender, EventArgs Event) { }
@@ -115,22 +117,27 @@ namespace Scarlet.Components.Motors
         private void SetSpeedThread()
         {
             float Output = this.RPMFilter.GetOutput();
-            while (!this.RPMFilter.IsSteadyState())
+            while (true)
             {
                 if (Stopped) { SetRPMDirectly(0); }
-                else
+                else if (!this.RPMFilter.IsSteadyState())
                 {
                     this.RPMFilter.Feed(this.TargetRPM);
                     SetRPMDirectly(this.RPMFilter.GetOutput());
                 }
+                else { this.SetRPMDirectly(this.TargetRPM); }
                 Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
             }
-            OngoingSpeedThread = false;
         }
 
         /// <summary> Creates a new thread for setting speed during motor filtering output </summary>
         /// <returns> A new thread for changing the motor speed. </returns>
-        private Thread SetSpeedThreadFactory() { return new Thread(new ThreadStart(SetSpeedThread)); }
+        private Thread SetSpeedThreadFactory()
+        {
+            Thread T = new Thread(new ThreadStart(SetSpeedThread));
+            T.IsBackground = true;
+            return T;
+        }
 
         /// <summary>
         /// Sets the motor speed. Output may vary from the given value under the following conditions:
@@ -148,13 +155,6 @@ namespace Scarlet.Components.Motors
 
         public void SetRPM(sbyte RPM)
         {
-            if (this.RPMFilter != null && !this.RPMFilter.IsSteadyState() && !OngoingSpeedThread)
-            {
-                this.RPMFilter.Feed(RPM);
-                SetSpeedThreadFactory().Start();
-                OngoingSpeedThread = true;
-            }
-            else { SetRPMDirectly(RPM); }
             this.TargetRPM = RPM;
             this.TargetSpeed = (float)RPM / (float)MOTOR_MAX_RPM;
         }
