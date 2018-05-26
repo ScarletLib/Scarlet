@@ -41,30 +41,31 @@ namespace Scarlet.Components.Motors
         }
         #endregion
 
-        private const int MOTOR_MAX_RPM = 60;
+        private const sbyte MOTOR_MAX_RPM = 60;
+        private const int ERPM_PER_RPM = 500;
 
-        private IFilter<int> RPMFilter; // Filter for speed output
+        private IFilter<sbyte> RPMFilter; // Filter for speed output
         private readonly IUARTBus UARTBus;
         private readonly ICANBus CANBus;
         private readonly int CANForwardID;
         private readonly uint CANID;
-        private readonly int MaxRPM;
+        private readonly sbyte MaxRPM;
         private readonly bool IsCAN;
 
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
         private bool Stopped; // Whether or not the motor is stopped
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
-        public int TargetRPM { get; private set; } // Target RPM of the motor
+        public sbyte TargetRPM { get; private set; } // Target RPM of the motor
 
         /// <summary> Initializes a VESC Motor controller </summary>
         /// <param name="UARTBus"> UART output to control the motor controller </param>
         /// <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
         /// <param name="CANForwardID"> CAN ID of the motor controller (-1 to disable CAN forwarding) </param>
         /// <param name="RPMFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
-        public VESC(IUARTBus UARTBus, float MaxSpeed, int CANForwardID = -1, IFilter<int> RPMFilter = null)
-            : this(UARTBus, (int)(MaxSpeed * MOTOR_MAX_RPM), CANForwardID, RPMFilter) { }
+        public VESC(IUARTBus UARTBus, float MaxSpeed, int CANForwardID = -1, IFilter<sbyte> RPMFilter = null)
+            : this(UARTBus, (sbyte)(MaxSpeed * MOTOR_MAX_RPM), CANForwardID, RPMFilter) { }
 
-        public VESC(IUARTBus UARTBus, int MaxRPM, int CANForwardID = -1, IFilter<int> RPMFilter = null)
+        public VESC(IUARTBus UARTBus, sbyte MaxRPM, int CANForwardID = -1, IFilter<sbyte> RPMFilter = null)
         {
             IsCAN = false;
             this.UARTBus = UARTBus;
@@ -78,14 +79,14 @@ namespace Scarlet.Components.Motors
             this.SetRPMDirectly(0);
         }
 
-        public VESC(ICANBus CANBus, float MaxSpeed, uint CANID, IFilter<int> RPMFilter = null)
-            : this(CANBus, (int)(MaxSpeed * MOTOR_MAX_RPM), CANID, RPMFilter) { }
+        public VESC(ICANBus CANBus, float MaxSpeed, uint CANID, IFilter<sbyte> RPMFilter = null)
+            : this(CANBus, (sbyte)(MaxSpeed * MOTOR_MAX_RPM), CANID, RPMFilter) { }
 
         /// <summary> Initializes a VESC Motor controller </summary>
         /// <param name="CANBus"> CAN output to control the motor controller </param>
-        /// <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+        /// <param name="MaxRPM"> Limiting factor for speed (should never exceed + or - this val) </param>
         /// <param name="RPMFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
-        public VESC(ICANBus CANBus, int MaxRPM, uint CANID, IFilter<int> RPMFilter = null)
+        public VESC(ICANBus CANBus, sbyte MaxRPM, uint CANID, IFilter<sbyte> RPMFilter = null)
         {
             IsCAN = true;
             this.CANBus = CANBus;
@@ -141,11 +142,11 @@ namespace Scarlet.Components.Motors
         /// <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
         public void SetSpeed(float Speed)
         {
-            int RPM = (int)(Speed * MOTOR_MAX_RPM);
+            sbyte RPM = (sbyte)(Speed * MOTOR_MAX_RPM);
             SetRPM(RPM);
         }
 
-        public void SetRPM(int RPM)
+        public void SetRPM(sbyte RPM)
         {
             if (this.RPMFilter != null && !this.RPMFilter.IsSteadyState() && !OngoingSpeedThread)
             {
@@ -163,10 +164,10 @@ namespace Scarlet.Components.Motors
         /// Takes into consideration motor stop signal and max speed restriction.
         /// </summary>
         /// <param name="Speed">  </param>
-		private void SetRPMDirectly(int Speed)
+        private void SetRPMDirectly(sbyte Speed)
         {
             if (Speed > this.MaxRPM) { Speed = this.MaxRPM; }
-            if (-Speed > this.MaxRPM) { Speed = -this.MaxRPM; }
+            if (-Speed > this.MaxRPM) { Speed = (sbyte)-this.MaxRPM; }
             if (this.Stopped) { Speed = 0; }
             this.SendRPM(Speed);
         }
@@ -191,7 +192,7 @@ namespace Scarlet.Components.Motors
         /// <param name="RPM"> RPM for the motor to spin at. RPM is capped at 36500 </param>
         private void SendRPM(int RPM)
         {
-            RPM = Math.Min(RPM, MOTOR_MAX_RPM) * 500;
+            RPM = Math.Min(RPM, MOTOR_MAX_RPM) * ERPM_PER_RPM;
             byte[] SpeedArray = UtilData.ToBytes(RPM);
             if (this.IsCAN) { this.CANBus.Write(((byte)CANPacketID.CAN_PACKET_SET_RPM << 8) | this.CANID, SpeedArray); }
             else
