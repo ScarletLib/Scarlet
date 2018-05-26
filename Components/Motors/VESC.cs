@@ -41,7 +41,7 @@ namespace Scarlet.Components.Motors
         }
         #endregion
 
-        private const int MOTOR_MAX_RPM = 30500;
+        private const int MOTOR_MAX_RPM = 60;
 
         private IFilter<int> RPMFilter; // Filter for speed output
         private readonly IUARTBus UARTBus;
@@ -162,7 +162,7 @@ namespace Scarlet.Components.Motors
         /// Sets the speed directly given an input from -1.0 to 1.0
         /// Takes into consideration motor stop signal and max speed restriction.
         /// </summary>
-        /// <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        /// <param name="Speed">  </param>
 		private void SetRPMDirectly(int Speed)
         {
             if (Speed > this.MaxRPM) { Speed = this.MaxRPM; }
@@ -191,7 +191,7 @@ namespace Scarlet.Components.Motors
         /// <param name="RPM"> RPM for the motor to spin at. RPM is capped at 36500 </param>
         private void SendRPM(int RPM)
         {
-            RPM = Math.Min(RPM, MOTOR_MAX_RPM);
+            RPM = Math.Min(RPM, MOTOR_MAX_RPM) * 500;
             byte[] SpeedArray = UtilData.ToBytes(RPM);
             if (this.IsCAN) { this.CANBus.Write(((byte)CANPacketID.CAN_PACKET_SET_RPM << 8) | this.CANID, SpeedArray); }
             else
