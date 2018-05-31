@@ -176,7 +176,7 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary> Blocks the current thread and reads a CAN frame, returning the payload and the ID of the received CAN frame. </summary>
-        /// <returns>A tuple, with the first element being the ID of the received CAN frame and the second being the payload</returns>
+        /// <returns> A tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
         public Tuple<uint, byte[]> Read()
         {
             if (Extended)
@@ -203,6 +203,8 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
+        /// <summary> Reads a CAN frame asynchronously, returning the payload and the ID of the received CAN frame. </summary>
+        /// <returns> A task that will return a tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
         public Task<Tuple<uint, byte[]>> ReadAsync()
         {
             return Task.Run(() =>
@@ -237,8 +239,8 @@ namespace Scarlet.IO.BeagleBone
         /// <param name="CanDLC"> Can dlc. </param>
         private byte DLCToLength(byte CanDLC)
         {
-            byte[] Dlc2Len = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64 };
-            return Dlc2Len[CanDLC & 0x0F];
+            byte[] DLC2Len = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64 };
+            return DLC2Len[CanDLC & 0x0F];
         }
 
         /// <summary> Converts a length to a CAN data length for use with DLCToLength. </summary>
