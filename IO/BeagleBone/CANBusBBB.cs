@@ -10,11 +10,12 @@ namespace Scarlet.IO.BeagleBone
         public static CANBusBBB CANBus1 { get; private set; }
 
         /// <summary> Prepares the given CAN buses for use. Should only be called from BeagleBone.Initialize(). </summary>
-        static internal void Initialize(bool[] EnableBuses, bool[] ExtendedCan)
+        static internal void Initialize(bool[] EnableBuses, bool[] CANFD)
         {
             if (EnableBuses == null || EnableBuses.Length != 2) { throw new Exception("Invalid enable array given to CANBBB.Initialize."); }
-            if (EnableBuses[0]) { CANBus0 = new CANBusBBB("can0", ExtendedCan[0]); }
-            if (EnableBuses[1]) { CANBus1 = new CANBusBBB("can1", ExtendedCan[1]); }
+            if (CANFD == null || CANFD.Length != 2) { throw new Exception("Invalid FD CAN array given to CANBBB.Initialize."); }
+            if (EnableBuses[0]) { CANBus0 = new CANBusBBB("can0", CANFD[0]); }
+            if (EnableBuses[1]) { CANBus1 = new CANBusBBB("can1", CANFD[1]); }
         }
 
         /// <summary> Converts a pin number to the corresponding CAN bus ID. 255 if invalid. </summary>
@@ -88,7 +89,7 @@ namespace Scarlet.IO.BeagleBone
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        private unsafe struct ExtendedCANFrame
+        private unsafe struct CANFDFrame
         {
             [FieldOffset(0), MarshalAs(UnmanagedType.U4)]
             public uint CANID;
@@ -124,13 +125,13 @@ namespace Scarlet.IO.BeagleBone
         private static extern int read(int FileDescriptor, ref CANFrame Frame, int Size);
 
         [DllImport("libc", SetLastError = true)]
-        private static extern int read(int FileDescriptor, ref ExtendedCANFrame Frame, int Size);
+        private static extern int read(int FileDescriptor, ref CANFDFrame Frame, int Size);
 
         [DllImport("libc", SetLastError = true)]
         private static extern int write(int FileDescriptor, ref CANFrame Frame, int Size);
 
         [DllImport("libc", SetLastError = true)]
-        private static extern int write(int FileDescriptor, ref ExtendedCANFrame Frame, int Size);
+        private static extern int write(int FileDescriptor, ref CANFDFrame Frame, int Size);
 
         [DllImport("libc", SetLastError = true)]
         private static extern int close(int FileDescriptor);
@@ -149,11 +150,11 @@ namespace Scarlet.IO.BeagleBone
         private const uint CAN_EFF_FLAG = 0x80000000;
 
         private int Socket;
-        private bool Extended;
+        private bool CANFD;
 
-        internal CANBusBBB(string CanName, bool Extended)
+        internal CANBusBBB(string CanName, bool CANFD)
         {
-            this.Extended = Extended;
+            this.CANFD = CANFD;
             this.Socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
             if (this.Socket < 0) { throw new Exception("Error while opening socket. Error code: " + Marshal.GetLastWin32Error()); }
 
@@ -167,10 +168,10 @@ namespace Scarlet.IO.BeagleBone
                 Addr.CanFamily = AF_CAN;
                 Addr.CanIfIndex = Req.IfIndex;
                 if (bind(Socket, ref Addr, Marshal.SizeOf(Addr)) < 0) { throw new Exception("Error while binding socket. Error code: " + Marshal.GetLastWin32Error()); };
-                if (Extended)
+                if (CANFD)
                 {
-                    int ExtendedCAN = Extended ? 1 : 0;
-                    if (setsockopt(Socket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, ref ExtendedCAN, Marshal.SizeOf(ExtendedCAN)) != 0) { throw new Exception("Failed to enable Extended CAN. Error code: " + Marshal.GetLastWin32Error()); }
+                    int FD = CANFD ? 1 : 0;
+                    if (setsockopt(Socket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, ref FD, Marshal.SizeOf(FD)) != 0) { throw new Exception("Failed to enable Extended CAN. Error code: " + Marshal.GetLastWin32Error()); }
                 }
             }
         }
@@ -179,9 +180,9 @@ namespace Scarlet.IO.BeagleBone
         /// <returns> A tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
         public Tuple<uint, byte[]> Read()
         {
-            if (Extended)
+            if (CANFD)
             {
-                ExtendedCANFrame Frame = new ExtendedCANFrame();
+                CANFDFrame Frame = new CANFDFrame();
                 read(Socket, ref Frame, Marshal.SizeOf(Frame));
                 byte[] Payload = new byte[Frame.DataLength];
                 unsafe
@@ -209,9 +210,9 @@ namespace Scarlet.IO.BeagleBone
         {
             return Task.Run(() =>
             {
-                if (Extended)
+                if (CANFD)
                 {
-                    ExtendedCANFrame Frame = new ExtendedCANFrame();
+                    CANFDFrame Frame = new CANFDFrame();
                     read(Socket, ref Frame, Marshal.SizeOf(Frame));
                     byte[] Payload = new byte[Frame.DataLength];
                     unsafe
@@ -234,19 +235,26 @@ namespace Scarlet.IO.BeagleBone
             });
         }
 
-        /// <summary> Converts a DLC into a proper multiple of 4 for CAN transmission </summary>
-        /// <returns> The multipole of 4 </returns>
-        /// <param name="CanDLC"> Can dlc. </param>
+        /// <summary>
+        /// Converts a CAN Data Length Code into a length in bytes. 
+        /// A DLC is a 4-bit number between 0 and 15. 0-8 map to themselves
+        /// while higher numbers map to a multiple of 4. 
+        /// </summary>
+        /// <returns> The length of the data in bytes </returns>
         private byte DLCToLength(byte CanDLC)
         {
             byte[] DLC2Len = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64 };
             return DLC2Len[CanDLC & 0x0F];
         }
 
-        /// <summary> Converts a length to a CAN data length for use with DLCToLength. </summary>
-        /// <returns> The DLC. </returns>
-        /// <param name="CanLen"> Can length. </param>
-        private byte LengthToDLC(byte CanLen)
+        /// <summary> 
+        /// Converts a byte array length to a CAN Data Length Code. 
+        /// A Data Length Code is a 4-bit number that represents the
+        /// length of the CAN data to send. Lengths 0-8 map to 
+        /// themselves while higher lengths map to a different DLC.
+        /// </summary>
+        /// <returns> The Data Length Code. </returns>
+        private byte LengthToDLC(byte CANLen)
         {
             byte[] Len2DLC =
             {
@@ -261,23 +269,24 @@ namespace Scarlet.IO.BeagleBone
                     15, 15, 15, 15, 15, 15, 15, 15,     /* 49 - 56 */
                 15, 15, 15, 15, 15, 15, 15, 15 /* 57 - 64 */
             };
-            if (CanLen > 64) { return 0xF; }
-            return Len2DLC[CanLen];
+            if (CANLen > 64) { return 0xF; }
+            return Len2DLC[CANLen];
         }
+
 
         /// <summary> Write a payload with specified ID </summary>
         /// <param name="ID"> ID of CAN Frame </param>
         /// <param name="Data"> Payload of CAN Frame. Must be at most 8 bytes. </param>
         public void Write(uint ID, byte[] Data)
         {
-            if (!Extended && Data.Length > 8) { throw new Exception("CAN Data Length must be no more than 8 bytes for non-Extended frames"); }
+            if (!CANFD && Data.Length > 8) { throw new Exception("CAN Data Length must be no more than 8 bytes for non-Extended frames"); }
             else if (Data.Length > 64) { throw new Exception("CAN Data Length must be no more than 64 bytes for Extended frames."); }
             int BytesWritten;
             unsafe
             {
-                if (Extended)
+                if (CANFD)
                 {
-                    ExtendedCANFrame Frame = new ExtendedCANFrame();
+                    CANFDFrame Frame = new CANFDFrame();
                     Frame.CANID = ID | CAN_EFF_FLAG;
                     Frame.DataLength = DLCToLength(LengthToDLC((byte)Data.Length));
                     for (int i = 0; i < Data.Length; i++) { Frame.Data[i] = Data[i]; }
