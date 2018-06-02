@@ -18,6 +18,8 @@ namespace Scarlet.Components.Sensors
         public string System { get; set; }
 
         private IUARTBus UART;
+        private bool GettingCoords;
+        private bool GettingHasFix;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.MTK3339"/> class. 
@@ -26,7 +28,9 @@ namespace Scarlet.Components.Sensors
         /// <param name="UART"> The UART bus to read from and write to. </param>
         public MTK3339(IUARTBus UART)
         {
-            this.UART = UART;
+            this.UART = UART ?? throw new Exception("Cannot initialize MTK3339 with null UART bus!");
+            GettingCoords = false;
+            GettingHasFix = false;
             WriteString(GPRMC_GPGGA);
             Thread.Sleep(1);
             WriteString(MEAS_200_MSEC);
@@ -51,6 +55,34 @@ namespace Scarlet.Components.Sensors
             string[] Result = Read();
             if (Result.Length < 3) { return false; }
             return Result[2] != "1";
+        }
+
+        public void HasFix(Action<bool> OnFinish)
+        {
+            if (!GettingHasFix)
+            {
+                Thread T = new Thread(() =>
+                {
+                    GettingHasFix = true;
+                    OnFinish.Invoke(HasFix());
+                    GettingHasFix = false;
+                });
+                T.Start();
+            }
+        }
+
+        public void GetCoords(Action<Tuple<float, float>> OnFinish)
+        {
+            if (!GettingCoords)
+            {
+                Thread T = new Thread(() =>
+                {
+                    GettingCoords = true;
+                    OnFinish.Invoke(GetCoords());
+                    GettingCoords = false;
+                });
+                T.Start();
+            }
         }
 
         /// <summary> Reads an NMEA sentence and splits it. </summary>
