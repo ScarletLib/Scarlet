@@ -45,15 +45,16 @@ namespace Scarlet.Utilities
             Dictionary<Type, Action> Switch = new Dictionary<Type, Action>
             {
                 { typeof(bool), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(bool)).ToArray())); i += sizeof(bool); }},
-                { typeof(char), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(char)).ToArray())); i += sizeof(char); }},
-                { typeof(double), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(double)).ToArray())); i += sizeof(double); }},
-                { typeof(float), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(float)).ToArray())); i += sizeof(float); }},
-                { typeof(int), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(int)).ToArray())); i += sizeof(int); }},
-                { typeof(long), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(long)).ToArray())); i += sizeof(long); }},
-                { typeof(short), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(short)).ToArray())); i += sizeof(short); }},
-                { typeof(uint), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(uint)).ToArray())); i += sizeof(uint); }},
-                { typeof(ulong), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(ulong)).ToArray())); i += sizeof(ulong); }},
-                { typeof(ushort), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(ushort)).ToArray())); i += sizeof(ushort); }},
+                { typeof(char), () => { Result.Add(ToChar(Bytes.GetRange(i, sizeof(char)).ToArray())); i += sizeof(char); }},
+                { typeof(double), () => { Result.Add(ToDouble(Bytes.GetRange(i, sizeof(double)).ToArray())); i += sizeof(double); }},
+                { typeof(float), () => { Result.Add(ToFloat(Bytes.GetRange(i, sizeof(float)).ToArray())); i += sizeof(float); }},
+                { typeof(int), () => { Result.Add(ToInt(Bytes.GetRange(i, sizeof(int)).ToArray())); i += sizeof(int); }},
+                { typeof(long), () => { Result.Add(ToLong(Bytes.GetRange(i, sizeof(long)).ToArray())); i += sizeof(long); }},
+                { typeof(short), () => { Result.Add(ToShort(Bytes.GetRange(i, sizeof(short)).ToArray())); i += sizeof(short); }},
+                { typeof(uint), () => { Result.Add(ToUInt(Bytes.GetRange(i, sizeof(uint)).ToArray())); i += sizeof(uint); }},
+                { typeof(ulong), () => { Result.Add(ToULong(Bytes.GetRange(i, sizeof(ulong)).ToArray())); i += sizeof(ulong); }},
+                { typeof(ushort), () => { Result.Add(ToUShort(Bytes.GetRange(i, sizeof(ushort)).ToArray())); i += sizeof(ushort); }},
+                { typeof(byte), () => { Result.Add(Bytes.GetRange(i, sizeof(byte)).ToArray()); i += sizeof(byte); }},
             };
             foreach (Type t in Types)
             {
