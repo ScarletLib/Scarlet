@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Scarlet.Utilities
@@ -24,15 +26,42 @@ namespace Scarlet.Utilities
         public static byte[] ToBytes(ushort Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
         public static byte[] ToBytes(string Input)
         {
-            if(Input == null || Input.Length == 0) { return new byte[0]; }
+            if (Input == null || Input.Length == 0) { return new byte[0]; }
             char[] Characters = Input.ToCharArray();
             byte[] Output = new byte[Characters.Length * 2];
-            for(int i = 0; i < Characters.Length; i++)
+            for (int i = 0; i < Characters.Length; i++)
             {
                 Output[i * 2] = (byte)(Characters[i] >> 8);
                 Output[(i * 2) + 1] = (byte)(Characters[i]);
             }
             return Output;
+        }
+
+        public static List<object> ToTypes(byte[] Input, params Type[] Types)
+        {
+            List<byte> Bytes = new List<byte>(Input);
+            List<object> Result = new List<object>();
+            int i = 0;
+            Dictionary<Type, Action> Switch = new Dictionary<Type, Action>
+            {
+                { typeof(bool), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(bool)).ToArray())); i += sizeof(bool); }},
+                { typeof(char), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(char)).ToArray())); i += sizeof(char); }},
+                { typeof(double), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(double)).ToArray())); i += sizeof(double); }},
+                { typeof(float), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(float)).ToArray())); i += sizeof(float); }},
+                { typeof(int), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(int)).ToArray())); i += sizeof(int); }},
+                { typeof(long), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(long)).ToArray())); i += sizeof(long); }},
+                { typeof(short), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(short)).ToArray())); i += sizeof(short); }},
+                { typeof(uint), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(uint)).ToArray())); i += sizeof(uint); }},
+                { typeof(ulong), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(ulong)).ToArray())); i += sizeof(ulong); }},
+                { typeof(ushort), () => { Result.Add(ToBool(Bytes.GetRange(i, sizeof(ushort)).ToArray())); i += sizeof(ushort); }},
+            };
+            foreach (Type t in Types)
+            {
+                if (!Switch.ContainsKey(t)) { throw new Exception("Unsupported type " + t); }
+                if (i + Marshal.SizeOf(t) >= Input.Length) { throw new Exception("Not enough bytes to parse these types"); }
+                Switch[t].Invoke();
+            }
+            return Result;
         }
 
         public static bool ToBool(byte[] Input)
@@ -102,7 +131,7 @@ namespace Scarlet.Utilities
         {
             if (Input == null || Input.Length == 0 || Input.Length % 2 == 1) { throw new FormatException("Given byte[] does not convert to string."); }
             StringBuilder Output = new StringBuilder(Input.Length / 2);
-            for(int i = 0; i < Input.Length; i += 2)
+            for (int i = 0; i < Input.Length; i += 2)
             {
                 Output.Append((char)(Input[i] << 8 | Input[i + 1]));
             }
@@ -115,7 +144,7 @@ namespace Scarlet.Utilities
         /// <returns> True if string conversion succeeds </returns>
         public static bool TryToString(byte[] Input, out string Output)
         {
-            Output = null; 
+            Output = null;
             try { Output = ToString(Input); }
             catch { return false; }
             return true;
