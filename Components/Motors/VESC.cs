@@ -155,7 +155,7 @@ namespace Scarlet.Components.Motors
             SetRPM(RPM);
         }
 
-        public void SetRPM(sbyte RPM)
+        public void SetRPM(int RPM)
         {
             this.TargetRPM = RPM;
             this.TargetSpeed = (float)RPM / (float)MOTOR_MAX_RPM;
