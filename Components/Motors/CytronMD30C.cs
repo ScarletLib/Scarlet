@@ -100,7 +100,6 @@ namespace Scarlet.Components.Motors
             if (Speed * -1 > this.MaxSpeed) { Speed = -1 * this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
             this.PWMOut.SetOutput(Math.Abs(Speed));
-            Console.WriteLine(GPIOOut != null);
             this.GPIOOut.SetOutput(Math.Sign(Speed) < 0);
         }
 
