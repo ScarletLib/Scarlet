@@ -159,15 +159,15 @@ namespace Scarlet.Components.Sensors
 
             // LOAD OTR
             SPIBus.Write(ChipSelect, new byte[] { 0b11_101_000 }, 1);
-            Thread.Sleep((int)(LOAD_READ_DELAY * 1000));
+            //Thread.Sleep((int)(LOAD_READ_DELAY * 1000));
             // READ OTR
             byte[] Output = SPIBus.Write(ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0}, 5);
 
             // Convert output to int
-            int IntOut = Output[1];
-            IntOut |= (Output[2] << 8);
-            IntOut |= (Output[3] << 16);
-            IntOut |= (Output[4] << 24);
+            int IntOut = Output[4];
+            IntOut |= (Output[3] << 8);
+            IntOut |= (Output[2] << 16);
+            IntOut |= (Output[1] << 24);
 
             // Check for over/under-flows
             byte[] STR = SPIBus.Write(ChipSelect, new byte[] { 0b01_110_000, 0 }, 2);
