@@ -98,9 +98,6 @@ namespace Scarlet.Components.Sensors
             else { return Fault.NONE; }
         }
 
-        /// <summary> This sensor does not process events. Will do nothing. </summary>
-        public void EventTriggered(object Sender, EventArgs Event) { }
-
         public DataUnit GetData()
         {
             return new DataUnit("MAX31855")

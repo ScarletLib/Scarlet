@@ -40,8 +40,6 @@ namespace Scarlet.Components.Sensors
         /// <returns> Returns true if the GPS has a fix and false otherwise. </returns>
         public bool Test() => HasFix();
 
-        public void EventTriggered(object sender, EventArgs e) => throw new NotImplementedException("MTK3339 doesn't have events");
-
         /// <summary> Gets new readings from GPS. </summary>
         public void UpdateState() => GetCoords();
 

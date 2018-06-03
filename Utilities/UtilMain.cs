@@ -70,7 +70,21 @@ namespace Scarlet.Utilities
             }
             return Output.ToString();
         }
- 
+
+        /// <summary> Takes an input value, original range, and final range. Returns input value linearly mapped to the final range. </summary>
+        /// <param name="Value"> The input value to be mapped (should be within SrcMin and SrcMax). </param>
+        /// <param name="SrcMin"> Minimum of the original range. </param>
+        /// <param name="SrcMax"> Maximum of the original range. </param>
+        /// <param name="DstMin"> Minimum of the destination range. </param>
+        /// <param name="DstMax"> Maximum of the destination range. </param>
+        public static double LinearMap(double Value, double SrcMin, double SrcMax, double DstMin, double DstMax)
+        {
+            double srcSpan = SrcMax - SrcMin;
+            double dstSpan = DstMax - DstMin;
+            double scaled = (Value - SrcMin) / srcSpan;
+            return DstMin + (scaled * dstSpan);
+        }
+
     }
 
 }
