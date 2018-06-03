@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Scarlet.Components.Sensors
@@ -28,6 +29,27 @@ namespace Scarlet.Components.Sensors
 
         public event EventHandler<OverflowEvent> OverflowOccured;
 
+        public static readonly Configuration DefaultConfig = new Configuration()
+        {
+            // MDR0
+            QuadMode = QuadMode.NON_QUAD,
+            CountMode = CountMode.FREE_RUNNING,
+            IndexConfig = IndexConfig.DISABLE,
+
+            SynchronousIndex = false,
+            DivideClkBy2 = false,
+
+            // MDR1
+            CounterMode = CounterMode.BYTE_4,
+
+            CountEnable = true,
+
+            FlagOnIDX = false,
+            FlagOnCMP = false,
+            FlagOnBW = false,
+            FlagOnCY = false,
+        };
+
 
         /// <summary> Initializes the LS7366R SPI encoder counter chip. </summary>
         /// <param name="SPIBus"> SPI Bus to communicate with </param>
@@ -48,7 +70,7 @@ namespace Scarlet.Components.Sensors
             byte SynIndex = Configuration.SynchronousIndex ? (byte)1 : (byte)0;
             byte FltrClk = Configuration.DivideClkBy2 ? (byte)1 : (byte)0;
 
-            byte CntEnable = Configuration.CountEnable ? (byte)1 : (byte)0;
+            byte CntEnable = Configuration.CountEnable ? (byte)0 : (byte)1;
 
             byte IDXFlg = Configuration.FlagOnIDX ? (byte)1 : (byte)0;
             byte CMPFlg = Configuration.FlagOnCMP ? (byte)1 : (byte)0;
@@ -78,31 +100,13 @@ namespace Scarlet.Components.Sensors
             SPIBus.Write(ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 2);
             // Write MDR1
             SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
+            // Clear CNT to zero
+            SPIBus.Write(ChipSelect, new byte[] { 0b00_100_000 }, 1);
         }
 
         /// <summary> Configures device with a default configuration </summary>
         public void Configure()
         {
-            Configuration DefaultConfig = new Configuration()
-            {
-                // MDR0
-                QuadMode = QuadMode.NON_QUAD,
-                CountMode = CountMode.FREE_RUNNING,
-                IndexConfig = IndexConfig.DISABLE,
-
-                SynchronousIndex = false,
-                DivideClkBy2 = false,
-
-                // MDR1
-                CounterMode = CounterMode.BYTE_4,
-
-                CountEnable = true,
-
-                FlagOnIDX = false,
-                FlagOnCMP = false,
-                FlagOnBW = false,
-                FlagOnCY = false,
-            };
             Configure(DefaultConfig);
         }
 
@@ -117,13 +121,14 @@ namespace Scarlet.Components.Sensors
         {
             CountEnable?.SetOutput(Enable);
             // Read MDR1
-            byte MDR1 = SPIBus.Write(ChipSelect, new byte[] { 0b01_010_000 }, 1)[0];
+            byte MDR1 = SPIBus.Write(ChipSelect, new byte[] { 0b01_010_000, 0 }, 2)[1];
+            Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "Encoder status " + MDR1);
             // If the count enable on the chip is different, then change it
-            if (((MDR1 & 0b00001000) == 0b00001000) != Enable)
+            if (((MDR1 & 0b00000100) != 0b00000100) != Enable)
             {
                 // Flip the CEN bit in MDR1
-                if (Enable) { MDR1 |= 0b00001000; }
-                else { MDR1 &= 0b11110111; }
+                if (!Enable) { MDR1 |= 0b00000100; }
+                else { MDR1 &= 0b11111011; }
                 // Write the new MDR1 to the chip
                 SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
             }
@@ -154,18 +159,19 @@ namespace Scarlet.Components.Sensors
 
             // LOAD OTR
             SPIBus.Write(ChipSelect, new byte[] { 0b11_101_000 }, 1);
+            Thread.Sleep((int)(LOAD_READ_DELAY * 1000));
             // READ OTR
-            byte[] Output = SPIBus.Write(ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0 }, 4);
+            byte[] Output = SPIBus.Write(ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0}, 5);
 
             // Convert output to int
-            int IntOut = Output[0];
-            IntOut |= (Output[1] << 8);
-            IntOut |= (Output[2] << 16);
-            IntOut |= (Output[3] << 24);
+            int IntOut = Output[1];
+            IntOut |= (Output[2] << 8);
+            IntOut |= (Output[3] << 16);
+            IntOut |= (Output[4] << 24);
 
             // Check for over/under-flows
-            byte[] STR = SPIBus.Write(ChipSelect, new byte[] { 0b01_110_000 }, 1);
-            byte STRO = STR[0];
+            byte[] STR = SPIBus.Write(ChipSelect, new byte[] { 0b01_110_000, 0 }, 2);
+            byte STRO = STR[1];
             if ((STRO >> 7) == 1) { OnOverflow(new OverflowEvent() { Overflow = true, Underflow = false }); }
             if ((STRO >> 6) == 1) { OnOverflow(new OverflowEvent() { Overflow = false, Underflow = true }); }
             // Reset over/under-flow bits
