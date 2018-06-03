@@ -1,4 +1,5 @@
 ﻿using Scarlet.IO;
+using Scarlet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,8 @@ namespace Scarlet.Components.Sensors
 
         public bool CountEnabled { get; private set; }
         public int Count { get; private set; }
+        public string System { get; set; }
+
         public event EventHandler<OverflowEvent> OverflowOccured;
 
 
@@ -170,6 +173,14 @@ namespace Scarlet.Components.Sensors
             SPIBus.Write(ChipSelect, new byte[] { 0b10_110_000, STRO }, 0);
 
             Count = IntOut; // Take over/under-flows into consideration here?
+        }
+
+        public DataUnit GetData() // TODO: Make sure this has all necessary data.
+        {
+            return new DataUnit("LS7366R")
+            {
+                { "Count", this.Count }
+            }.SetSystem(this.System);
         }
 
         /// <summary> Structure for the configuration of the device. </summary>
