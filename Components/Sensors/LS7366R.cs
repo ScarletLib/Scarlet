@@ -122,7 +122,6 @@ namespace Scarlet.Components.Sensors
             CountEnable?.SetOutput(Enable);
             // Read MDR1
             byte MDR1 = SPIBus.Write(ChipSelect, new byte[] { 0b01_010_000, 0 }, 2)[1];
-            Log.Output(Log.Severity.INFO, Log.Source.SENSORS, "Encoder status " + MDR1);
             // If the count enable on the chip is different, then change it
             if (((MDR1 & 0b00000100) != 0b00000100) != Enable)
             {
