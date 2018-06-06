@@ -24,8 +24,7 @@ namespace Scarlet.Components.Sensors
         {
             this.UART = UART ?? throw new Exception("Cannot initialize MTK3339 with null UART bus!");
             if (UART.BytesAvailable() > 0) { UART.Read(UART.BytesAvailable(), new byte[UART.BytesAvailable()]); }
-            Thread ParseThread = new Thread(Parse);
-            ParseThread.IsBackground = true;
+            Thread ParseThread = new Thread(Parse) { IsBackground = true };
             ParseThread.Start();
         }
 
@@ -57,8 +56,8 @@ namespace Scarlet.Components.Sensors
 
                         if (LatIndex.HasValue && LngIndex.HasValue)
                         {
-                            Latitude = RawToDeg(SplitData[Math.Abs(LatIndex.Value)]) * Math.Sign(LatIndex.Value);
-                            Longitude = RawToDeg(SplitData[Math.Abs(LngIndex.Value)]) * Math.Sign(LngIndex.Value);
+                            this.Latitude = RawToDeg(SplitData[Math.Abs(LatIndex.Value)]) * Math.Sign(LatIndex.Value);
+                            this.Longitude = RawToDeg(SplitData[Math.Abs(LngIndex.Value)]) * Math.Sign(LngIndex.Value);
                         }
                     }
                     Builder.Clear();
@@ -69,8 +68,8 @@ namespace Scarlet.Components.Sensors
         private char BlockingGetChar()
         {
             byte[] NewChar = new byte[1];
-            while (UART.BytesAvailable() < 1) ;
-            UART.Read(1, NewChar);
+            while (this.UART.BytesAvailable() < 1) { Thread.Sleep(10); }
+            this.UART.Read(1, NewChar);
             return (char)NewChar[0];
         }
 
@@ -92,7 +91,7 @@ namespace Scarlet.Components.Sensors
         /// <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
         public Tuple<float, float> GetCoords()
         {
-            return new Tuple<float, float>(Latitude, Longitude);
+            return new Tuple<float, float>(this.Latitude, this.Longitude);
         }
 
         /// <summary> Converts a string number to a degree value. </summary>
