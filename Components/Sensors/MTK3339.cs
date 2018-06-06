@@ -82,6 +82,7 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Queries the GPS to see if it has a fix. </summary>
         /// <returns> <c>true</c>, if fix was hased, <c>false</c> otherwise. </returns>
+        [Obsolete("This current does not actually check if a fix is hased, and will always return true.")]
         public bool HasFix()
         {
             return true;
