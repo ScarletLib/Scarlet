@@ -93,22 +93,19 @@ namespace Scarlet.Components.Sensors
             MDR1 |= (byte)(CYFlg << 7);
 
             // Clear MDR0 to zero
-            SPIBus.Write(ChipSelect, new byte[] { 0b00_001_000 }, 1);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_001_000 }, 1);
             // Clear MDR1 to zero
-            SPIBus.Write(ChipSelect, new byte[] { 0b00_010_000 }, 1);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_010_000 }, 1);
             // Write MDR0
-            SPIBus.Write(ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 2);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 2);
             // Write MDR1
-            SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
             // Clear CNT to zero
-            SPIBus.Write(ChipSelect, new byte[] { 0b00_100_000 }, 1);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_100_000 }, 1);
         }
 
         /// <summary> Configures device with a default configuration </summary>
-        public void Configure()
-        {
-            Configure(DefaultConfig);
-        }
+        public void Configure() => Configure(DefaultConfig);
 
         /// <summary>
         /// Sets the output of the given count enable output
@@ -119,9 +116,9 @@ namespace Scarlet.Components.Sensors
         /// <param name="Enable"> Whether or not to enable counting. </param>
         public void EnableCount(bool Enable)
         {
-            CountEnable?.SetOutput(Enable);
+            this.CountEnable?.SetOutput(Enable);
             // Read MDR1
-            byte MDR1 = SPIBus.Write(ChipSelect, new byte[] { 0b01_010_000, 0 }, 2)[1];
+            byte MDR1 = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_010_000, 0 }, 2)[1];
             // If the count enable on the chip is different, then change it
             if (((MDR1 & 0b00000100) != 0b00000100) != Enable)
             {
@@ -129,9 +126,9 @@ namespace Scarlet.Components.Sensors
                 if (!Enable) { MDR1 |= 0b00000100; }
                 else { MDR1 &= 0b11111011; }
                 // Write the new MDR1 to the chip
-                SPIBus.Write(ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
+                this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
             }
-            CountEnabled = Enable;
+            this.CountEnabled = Enable;
         }
 
         /// <summary> Event called on an overflow </summary>
@@ -141,7 +138,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Receives external events. </summary>
         /// <param name="Sender"> Sender of the event </param>
         /// <param name="Event"> Sent event </param>
-        public void EventTriggered(object Sender, EventArgs Event) { if (Event is OverflowEvent) { HadEvent = true; } }
+        public void EventTriggered(object Sender, EventArgs Event) { if (Event is OverflowEvent) { this.HadEvent = true; } }
 
         /// <summary> Tests the LS7366R device. </summary>
         /// <returns> Whether or not the test passed </returns>
@@ -154,13 +151,13 @@ namespace Scarlet.Components.Sensors
         /// </summary>
         public void UpdateState()
         {
-            if (HadEvent) { HadEvent = false; }
+            this.HadEvent = false;
 
             // LOAD OTR
-            SPIBus.Write(ChipSelect, new byte[] { 0b11_101_000 }, 1);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b11_101_000 }, 1);
             //Thread.Sleep((int)(LOAD_READ_DELAY * 1000));
             // READ OTR
-            byte[] Output = SPIBus.Write(ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0}, 5);
+            byte[] Output = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0}, 5);
 
             // Convert output to int
             int IntOut = Output[4];
@@ -169,15 +166,15 @@ namespace Scarlet.Components.Sensors
             IntOut |= (Output[1] << 24);
 
             // Check for over/under-flows
-            byte[] STR = SPIBus.Write(ChipSelect, new byte[] { 0b01_110_000, 0 }, 2);
+            byte[] STR = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_110_000, 0 }, 2);
             byte STRO = STR[1];
             if ((STRO >> 7) == 1) { OnOverflow(new OverflowEvent() { Overflow = true, Underflow = false }); }
             if ((STRO >> 6) == 1) { OnOverflow(new OverflowEvent() { Overflow = false, Underflow = true }); }
             // Reset over/under-flow bits
             STRO = (byte)(0b00111111 & STRO);
-            SPIBus.Write(ChipSelect, new byte[] { 0b10_110_000, STRO }, 2);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_110_000, STRO }, 2);
 
-            Count = IntOut; // Take over/under-flows into consideration here?
+            this.Count = IntOut; // Take over/under-flows into consideration here?
         }
 
         public DataUnit GetData() // TODO: Make sure this has all necessary data.
