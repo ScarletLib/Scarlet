@@ -78,6 +78,7 @@
     <Compile Include="Components\Outputs\PCA9685.cs" />
     <Compile Include="Components\Outputs\RGBLED.cs" />
     <Compile Include="Components\Sensors\LimitSwitch.cs" />
+    <Compile Include="Components\Sensors\LS7366R.cs" />
     <Compile Include="Components\Sensors\MAX31855.cs" />
     <Compile Include="Components\Sensors\MPU6050.cs" />
     <Compile Include="Components\Sensors\MTK3339.cs" />
