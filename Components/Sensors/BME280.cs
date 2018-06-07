@@ -148,8 +148,8 @@ namespace Scarlet.Components.Sensors
         private CompensationParameters ReadCompVals()
         {
             byte[] RegistersLow = ReadSequential(Register.CALIBRATION_LOW, 25);
-            byte[] RegistersHigh = ReadSequential(Register.CALIBRATION_HIGH, 3);
-            if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 3) { throw new Exception("Failed to get suitable compensation data from device."); }
+            byte[] RegistersHigh = ReadSequential(Register.CALIBRATION_HIGH, 7);
+            if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
             CompensationParameters Output = new CompensationParameters()
             {
                 dig_T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
@@ -165,8 +165,11 @@ namespace Scarlet.Components.Sensors
                 dig_P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
                 dig_P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]),
                 dig_H1 = RegistersLow[24],
-                dig_H2 = (short)(RegistersHigh[1] << 8 | RegistersHigh[1]),
-                dig_H3 = RegistersHigh[2]
+                dig_H2 = (short)(RegistersHigh[0] << 8 | RegistersHigh[1]),
+                dig_H3 = RegistersHigh[2],
+                dig_H4 = (short)(RegistersHigh[3] << 4 | (RegistersHigh[4] & 0b0000_1111)),
+                dig_H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
+                dig_H6 = (sbyte)(RegistersHigh[6])
             };
             return Output;
         }
@@ -203,6 +206,9 @@ namespace Scarlet.Components.Sensors
             public byte dig_H1;
             public short dig_H2;
             public byte dig_H3;
+            public short dig_H4;
+            public short dig_H5;
+            public sbyte dig_H6;
         }
 
         private enum Register : byte
