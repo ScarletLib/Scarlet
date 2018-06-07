@@ -61,11 +61,6 @@ namespace Scarlet.Components.Sensors
             Configure(Configuration);
         }
 
-        public void EventTriggered(object Sender, EventArgs Event)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool Test()
         {
             // Read Self Test Registers

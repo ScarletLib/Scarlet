@@ -17,6 +17,7 @@ namespace Scarlet.IO.BeagleBone
         private static bool[] EnableSPIBuses = new bool[2];
         private static bool[] EnablePWMBuses = new bool[3];
         private static bool[] EnableCANBuses = new bool[2];
+        private static bool[] CANFD = new bool[2];
         private static bool[] EnableUARTBuses = new bool[4];
 
         #region Adding Mappings
@@ -44,7 +45,7 @@ namespace Scarlet.IO.BeagleBone
 
             if (GPIOMappings == null) { GPIOMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment NewMap = new PinAssignment(SelectedPin, Pin.GetPinMode(FastSlew, !IsOutput, Resistor, Mode));
-            lock(GPIOMappings)
+            lock (GPIOMappings)
             {
                 if (GPIOMappings.ContainsKey(SelectedPin))
                 {
@@ -83,7 +84,7 @@ namespace Scarlet.IO.BeagleBone
 
             if (PWMMappings == null) { PWMMappings = new Dictionary<BBBPin, PinAssignment>(); }
             PinAssignment NewMap = new PinAssignment(SelectedPin, Mode);
-            lock(PWMMappings)
+            lock (PWMMappings)
             {
                 if (PWMMappings.ContainsKey(SelectedPin))
                 {
@@ -114,14 +115,14 @@ namespace Scarlet.IO.BeagleBone
 
             if (ClockPin == BBBPin.P9_17 || ClockPin == BBBPin.P9_24) // Port 1 SCL
             {
-                if(DataPin != BBBPin.P9_18 && DataPin != BBBPin.P9_26) // Not Port 1 SDA
+                if (DataPin != BBBPin.P9_18 && DataPin != BBBPin.P9_26) // Not Port 1 SDA
                 {
                     throw new InvalidOperationException("I2C SDA pin selected is invalid with the selected SCL pin. Make sure that it is part of the same I2C port.");
                 }
             }
             else if (ClockPin == BBBPin.P9_19 || ClockPin == BBBPin.P9_21) // Port 2 SCL
             {
-                if(DataPin != BBBPin.P9_20 && DataPin != BBBPin.P9_22) // Not Port 2 SDA
+                if (DataPin != BBBPin.P9_20 && DataPin != BBBPin.P9_22) // Not Port 2 SDA
                 {
                     throw new InvalidOperationException("I2C SDA pin selected is invalid with the selected SCL pin. Make sure that it is part of the same I2C port.");
                 }
@@ -147,7 +148,7 @@ namespace Scarlet.IO.BeagleBone
             PinAssignment DataMap = new PinAssignment(DataPin, Pin.GetPinMode(false, true, ResistorState.PULL_UP, DataMode));
             lock (I2CMappings)
             {
-                if(I2CMappings.ContainsKey(ClockPin))
+                if (I2CMappings.ContainsKey(ClockPin))
                 {
                     Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Overriding I2C SCL pin setting. This may mean that you have a pin usage conflict.");
                     I2CMappings[ClockPin] = ClockMap;
@@ -218,7 +219,7 @@ namespace Scarlet.IO.BeagleBone
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_21) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_18) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-                
+
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
@@ -287,6 +288,7 @@ namespace Scarlet.IO.BeagleBone
         /// <param name="TX"> The pin to use for the transmit line. </param>
         /// <param name="RX"> The pin to use for the receive line. </param>
         /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for CAN at this time. Reason will be given. </exception>
+        [Obsolete("Currently not functioning, use AddBusCAN instead.")]
         public static void AddMappingsCAN(BBBPin TX, BBBPin RX)
         {
             byte TXMode = Pin.GetModeID(TX, BBBPinMode.CAN);
@@ -391,7 +393,7 @@ namespace Scarlet.IO.BeagleBone
         public static void AddMappingADC(BBBPin SelectedPin)
         {
             int ADCNum = -1;
-            switch(SelectedPin)
+            switch (SelectedPin)
             {
                 case BBBPin.P9_39: ADCNum = 0; break;
                 case BBBPin.P9_40: ADCNum = 1; break;
@@ -415,12 +417,27 @@ namespace Scarlet.IO.BeagleBone
         }
         #endregion
 
+        /// <summary>
+        /// Prepares the given CAN bus for use. Assumes device tree changes have already been made external to Scarlet.
+        /// You'll need to call ApplyPinSettings() to actually initialize the bus. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// </summary>
+        /// <param name="BusID"> The bus number to prepare for use. </param>
+        /// <param name="FD"> Whether or not this bus uses CAN Flexible Data frames. This allows for sending of payloads up to 64 bytes, as opposed to the normal 8. </param>
+        /// <exception cref="InvalidOperationException"> If the given bus is unavailable. Only 0 and 1 exist on the BBB. </exception>
+        public static void AddBusCAN(byte BusID, bool FD = true)
+        {
+            if (BusID > 1) { throw new InvalidOperationException("Only CAN bus 0 and 1 exist."); }
+            EnableCANBuses[BusID] = true;
+            CANFD[BusID] = FD;
+        }
+
         public enum ApplicationMode { NO_CHANGES, APPLY_IF_NONE, REMOVE_AND_APPLY, APPLY_REGARDLESS }
 
         /// <summary>
         /// Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while. Should only be run once per program execution.
         /// We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the OneNote page for more info.
         /// </summary>
+        /// <remarks> If no device tree overlay changes are required, calling this will initialize other systems, like the CAN buses, then do nothing. </remarks>
         /// <param name="Mode">
         /// The behaviour to use when determining what to do during application of the overlay. Please read the OneNote documentation for a more thorough explanation.
         /// NO_CHANGES: Does not apply the device tree overlay regardles
@@ -431,14 +448,18 @@ namespace Scarlet.IO.BeagleBone
         public static void ApplyPinSettings(ApplicationMode Mode)
         {
             // Generate the device tree
-            if((GPIOMappings == null || GPIOMappings.Count == 0) &&
+            if ((GPIOMappings == null || GPIOMappings.Count == 0) &&
                (PWMMappings == null || PWMMappings.Count == 0) &&
                (I2CMappings == null || I2CMappings.Count == 0) &&
                (SPIMappings == null || SPIMappings.Count == 0) &&
                (CANMappings == null || CANMappings.Count == 0) &&
                (UARTMappings == null || UARTMappings.Count == 0) &&
                (ADCMappings == null || ADCMappings.Count == 0))
-                { Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application."); return; }
+            {
+                Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "No pins defined, skipping device tree application.");
+                InitBuses(false);
+                return;
+            }
             if (!StateStore.Started) { throw new Exception("Please start the StateStore system first."); }
             string FileName = "Scarlet-DT";
             string PrevNum = StateStore.GetOrCreate("Scarlet-DevTreeNum", "0");
@@ -462,7 +483,7 @@ namespace Scarlet.IO.BeagleBone
 
             bool AttemptOverlayChanges = false;
             bool WarnAboutApplication = false;
-            switch(Mode)
+            switch (Mode)
             {
                 case ApplicationMode.APPLY_IF_NONE:
                     AttemptOverlayChanges = FindScarletOverlays().Count == 0;
@@ -522,7 +543,7 @@ namespace Scarlet.IO.BeagleBone
                     }
                     Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Done applying.");
                 }
-                catch(IOException Exc)
+                catch (IOException Exc)
                 {
                     Log.Output(Log.Severity.ERROR, Log.Source.HARDWAREIO, "Failed to apply device tree overlay. This is likely caused by a conflict. Please read 'Common Issues' in the documentation.");
                     throw;
@@ -530,15 +551,23 @@ namespace Scarlet.IO.BeagleBone
 
                 Thread.Sleep(100);
             }
-            if(WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
+            if (WarnAboutApplication) { Log.Output(Log.Severity.WARNING, Log.Source.HARDWAREIO, "Scarlet device tree overlays have not been applied. Ensure that this is what you intended, otherwise I/O pins may not work as expected."); }
 
-            // Start relevant components.
+            InitBuses(true);
+        }
+
+        private static void InitBuses(bool HadDevTreeChanges)
+        {
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Initializing components...");
-            I2CBBB.Initialize(EnableI2CBuses);
-            SPIBBB.Initialize(EnableSPIBuses);
-            PWMBBB.Initialize(EnablePWMBuses);
-            CANBBB.Initialize(EnableCANBuses);
-            UARTBBB.Initialize(EnableUARTBuses);
+            CANBBB.Initialize(EnableCANBuses, CANFD);
+            if (HadDevTreeChanges)
+            {
+                I2CBBB.Initialize(EnableI2CBuses);
+                SPIBBB.Initialize(EnableSPIBuses);
+                PWMBBB.Initialize(EnablePWMBuses);
+                CANBBB.Initialize(EnableCANBuses, CANFD);
+                UARTBBB.Initialize(EnableUARTBuses);
+            }
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "BBB ready!");
         }
 
@@ -688,12 +717,12 @@ namespace Scarlet.IO.BeagleBone
 
             if (I2CMappings != null)
             {
-                lock(I2CMappings)
+                lock (I2CMappings)
                 {
                     // Sort I2C pins into devices
-                    foreach(KeyValuePair<BBBPin, PinAssignment> Entry in I2CMappings)
+                    foreach (KeyValuePair<BBBPin, PinAssignment> Entry in I2CMappings)
                     {
-                        switch(Entry.Key)
+                        switch (Entry.Key)
                         {
                             case BBBPin.P9_17: case BBBPin.P9_24: // 1_SCL
                             case BBBPin.P9_18: case BBBPin.P9_26: // 1_SDA
@@ -705,7 +734,7 @@ namespace Scarlet.IO.BeagleBone
                         }
                     }
                     // Add I2C pins to exclusive-use list
-                    if(I2CDev1.Count > 0)
+                    if (I2CDev1.Count > 0)
                     {
                         ExclusiveUseList.Add("i2c1");
                         foreach (PinAssignment OnePin in I2CDev1.Values)
@@ -758,12 +787,12 @@ namespace Scarlet.IO.BeagleBone
 
             if (CANMappings != null)
             {
-                lock(CANMappings)
+                lock (CANMappings)
                 {
                     // Sort CAN pins into devices
                     foreach (KeyValuePair<BBBPin, PinAssignment> Entry in CANMappings)
                     {
-                        switch(CANBBB.PinToCANBus(Entry.Key))
+                        switch (CANBBB.PinToCANBus(Entry.Key))
                         {
                             case 0: CANDev0.Add(Entry.Key, Entry.Value); continue;
                             case 1: CANDev1.Add(Entry.Key, Entry.Value); continue;
@@ -774,12 +803,12 @@ namespace Scarlet.IO.BeagleBone
 
             if (UARTMappings != null)
             {
-                lock(UARTMappings)
+                lock (UARTMappings)
                 {
                     // Sort UART pins into devices
-                    foreach(KeyValuePair<BBBPin, PinAssignment> Entry in UARTMappings)
+                    foreach (KeyValuePair<BBBPin, PinAssignment> Entry in UARTMappings)
                     {
-                        switch(UARTBBB.PinToUARTBus(Entry.Key))
+                        switch (UARTBBB.PinToUARTBus(Entry.Key))
                         {
                             case 1: UARTDev1.Add(Entry.Key, Entry.Value); continue;
                             case 2: UARTDev2.Add(Entry.Key, Entry.Value); continue;
@@ -791,7 +820,7 @@ namespace Scarlet.IO.BeagleBone
             }
 
             // Output exclusive-use list
-            if(ExclusiveUseList.Count > 0)
+            if (ExclusiveUseList.Count > 0)
             {
                 Output.Add("    exclusive-use =");
                 for (int i = 0; i < ExclusiveUseList.Count; i++)
@@ -951,9 +980,9 @@ namespace Scarlet.IO.BeagleBone
             }
 
             // Output I2C device fragments
-            if(I2CMappings != null)
+            if (I2CMappings != null)
             {
-                lock(I2CMappings)
+                lock (I2CMappings)
                 {
                     Output.Add("    fragment@3 {");
                     Output.Add("        target = <&am33xx_pinmux>;");
@@ -1115,15 +1144,15 @@ namespace Scarlet.IO.BeagleBone
             }
 
             // Output ADC device fragment
-            if(ADCMappings != null)
+            if (ADCMappings != null)
             {
-                lock(ADCMappings)
+                lock (ADCMappings)
                 {
                     SortedList Channels = new SortedList(7);
                     ADCMappings.Values.ToList().ForEach(x => Channels.Add(x, x));
 
                     string ChannelsOut = "<";
-                    for(int i = 0; i < Channels.Count; i++)
+                    for (int i = 0; i < Channels.Count; i++)
                     {
                         ChannelsOut += Channels.GetByIndex(i);
                         if (i + 1 < Channels.Count) { ChannelsOut += " "; }
@@ -1147,9 +1176,9 @@ namespace Scarlet.IO.BeagleBone
             }
 
             // Output CAN device fragments
-            if(CANMappings != null)
+            if (CANMappings != null)
             {
-                lock(CANMappings)
+                lock (CANMappings)
                 {
                     Output.Add("    fragment@6 {");
                     Output.Add("        target = <&am33xx_pinmux>;");
@@ -1216,9 +1245,9 @@ namespace Scarlet.IO.BeagleBone
             }
 
             // Output UART device fragments
-            if(UARTMappings != null)
+            if (UARTMappings != null)
             {
-                lock(UARTMappings)
+                lock (UARTMappings)
                 {
                     Output.Add("    fragment@7 {");
                     Output.Add("        target = <&am33xx_pinmux>;");

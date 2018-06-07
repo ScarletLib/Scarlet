@@ -37,13 +37,13 @@ namespace Scarlet.Components.Sensors
         /// </summary>
         public void UpdateState()
         {
-            int NewAngle = this.Range - (int)((this.Input.GetRawInput() / this.Input.GetRawRange()) * this.Range);
+            int NewAngle = this.Range - (int)((((float)this.Input.GetRawInput() / (float)this.Input.GetRawRange()) * this.Range));
             if (this.Invert) { NewAngle = this.Range - NewAngle; }
-            
+
             int AngleChange = this.Angle - NewAngle;
             this.Angle = NewAngle;
 
-            if(AngleChange != 0)
+            if (AngleChange != 0)
             {
                 PotentiometerTurn Event = new PotentiometerTurn() { TurnAmount = AngleChange, Angle = this.Angle };
                 OnTurn(Event);
@@ -51,9 +51,6 @@ namespace Scarlet.Components.Sensors
         }
 
         protected virtual void OnTurn(PotentiometerTurn Event) { Turned?.Invoke(this, Event); }
-
-        /// <summary> This sensor does not process events. Will do nothing. </summary>
-        public void EventTriggered(object Sender, EventArgs Event) { }
 
         public DataUnit GetData()
         {

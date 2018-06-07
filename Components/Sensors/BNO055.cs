@@ -316,11 +316,6 @@ namespace Scarlet.Components.Sensors
             this.Z = XYZ.Item3;
         }
 
-        /// <summary> Does nothing. </summary>
-        /// <param name="sender"> Sender. </param>
-        /// <param name="e"> The EventArgs object </param>
-        public void EventTriggered(object sender, EventArgs e) { }
-
         /// <summary> Reads a byte from the specified register. </summary>
         /// <returns> The byte that was read. </returns>
         /// <param name="Register"> The register to read from. </param>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using Scarlet.IO;
@@ -8,11 +9,6 @@ namespace Scarlet.Components.Sensors
 {
     public class MTK3339 : ISensor
     {
-        private const string UPDATE_200_MSEC = "$PMTK220,200*2C\r\n";
-        private const string MEAS_200_MSEC = "$PMTK300,200,0,0,0,0*2F\r\n";
-        private const string GPRMC_GPGGA = "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
-        private const string QUERY_GPGSA = "$PSRF103,02,01,00,01*27\r\n";
-
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }
         public string System { get; set; }
@@ -26,69 +22,77 @@ namespace Scarlet.Components.Sensors
         /// <param name="UART"> The UART bus to read from and write to. </param>
         public MTK3339(IUARTBus UART)
         {
-            this.UART = UART;
-            WriteString(GPRMC_GPGGA);
-            Thread.Sleep(1);
-            WriteString(MEAS_200_MSEC);
-            Thread.Sleep(1);
-            WriteString(UPDATE_200_MSEC);
-            Thread.Sleep(1);
+            this.UART = UART ?? throw new Exception("Cannot initialize MTK3339 with null UART bus!");
             if (UART.BytesAvailable() > 0) { UART.Read(UART.BytesAvailable(), new byte[UART.BytesAvailable()]); }
+            Thread ParseThread = new Thread(Parse) { IsBackground = true };
+            ParseThread.Start();
+        }
+
+        private void Parse()
+        {
+            StringBuilder Builder = new StringBuilder();
+
+            while (true)
+            {
+                char Data = BlockingGetChar();
+                Builder.Append(Data);
+                if (Data == '\n')
+                {
+                    if (Builder.ToString().Contains("$GPGGA"))
+                    {
+                        int? LatIndex = null;
+                        int? LngIndex = null;
+                        string[] SplitData = Builder.ToString().Split(',');
+                        for (int i = 0; i < SplitData.Length; i++)
+                        {
+                            switch (SplitData[i])
+                            {
+                                case "N": LatIndex = i - 1; break;
+                                case "S": LatIndex = -(i - 1); break;
+                                case "W": LngIndex = -(i - 1); break;
+                                case "E": LngIndex = i - 1; break;
+                            }
+                        }
+
+                        if (LatIndex.HasValue && LngIndex.HasValue)
+                        {
+                            this.Latitude = RawToDeg(SplitData[Math.Abs(LatIndex.Value)]) * Math.Sign(LatIndex.Value);
+                            this.Longitude = RawToDeg(SplitData[Math.Abs(LngIndex.Value)]) * Math.Sign(LngIndex.Value);
+                        }
+                    }
+                    Builder.Clear();
+                }
+            }
+        }
+
+        private char BlockingGetChar()
+        {
+            byte[] NewChar = new byte[1];
+            while (this.UART.BytesAvailable() < 1) { Thread.Sleep(10); }
+            this.UART.Read(1, NewChar);
+            return (char)NewChar[0];
         }
 
         /// <summary> Checks whether this GPS has a fix. </summary>        
         /// <returns> Returns true if the GPS has a fix and false otherwise. </returns>
         public bool Test() => HasFix();
 
-        public void EventTriggered(object sender, EventArgs e) => throw new NotImplementedException("MTK3339 doesn't have events");
-
         /// <summary> Gets new readings from GPS. </summary>
         public void UpdateState() => GetCoords();
 
         /// <summary> Queries the GPS to see if it has a fix. </summary>
         /// <returns> <c>true</c>, if fix was hased, <c>false</c> otherwise. </returns>
+        [Obsolete("This currently does not actually check if a fix is hased, and will always return true.")]
         public bool HasFix()
         {
-            WriteString(QUERY_GPGSA);
-            string[] Result = Read();
-            if (Result.Length < 3) { return false; }
-            return Result[2] != "1";
-        }
-
-        /// <summary> Reads an NMEA sentence and splits it. </summary>
-        /// <returns> Returns the NMEA sentence split by comma. </returns>
-        private string[] Read()
-        {
-            string GpsResult = "";
-            byte[] PrevChar = new byte[1];
-            while (PrevChar[0] != '\n')
-            {
-                if (UART.BytesAvailable() < 1)
-                {
-                    Thread.Sleep(Utilities.Constants.DEFAULT_MIN_THREAD_SLEEP);
-                    continue;
-                }
-                UART.Read(1, PrevChar);
-                GpsResult += Encoding.ASCII.GetString(PrevChar);
-            }
-            return GpsResult.Split(',');
+            return true;
         }
 
         /// <summary> Gets the GPS coordinates of this GPS. </summary>
         /// <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
         public Tuple<float, float> GetCoords()
         {
-            string[] Info = Read();
-            if (Info[0] == "$GPGGA")
-            {
-                Latitude = RawToDeg(Info[2]);
-                string LatDir = Info[3];
-                Longitude = RawToDeg(Info[4]);
-                string LngDir = Info[5];
-                if (LatDir == "S") { Latitude = -Latitude; }
-                if (LngDir == "W") { Longitude = -Longitude; }
-            }
-            return new Tuple<float, float>(Latitude, Longitude);
+            return new Tuple<float, float>(this.Latitude, this.Longitude);
         }
 
         /// <summary> Converts a string number to a degree value. </summary>
@@ -97,14 +101,11 @@ namespace Scarlet.Components.Sensors
         private float RawToDeg(string Val)
         {
             string[] GPSplit = Val.Split('.');
+            //Console.WriteLine(GPSplit[0]);
             float Deg = float.Parse(GPSplit[0].Substring(0, GPSplit[0].Length - 2));
             float Min = float.Parse(GPSplit[0].Substring(GPSplit[0].Length - 2) + '.' + GPSplit[1]);
             return Deg + Min / 60.0f;
         }
-
-        /// <summary> Writes a string to the UART as a string of bytes. </summary>
-        /// <param name="s"> The string to write. </param>
-        private void WriteString(string s) => UART.Write(Encoding.ASCII.GetBytes(s));
 
         public DataUnit GetData()
         {
