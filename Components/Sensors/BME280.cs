@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Scarlet.IO;
 using Scarlet.Utilities;
 
@@ -75,7 +71,7 @@ namespace Scarlet.Components.Sensors
 
             byte Config = (byte)((((byte)Configuration.StandbyTime << 5) & 0b1110_0000) | (((byte)Configuration.IIRFilterTimeConstant << 2) & 0b0001_1100) | (RawData[3] & 0b0000_0010) | (Configuration.Use3WireSPI ? 1 : 0));
 
-            WriteRegister(new byte[] { (byte)Register.CTRL_HUM, (byte)Register.CTRL_MEAS, (byte)Register.CONFIG }, new byte[] { Ctrl_Hum, Ctrl_Meas, Config});
+            WriteRegister(new byte[] { (byte)Register.CTRL_HUM, (byte)Register.CTRL_MEAS, (byte)Register.CONFIG }, new byte[] { Ctrl_Hum, Ctrl_Meas, Config });
 
             ChangeMode(Configuration.Mode);
         }
@@ -83,7 +79,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Configures the device with default settings, which should be good enough for basic functionality. </summary>
         public void Configure() => Configure(DefaultConfig);
 
-        /// <summary> CHanges the acquisition mode of the device, or brings it in/out of SLEEP. </summary>
+        /// <summary> Changes the acquisition mode of the device, or brings it in/out of SLEEP. </summary>
         public void ChangeMode(Mode NewMode)
         {
             byte Config = Read((byte)Register.CTRL_MEAS, 1)[0];
