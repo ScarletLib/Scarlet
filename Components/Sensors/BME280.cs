@@ -16,12 +16,6 @@ namespace Scarlet.Components.Sensors
     {
         public string System { get; set; }
 
-        private readonly II2CBus I2CBus;
-        private readonly byte I2CAddress;
-        private readonly ISPIBus SPIBus;
-        private readonly IDigitalOut SPICS;
-        private readonly bool IsSPI;
-
         public static readonly Config DefaultConfig = new Config()
         {
             HumidityOversampling = Oversampling.OS_1x,
@@ -35,6 +29,12 @@ namespace Scarlet.Components.Sensors
             StandbyTime = StandbyTime.TIME_500us,
             IIRFilterTimeConstant = FilterCoefficient.FILTER_OFF
         };
+
+        private readonly II2CBus I2CBus;
+        private readonly byte I2CAddress;
+        private readonly ISPIBus SPIBus;
+        private readonly IDigitalOut SPICS;
+        private readonly bool IsSPI;
 
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
@@ -66,8 +66,28 @@ namespace Scarlet.Components.Sensors
             // Write CTRL_MEAS
         }
 
+        public DataUnit GetData()
+        {
+            // TODO: Implement DataUnit generation.
+            return new DataUnit("BME280")
+            {
+
+            }.SetSystem(this.System);
+        }
+
+        public bool Test()
+        {
+            byte[] DeviceData = DoRead((byte)Register.DEV_ID, 1);
+            return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
+        }
+
+        public void UpdateState()
+        {
+            throw new NotImplementedException();
+        }
+
         #region Read/Write
-        //TODO: Finish this.
+        // TODO: Finish this.
         private byte[] DoRead(byte Register, byte Length)
         {
             if (this.IsSPI)
@@ -94,7 +114,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Writes data into registers at each given location. Useful for write coalescing. Data[i] will be written into Registers[i] for each i. </summary>
         /// <param name="Registers"> The registers to write to. </param>
         /// <param name="Data"> The data to write to each register. </param>
-        /// <exception cref="InvalidOperationException"> If Data or Regsiters are null or 0 length, or if their lengths don't match. </exception>
+        /// <exception cref="InvalidOperationException"> If Data or Registers are null or 0 length, or if their lengths don't match. </exception>
         private void WriteRegister(byte[] Registers, byte[] Data)
         {
             if (Registers == null || Data == null || Registers.Length == 0 || Data.Length == 0 || Registers.Length != Data.Length) { throw new InvalidOperationException("Register and Data must have contents and matching length."); }
@@ -104,14 +124,14 @@ namespace Scarlet.Components.Sensors
                 DataOut[i * 2] = Registers[i];
                 DataOut[(i * 2) + 1] = Data[i];
             }
-            
-            if(this.IsSPI) { this.SPIBus.Write(this.SPICS, DataOut, DataOut.Length); }
+
+            if (this.IsSPI) { this.SPIBus.Write(this.SPICS, DataOut, DataOut.Length); }
             else { this.I2CBus.Write(this.I2CAddress, DataOut); }
         }
 
         /// <summary> Writes data into registers as if the device had auto-increment. </summary>
         /// <param name="StartRegister"> The first register to write data into. </param>
-        /// <param name="Data"></param>
+        /// <param name="Data"> The data to write into the registers. </param>
         /// <exception cref="InvalidOperationException"> If Data is null or empty, or the write would go past register 0xFF. </exception>
         private void WriteSequential(byte StartRegister, byte[] Data)
         {
@@ -122,26 +142,6 @@ namespace Scarlet.Components.Sensors
             WriteRegister(Registers, Data);
         }
         #endregion
-
-        public DataUnit GetData()
-        {
-            // TODO: Implement DataUnit generation.
-            return new DataUnit("BME280")
-            {
-
-            }.SetSystem(this.System);
-        }
-
-        public bool Test()
-        {
-            byte[] DeviceData = DoRead((byte)Register.DEV_ID, 1);
-            return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
-        }
-
-        public void UpdateState()
-        {
-            throw new NotImplementedException();
-        }
 
         public struct Config
         {
