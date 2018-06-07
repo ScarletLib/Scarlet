@@ -143,6 +143,34 @@ namespace Scarlet.Components.Sensors
         }
         #endregion
 
+        /// <summary> Reads compensation values from the device. </summary>
+        /// <remarks> This only needs to be done once, as they are hard-coded on the chip, so will never change. </remarks>
+        private CompensationParameters ReadCompVals()
+        {
+            byte[] RegistersLow = ReadSequential(Register.CALIBRATION_LOW, 25);
+            byte[] RegistersHigh = ReadSequential(Register.CALIBRATION_HIGH, 3);
+            if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 3) { throw new Exception("Failed to get suitable compensation data from device."); }
+            CompensationParameters Output = new CompensationParameters()
+            {
+                dig_T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
+                dig_T2 = (short)(RegistersLow[2] << 8 | RegistersLow[3]),
+                dig_T3 = (short)(RegistersLow[4] << 8 | RegistersLow[5]),
+                dig_P1 = (ushort)(RegistersLow[6] << 8 | RegistersLow[7]),
+                dig_P2 = (short)(RegistersLow[8] << 8 | RegistersLow[9]),
+                dig_P3 = (short)(RegistersLow[10] << 8 | RegistersLow[11]),
+                dig_P4 = (short)(RegistersLow[12] << 8 | RegistersLow[13]),
+                dig_P5 = (short)(RegistersLow[14] << 8 | RegistersLow[15]),
+                dig_P6 = (short)(RegistersLow[16] << 8 | RegistersLow[17]),
+                dig_P7 = (short)(RegistersLow[18] << 8 | RegistersLow[19]),
+                dig_P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
+                dig_P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]),
+                dig_H1 = RegistersLow[24],
+                dig_H2 = (short)(RegistersHigh[1] << 8 | RegistersHigh[1]),
+                dig_H3 = RegistersHigh[2]
+            };
+            return Output;
+        }
+
         public struct Config
         {
             public Oversampling HumidityOversampling;
@@ -157,6 +185,26 @@ namespace Scarlet.Components.Sensors
             public FilterCoefficient IIRFilterTimeConstant;
         }
 
+        /// <summary> Stores the factory-set compensation values used during calculation of final readings. </summary>
+        private struct CompensationParameters
+        {
+            public ushort dig_T1;
+            public short dig_T2;
+            public short dig_T3;
+            public ushort dig_P1;
+            public short dig_P2;
+            public short dig_P3;
+            public short dig_P4;
+            public short dig_P5;
+            public short dig_P6;
+            public short dig_P7;
+            public short dig_P8;
+            public short dig_P9;
+            public byte dig_H1;
+            public short dig_H2;
+            public byte dig_H3;
+        }
+
         private enum Register : byte
         {
             DEV_ID = 0xD0,
@@ -165,7 +213,7 @@ namespace Scarlet.Components.Sensors
             CALIBRATION_HIGH = 0xE1,
             CTRL_HUM = 0xF2, // Sets humidity acquisition options: Must write to CTRL_MEAS before changes are applied.
             STATUS = 0xF3,
-            CTRL_MEAS = 0xF4, // Sets pressure and temperature acquision options
+            CTRL_MEAS = 0xF4, // Sets pressure and temperature acquisition options
             CONFIG = 0xF5, // Must be in sleep mode
             PRESSURE_MSB = 0xF7,
             PRESSURE_LSB = 0xF8,
