@@ -25,10 +25,16 @@ namespace Scarlet.Components.Sensors
             TemperatureOversampling = Oversampling.OS_1x,
             MeasureTemperature = true,
 
-            Mode = Mode.FORCED,
+            Mode = Mode.NORMAL,
             StandbyTime = StandbyTime.TIME_500us,
-            IIRFilterTimeConstant = FilterCoefficient.FILTER_OFF
+            IIRFilterTimeConstant = FilterCoefficient.FILTER_OFF,
+
+            Use3WireSPI = false
         };
+
+        public double Temperature { get; private set; }
+        public double Humidity { get; private set; }
+        public double Pressure { get; private set; }
 
         private readonly II2CBus I2CBus;
         private readonly byte I2CAddress;
@@ -37,7 +43,6 @@ namespace Scarlet.Components.Sensors
         private readonly bool IsSPI;
 
         private CompensationParameters CompParams;
-        private double Temperature, Humidity, Pressure;
 
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
@@ -57,7 +62,20 @@ namespace Scarlet.Components.Sensors
         {
             this.CompParams = ReadCompVals();
             ChangeMode(Mode.SLEEP);
-            // Do things.
+
+            byte[] RawData = Read((byte)Register.CTRL_HUM, 4);
+
+            byte osrs_h = (byte)(Configuration.MeasureHumidity ? (byte)Configuration.HumidityOversampling : 0);
+            byte Ctrl_Hum = (byte)((RawData[0] & 0b1111_1000) | osrs_h & 0b111);
+
+            byte osrs_t = (byte)(Configuration.MeasureTemperature ? (byte)Configuration.TemperatureOversampling : 0);
+            byte osrs_p = (byte)(Configuration.MeasurePressure ? (byte)Configuration.PressureOversampling : 0);
+            byte Ctrl_Meas = (byte)(((osrs_t << 5) & 0b1110_0000) | ((osrs_p << 2) & 0b0001_1100) | ((byte)Mode.SLEEP & 0b0000_0011)); // Stays in SLEEP mode, we'll exit once these writes are all done.
+
+            byte Config = (byte)((((byte)Configuration.StandbyTime << 5) & 0b1110_0000) | (((byte)Configuration.IIRFilterTimeConstant << 2) & 0b0001_1100) | (RawData[3] & 0b0000_0010) | (Configuration.Use3WireSPI ? 1 : 0));
+
+            WriteRegister(new byte[] { (byte)Register.CTRL_HUM, (byte)Register.CTRL_MEAS, (byte)Register.CONFIG }, new byte[] { Ctrl_Hum, Ctrl_Meas, Config});
+
             ChangeMode(Configuration.Mode);
         }
 
@@ -65,25 +83,31 @@ namespace Scarlet.Components.Sensors
 
         public void ChangeMode(Mode NewMode)
         {
-            // Read CTRL_MEAS
-            // Make changes to bits 0, 1
-            // Write CTRL_MEAS
+            byte Config = Read((byte)Register.CONFIG, 1)[0];
+            Config = (byte)((Config & 0b1111_1100) | ((byte)NewMode & 0b0000_0011));
+            WriteSingle((byte)Register.CONFIG, Config);
         }
 
+        /// <summary> Gets the sensor's current readings in an easy to store format. </summary>
         public DataUnit GetData()
         {
-            // TODO: Implement DataUnit generation.
             return new DataUnit("BME280")
             {
-
+                { "Temperature", this.Temperature },
+                { "Pressure", this.Pressure },
+                { "Humidity", this.Humidity }
             }.SetSystem(this.System);
         }
 
+        /// <summary> Checks if the device is responding by querying a known, constant register value. </summary>
         public bool Test()
         {
             byte[] DeviceData = Read((byte)Register.DEV_ID, 1);
             return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
         }
+
+        /// <summary> Restarts the device. </summary>
+        public void Reset() => WriteSingle((byte)Register.RESET, 0x6B);
 
         /// <summary> Gets new readings from the device. </summary>
         /// <exception cref="Exception"> If getting readings from the device fails. </exception>
@@ -91,6 +115,7 @@ namespace Scarlet.Components.Sensors
         {
             byte[] RawData = Read((byte)Register.PRESSURE_MSB, 8);
             if (RawData == null || RawData.Length != 8) { throw new Exception("Failed to get readings from device."); }
+
             int RawPressure = (RawData[0] << 12) | (RawData[1] << 4) | ((RawData[2] & 0b1111_0000) >> 4);
             int RawTemperature = (RawData[3] << 12) | (RawData[4] << 4) | ((RawData[5] & 0b1111_0000) >> 4);
             int RawHumidity = (RawData[6] << 8) | (RawData[7]);
@@ -251,6 +276,7 @@ namespace Scarlet.Components.Sensors
             return Output;
         }
 
+        #region Structs and Enums
         public struct Config
         {
             public Oversampling HumidityOversampling;
@@ -263,6 +289,8 @@ namespace Scarlet.Components.Sensors
             public Mode Mode;
             public StandbyTime StandbyTime;
             public FilterCoefficient IIRFilterTimeConstant;
+
+            public bool Use3WireSPI;
         }
 
         /// <summary> Stores the factory-set compensation values used during calculation of final readings. </summary>
@@ -319,11 +347,17 @@ namespace Scarlet.Components.Sensors
 
         public enum Mode : byte
         {
+            /// <summary> No operation, all registers accessible, lowest power, default after startup. </summary>
             SLEEP = 0b00,
+
+            /// <summary> Performs one measurement, stores results and then returns to sleep mode. </summary>
             FORCED = 0b01,
+
+            /// <summary> Continuously takes readings, waiting <c>StandbyTime</c> between readings. </summary>
             NORMAL = 0b11
         }
 
+        /// <summary> How long to wait between readings in NORMAL operation mode. </summary>
         public enum StandbyTime : byte
         {
             TIME_500us = 0b000,
@@ -336,6 +370,10 @@ namespace Scarlet.Components.Sensors
             TIME_20000us = 0b111
         }
 
+        /// <summary>
+        /// Filter to average out several readings for more consistent data, losing fast changes.
+        /// Only applicable to temperature and pressure (not humidity).
+        /// </summary>
         public enum FilterCoefficient : byte
         {
             FILTER_OFF = 0b000,
@@ -344,5 +382,6 @@ namespace Scarlet.Components.Sensors
             FILTER_8x = 0b011,
             FILTER_16x = 0b100
         }
+        #endregion
     }
 }
