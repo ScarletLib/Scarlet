@@ -4,7 +4,11 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
-    // Math based on http://davidegironi.blogspot.com/2017/05/mq-gas-sensor-correlation-function.html#.Wo84_UxFx9A
+    /// <summary>
+    /// Simple sensor to detect approximate concentration of air pollutants.
+    /// Datasheet here: https://www.olimex.com/Products/Components/Sensors/SNS-MQ135/resources/SNS-MQ135.pdf
+    /// Math based on: http://davidegironi.blogspot.com/2017/05/mq-gas-sensor-correlation-function.html#.Wo84_UxFx9A
+    /// </summary>
     public class MQ135 : ISensor
     {
         public string System { get; set; }
@@ -97,6 +101,7 @@ namespace Scarlet.Components.Sensors
 
         // TODO: This still needs to be implemented.
         // I'm not sure if it will actually be useful.
+        // Math here: http://davidegironi.blogspot.com/2017/07/mq-gas-sensor-correlation-function.html#.WxltRyAh2Un
         private static double GetCalibrationMultipler(float Humidity, float Temperature)
         {
             return 1.0;
