@@ -22,6 +22,20 @@ namespace Scarlet.Components.Sensors
         private readonly IDigitalOut SPICS;
         private readonly bool IsSPI;
 
+        public static readonly Config DefaultConfig = new Config()
+        {
+            HumidityOversampling = Oversampling.OS_1x,
+            MeasureHumidity = true,
+            PressureOversampling = Oversampling.OS_1x,
+            MeasurePressure = true,
+            TemperatureOversampling = Oversampling.OS_1x,
+            MeasureTemperature = true,
+
+            Mode = Mode.FORCED,
+            StandbyTime = StandbyTime.TIME_500us,
+            IIRFilterTimeConstant = FilterCoefficient.FILTER_OFF
+        };
+
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
             this.IsSPI = false;
@@ -35,6 +49,24 @@ namespace Scarlet.Components.Sensors
             this.SPIBus = SPIBus;
             this.SPICS = ChipSelect;
         }
+
+        public void Configure(Config Configuration)
+        {
+            ChangeMode(Mode.SLEEP);
+            // Do things.
+            ChangeMode(Configuration.Mode);
+        }
+
+        public void Configure() => Configure(DefaultConfig);
+
+        public void ChangeMode(Mode NewMode)
+        {
+            // Read CTRL_MEAS
+            // Make changes to bits 0, 1
+            // Write CTRL_MEAS
+        }
+
+        #region Read/Write
         //TODO: Finish this.
         private byte[] DoRead(byte Register, byte Length)
         {
@@ -89,6 +121,7 @@ namespace Scarlet.Components.Sensors
             for (byte i = 0; i < Registers.Length; i++) { Registers[i] = (byte)(StartRegister + i); }
             WriteRegister(Registers, Data);
         }
+        #endregion
 
         public DataUnit GetData()
         {
@@ -108,6 +141,20 @@ namespace Scarlet.Components.Sensors
         public void UpdateState()
         {
             throw new NotImplementedException();
+        }
+
+        public struct Config
+        {
+            public Oversampling HumidityOversampling;
+            public bool MeasureHumidity;
+            public Oversampling PressureOversampling;
+            public bool MeasurePressure;
+            public Oversampling TemperatureOversampling;
+            public bool MeasureTemperature;
+
+            public Mode Mode;
+            public StandbyTime StandbyTime;
+            public FilterCoefficient IIRFilterTimeConstant;
         }
 
         private enum Register : byte
@@ -132,7 +179,6 @@ namespace Scarlet.Components.Sensors
 
         public enum Oversampling : byte
         {
-            NONE = 0b000,
             OS_1x = 0b001,
             OS_2x = 0b010,
             OS_4x = 0b011,
@@ -161,7 +207,7 @@ namespace Scarlet.Components.Sensors
 
         public enum FilterCoefficient : byte
         {
-            NONE = 0b000,
+            FILTER_OFF = 0b000,
             FILTER_2x = 0b001,
             FILTER_4x = 0b010,
             FILTER_8x = 0b011,
