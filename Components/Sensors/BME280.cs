@@ -58,6 +58,7 @@ namespace Scarlet.Components.Sensors
             this.SPICS = ChipSelect;
         }
 
+        /// <summary> Sets the device's registers to match the given <c>Configuration</c>. </summary>
         public void Configure(Config Configuration)
         {
             this.CompParams = ReadCompVals();
@@ -79,13 +80,15 @@ namespace Scarlet.Components.Sensors
             ChangeMode(Configuration.Mode);
         }
 
+        /// <summary> Configures the device with default settings, which should be good enough for basic functionality. </summary>
         public void Configure() => Configure(DefaultConfig);
 
+        /// <summary> CHanges the acquisition mode of the device, or brings it in/out of SLEEP. </summary>
         public void ChangeMode(Mode NewMode)
         {
-            byte Config = Read((byte)Register.CONFIG, 1)[0];
+            byte Config = Read((byte)Register.CTRL_MEAS, 1)[0];
             Config = (byte)((Config & 0b1111_1100) | ((byte)NewMode & 0b0000_0011));
-            WriteSingle((byte)Register.CONFIG, Config);
+            WriteSingle((byte)Register.CTRL_MEAS, Config);
         }
 
         /// <summary> Gets the sensor's current readings in an easy to store format. </summary>
