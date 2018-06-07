@@ -35,6 +35,7 @@ namespace Scarlet.Components.Sensors
         private readonly ISPIBus SPIBus;
         private readonly IDigitalOut SPICS;
         private readonly bool IsSPI;
+        private CompensationParameters CompParams;
 
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
@@ -52,6 +53,7 @@ namespace Scarlet.Components.Sensors
 
         public void Configure(Config Configuration)
         {
+            this.CompParams = ReadCompVals();
             ChangeMode(Mode.SLEEP);
             // Do things.
             ChangeMode(Configuration.Mode);
@@ -77,7 +79,7 @@ namespace Scarlet.Components.Sensors
 
         public bool Test()
         {
-            byte[] DeviceData = DoRead((byte)Register.DEV_ID, 1);
+            byte[] DeviceData = Read((byte)Register.DEV_ID, 1);
             return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
         }
 
@@ -87,14 +89,14 @@ namespace Scarlet.Components.Sensors
         }
 
         #region Read/Write
-        // TODO: Finish this.
-        private byte[] DoRead(byte Register, byte Length)
+        private byte[] Read(byte Register, byte Length)
         {
             if (this.IsSPI)
             {
-                byte[] DataOut = new byte[Length];
-                byte[] DataIn = this.SPIBus.Write(this.SPICS, DataOut, Length);
-                return DataIn;
+                byte[] DataOut = new byte[Length + 1];
+                DataOut[0] = (byte)((Register & 0b0111_1111) | 0b1000_0000);
+                byte[] DataIn = this.SPIBus.Write(this.SPICS, DataOut, DataOut.Length);
+                return UtilMain.SubArray(DataIn, 1, Length);
             }
             else
             {
@@ -107,7 +109,7 @@ namespace Scarlet.Components.Sensors
         /// <param name="Data"> The data to write. </param>
         private void WriteSingle(byte Register, byte Data)
         {
-            if (this.IsSPI) { this.SPIBus.Write(this.SPICS, new byte[] { Register, Data }, 2); }
+            if (this.IsSPI) { this.SPIBus.Write(this.SPICS, new byte[] { (byte)(Register & 0b0111_1111), Data }, 2); }
             else { this.I2CBus.Write(this.I2CAddress, new byte[] { Register, Data }); }
         }
 
@@ -121,7 +123,8 @@ namespace Scarlet.Components.Sensors
             byte[] DataOut = new byte[Registers.Length * 2];
             for (int i = 0; i < Registers.Length; i++)
             {
-                DataOut[i * 2] = Registers[i];
+                if (this.IsSPI) { DataOut[i * 2] = (byte)(Registers[i] & 0b0111_1111); }
+                else { DataOut[i * 2] = Registers[i]; }
                 DataOut[(i * 2) + 1] = Data[i];
             }
 
@@ -147,8 +150,8 @@ namespace Scarlet.Components.Sensors
         /// <remarks> This only needs to be done once, as they are hard-coded on the chip, so will never change. </remarks>
         private CompensationParameters ReadCompVals()
         {
-            byte[] RegistersLow = ReadSequential(Register.CALIBRATION_LOW, 25);
-            byte[] RegistersHigh = ReadSequential(Register.CALIBRATION_HIGH, 7);
+            byte[] RegistersLow = Read((byte)Register.CALIBRATION_LOW, 25);
+            byte[] RegistersHigh = Read((byte)Register.CALIBRATION_HIGH, 7);
             if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
             CompensationParameters Output = new CompensationParameters()
             {
