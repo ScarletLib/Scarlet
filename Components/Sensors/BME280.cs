@@ -35,7 +35,9 @@ namespace Scarlet.Components.Sensors
         private readonly ISPIBus SPIBus;
         private readonly IDigitalOut SPICS;
         private readonly bool IsSPI;
+
         private CompensationParameters CompParams;
+        private double Temperature, Humidity, Pressure;
 
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
@@ -85,6 +87,7 @@ namespace Scarlet.Components.Sensors
 
         public void UpdateState()
         {
+            // TODO: Read raw values from the device and process them.
             throw new NotImplementedException();
         }
 
@@ -146,6 +149,67 @@ namespace Scarlet.Components.Sensors
         }
         #endregion
 
+        #region Data Processing
+        /// <summary> Gets temperature in format useful for compensation of other values. </summary>
+        /// <remarks> Corresponds to <c>t_fine</c> in original code. </remarks>
+        /// <source> Datasheet, page 23 </source>
+        /// <param name="RawTemp"> The temperature as read directly from the device's registers. </param>
+        private int ProcessTemperatureInternal(int RawTemp)
+        {
+            int Var1, Var2;
+            Var1 = ((((RawTemp >> 3) - (this.CompParams.T1 << 1))) * (this.CompParams.T2)) >> 11;
+            Var2 = (((((RawTemp >> 4) - (this.CompParams.T1)) * ((RawTemp >> 4) - (this.CompParams.T1))) >> 12) * (this.CompParams.T3)) >> 14;
+            return Var1 + Var2;
+        }
+
+        /// <summary> Gets the actual external temperature. </summary>
+        /// <source> Datasheet, page 23 </source>
+        /// <param name="TempInternal"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+        /// <returns> The external temperature reading in increments of 0.01 degrees Celsius. </returns>
+        private double ProcessTemperature(int TempInternal)
+        {
+            return ((TempInternal * 5 + 128) >> 8) / 100.00D;
+        }
+
+        /// <summary> Gets the pressure reading. </summary>
+        /// <param name="RawPress"> The pressure as read directly from the device's registers. </param>
+        /// <param name="TempComp"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+        /// <returns> Pressure reading in 1/256 increments, in Pa. </returns>
+        private double ProcessPressure(int RawPress, int TempComp)
+        {
+            long Var1, Var2, P;
+            Var1 = ((long)TempComp) - 128000;
+            Var2 = Var1 * Var1 * this.CompParams.P6;
+            Var2 = Var2 + ((Var1 * this.CompParams.P5) << 17);
+            Var2 = Var2 + (((long)this.CompParams.P4) << 35);
+            Var1 = ((Var1 * Var1 * this.CompParams.P3) >> 8) + ((Var1 * this.CompParams.P2) << 12);
+            Var1 = (((((long)1) << 47) + Var1)) * (this.CompParams.P1) >> 33;
+            if (Var1 == 0) { return 0; }
+            P = 1048576 - RawPress;
+            P = (((P << 31) - Var2) * 3125) / Var1;
+            Var1 = ((this.CompParams.P9) * (P >> 13) * (P >> 13)) >> 25;
+            Var2 = ((this.CompParams.P8) * P) >> 19;
+            P = ((P + Var1 + Var2) >> 8) + (((long)this.CompParams.P7) << 4);
+            return P / 256.000D;
+        }
+
+        /// <summary> Gets the humidity reading. </summary>
+        /// <param name="RawHumid"> The humidity as read directly from the device's registers. </param>
+        /// <param name="TempComp"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+        /// <returns> Humidity reading in 1/1024 increments, in % from 0-100. </returns>
+        private double ProcessHumidity(int RawHumid, int TempComp)
+        {
+            int Var1;
+            Var1 = (TempComp - 76800);
+            Var1 = (((((RawHumid << 14) - ((this.CompParams.H4) << 20) - ((this.CompParams.H5) * Var1)) + 16384) >> 15) * (((((((Var1 * (this.CompParams.H6)) >> 10) *
+                (((Var1 * (this.CompParams.H3)) >> 11) + 32768)) >> 10) + 2097152) * (this.CompParams.H2) + 8192) >> 14));
+            Var1 = (Var1 - (((((Var1 >> 15) * (Var1 >> 15)) >> 7) * this.CompParams.H1) >> 4));
+            Var1 = (Var1 < 0 ? 0 : Var1);
+            Var1 = (Var1 > 419430400 ? 419430400 : Var1);
+            return (Var1 >> 12) / 1024.000D;
+        }
+        #endregion
+
         /// <summary> Reads compensation values from the device. </summary>
         /// <remarks> This only needs to be done once, as they are hard-coded on the chip, so will never change. </remarks>
         private CompensationParameters ReadCompVals()
@@ -155,24 +219,24 @@ namespace Scarlet.Components.Sensors
             if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
             CompensationParameters Output = new CompensationParameters()
             {
-                dig_T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
-                dig_T2 = (short)(RegistersLow[2] << 8 | RegistersLow[3]),
-                dig_T3 = (short)(RegistersLow[4] << 8 | RegistersLow[5]),
-                dig_P1 = (ushort)(RegistersLow[6] << 8 | RegistersLow[7]),
-                dig_P2 = (short)(RegistersLow[8] << 8 | RegistersLow[9]),
-                dig_P3 = (short)(RegistersLow[10] << 8 | RegistersLow[11]),
-                dig_P4 = (short)(RegistersLow[12] << 8 | RegistersLow[13]),
-                dig_P5 = (short)(RegistersLow[14] << 8 | RegistersLow[15]),
-                dig_P6 = (short)(RegistersLow[16] << 8 | RegistersLow[17]),
-                dig_P7 = (short)(RegistersLow[18] << 8 | RegistersLow[19]),
-                dig_P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
-                dig_P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]),
-                dig_H1 = RegistersLow[24],
-                dig_H2 = (short)(RegistersHigh[0] << 8 | RegistersHigh[1]),
-                dig_H3 = RegistersHigh[2],
-                dig_H4 = (short)(RegistersHigh[3] << 4 | (RegistersHigh[4] & 0b0000_1111)),
-                dig_H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
-                dig_H6 = (sbyte)(RegistersHigh[6])
+                T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
+                T2 = (short)(RegistersLow[2] << 8 | RegistersLow[3]),
+                T3 = (short)(RegistersLow[4] << 8 | RegistersLow[5]),
+                P1 = (ushort)(RegistersLow[6] << 8 | RegistersLow[7]),
+                P2 = (short)(RegistersLow[8] << 8 | RegistersLow[9]),
+                P3 = (short)(RegistersLow[10] << 8 | RegistersLow[11]),
+                P4 = (short)(RegistersLow[12] << 8 | RegistersLow[13]),
+                P5 = (short)(RegistersLow[14] << 8 | RegistersLow[15]),
+                P6 = (short)(RegistersLow[16] << 8 | RegistersLow[17]),
+                P7 = (short)(RegistersLow[18] << 8 | RegistersLow[19]),
+                P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
+                P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]),
+                H1 = RegistersLow[24],
+                H2 = (short)(RegistersHigh[0] << 8 | RegistersHigh[1]),
+                H3 = RegistersHigh[2],
+                H4 = (short)(RegistersHigh[3] << 4 | (RegistersHigh[4] & 0b0000_1111)),
+                H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
+                H6 = (sbyte)(RegistersHigh[6])
             };
             return Output;
         }
@@ -194,24 +258,24 @@ namespace Scarlet.Components.Sensors
         /// <summary> Stores the factory-set compensation values used during calculation of final readings. </summary>
         private struct CompensationParameters
         {
-            public ushort dig_T1;
-            public short dig_T2;
-            public short dig_T3;
-            public ushort dig_P1;
-            public short dig_P2;
-            public short dig_P3;
-            public short dig_P4;
-            public short dig_P5;
-            public short dig_P6;
-            public short dig_P7;
-            public short dig_P8;
-            public short dig_P9;
-            public byte dig_H1;
-            public short dig_H2;
-            public byte dig_H3;
-            public short dig_H4;
-            public short dig_H5;
-            public sbyte dig_H6;
+            public ushort T1;
+            public short T2;
+            public short T3;
+            public ushort P1;
+            public short P2;
+            public short P3;
+            public short P4;
+            public short P5;
+            public short P6;
+            public short P7;
+            public short P8;
+            public short P9;
+            public byte H1;
+            public short H2;
+            public byte H3;
+            public short H4;
+            public short H5;
+            public sbyte H6;
         }
 
         private enum Register : byte
