@@ -22,7 +22,7 @@ namespace Scarlet.Components.Sensors
         private readonly IDigitalOut SPICS;
         private readonly bool IsSPI;
 
-        public BME280(II2CBus I2CBus, byte DeviceAddress) // TODO: Set default
+        public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
             this.IsSPI = false;
             this.I2CBus = I2CBus;
@@ -40,8 +40,8 @@ namespace Scarlet.Components.Sensors
         {
             if (this.IsSPI)
             {
-                byte[] DataOut = new byte[];
-                byte[] DataIn = this.SPIBus.Write(SPICS, DataOut, Length);
+                byte[] DataOut = new byte[Length];
+                byte[] DataIn = this.SPIBus.Write(this.SPICS, DataOut, Length);
                 return DataIn;
             }
             else
@@ -50,9 +50,44 @@ namespace Scarlet.Components.Sensors
             }
         }
 
-        private void DoWrite(byte Register, byte[] Data)
+        /// <summary> Writes a single register. </summary>
+        /// <param name="Register"> The register address to write to. </param>
+        /// <param name="Data"> The data to write. </param>
+        private void WriteSingle(byte Register, byte Data)
         {
+            if (this.IsSPI) { this.SPIBus.Write(this.SPICS, new byte[] { Register, Data }, 2); }
+            else { this.I2CBus.Write(this.I2CAddress, new byte[] { Register, Data }); }
+        }
 
+        /// <summary> Writes data into registers at each given location. Useful for write coalescing. Data[i] will be written into Registers[i] for each i. </summary>
+        /// <param name="Registers"> The registers to write to. </param>
+        /// <param name="Data"> The data to write to each register. </param>
+        /// <exception cref="InvalidOperationException"> If Data or Regsiters are null or 0 length, or if their lengths don't match. </exception>
+        private void WriteRegister(byte[] Registers, byte[] Data)
+        {
+            if (Registers == null || Data == null || Registers.Length == 0 || Data.Length == 0 || Registers.Length != Data.Length) { throw new InvalidOperationException("Register and Data must have contents and matching length."); }
+            byte[] DataOut = new byte[Registers.Length * 2];
+            for (int i = 0; i < Registers.Length; i++)
+            {
+                DataOut[i * 2] = Registers[i];
+                DataOut[(i * 2) + 1] = Data[i];
+            }
+            
+            if(this.IsSPI) { this.SPIBus.Write(this.SPICS, DataOut, DataOut.Length); }
+            else { this.I2CBus.Write(this.I2CAddress, DataOut); }
+        }
+
+        /// <summary> Writes data into registers as if the device had auto-increment. </summary>
+        /// <param name="StartRegister"> The first register to write data into. </param>
+        /// <param name="Data"></param>
+        /// <exception cref="InvalidOperationException"> If Data is null or empty, or the write would go past register 0xFF. </exception>
+        private void WriteSequential(byte StartRegister, byte[] Data)
+        {
+            if (Data == null || Data.Length == 0) { throw new InvalidOperationException("Data must have contents."); }
+            if (StartRegister + Data.Length > 0xFF) { throw new InvalidOperationException("Cannot write past register 0xFF."); }
+            byte[] Registers = new byte[Data.Length];
+            for (byte i = 0; i < Registers.Length; i++) { Registers[i] = (byte)(StartRegister + i); }
+            WriteRegister(Registers, Data);
         }
 
         public DataUnit GetData()
