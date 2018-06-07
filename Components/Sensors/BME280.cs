@@ -85,10 +85,20 @@ namespace Scarlet.Components.Sensors
             return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
         }
 
+        /// <summary> Gets new readings from the device. </summary>
+        /// <exception cref="Exception"> If getting readings from the device fails. </exception>
         public void UpdateState()
         {
-            // TODO: Read raw values from the device and process them.
-            throw new NotImplementedException();
+            byte[] RawData = Read((byte)Register.PRESSURE_MSB, 8);
+            if (RawData == null || RawData.Length != 8) { throw new Exception("Failed to get readings from device."); }
+            int RawPressure = (RawData[0] << 12) | (RawData[1] << 4) | ((RawData[2] & 0b1111_0000) >> 4);
+            int RawTemperature = (RawData[3] << 12) | (RawData[4] << 4) | ((RawData[5] & 0b1111_0000) >> 4);
+            int RawHumidity = (RawData[6] << 8) | (RawData[7]);
+
+            int IntTempCal = ProcessTemperatureInternal(RawTemperature);
+            this.Temperature = ProcessTemperature(IntTempCal);
+            this.Pressure = ProcessPressure(RawPressure, IntTempCal);
+            this.Humidity = ProcessHumidity(RawHumidity, IntTempCal);
         }
 
         #region Read/Write
