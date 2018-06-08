@@ -6,7 +6,9 @@ namespace Scarlet.Components.Sensors
 {
     /// <summary>
     /// Bosch BME280 - Integrated Air Humidity, Pressure and Temperature Sensor
-    /// Datasheet: https://download.mikroe.com/documents/datasheets/BST-BME280_DS001-11.pdf
+    /// Datasheet v1.1: https://download.mikroe.com/documents/datasheets/BST-BME280_DS001-11.pdf
+    /// Datasheet v1.19: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf
+    ///     NOTE: This is for a similar device, the BMP280 (P for pressure only). THis describes register LSB/MSB order, but has no info about humidity.
     /// </summary>
     public class BME280 : ISensor
     {
@@ -253,20 +255,20 @@ namespace Scarlet.Components.Sensors
             if (RegistersLow == null || RegistersLow.Length != 26 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
             CompensationParameters Output = new CompensationParameters()
             {
-                T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
-                T2 = (short)(RegistersLow[2] << 8 | RegistersLow[3]),
-                T3 = (short)(RegistersLow[4] << 8 | RegistersLow[5]),
-                P1 = (ushort)(RegistersLow[6] << 8 | RegistersLow[7]),
-                P2 = (short)(RegistersLow[8] << 8 | RegistersLow[9]),
-                P3 = (short)(RegistersLow[10] << 8 | RegistersLow[11]),
-                P4 = (short)(RegistersLow[12] << 8 | RegistersLow[13]),
-                P5 = (short)(RegistersLow[14] << 8 | RegistersLow[15]),
-                P6 = (short)(RegistersLow[16] << 8 | RegistersLow[17]),
-                P7 = (short)(RegistersLow[18] << 8 | RegistersLow[19]),
-                P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
-                P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]), // Register A0 appears to be skipped.
+                T1 = (ushort)(RegistersLow[0] | RegistersLow[1] << 8),
+                T2 = (short)(RegistersLow[2] | RegistersLow[3] << 8),
+                T3 = (short)(RegistersLow[4] | RegistersLow[5] << 8),
+                P1 = (ushort)(RegistersLow[6] | RegistersLow[7] << 8),
+                P2 = (short)(RegistersLow[8] | RegistersLow[9] << 8),
+                P3 = (short)(RegistersLow[10] | RegistersLow[11] << 8),
+                P4 = (short)(RegistersLow[12] | RegistersLow[13] << 8),
+                P5 = (short)(RegistersLow[14] | RegistersLow[15] << 8),
+                P6 = (short)(RegistersLow[16] | RegistersLow[17] << 8),
+                P7 = (short)(RegistersLow[18] | RegistersLow[19] << 8),
+                P8 = (short)(RegistersLow[20] | RegistersLow[21] << 8),
+                P9 = (short)(RegistersLow[22] | RegistersLow[23] << 8), // Register A0 appears to be skipped.
                 H1 = RegistersLow[25],
-                H2 = (short)(RegistersHigh[0] << 8 | RegistersHigh[1]),
+                H2 = (short)(RegistersHigh[0] | RegistersHigh[1] << 8),
                 H3 = RegistersHigh[2],
                 H4 = (short)(RegistersHigh[3] << 4 | (RegistersHigh[4] & 0b0000_1111)),
                 H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
