@@ -248,7 +248,7 @@ namespace Scarlet.IO.BeagleBone
             if (this.DutyCycle != -1) { this.Port.DutyPercent = this.DutyCycle; }
         }
 
-        /// <summary> PWMDeviceBBB does not support clock delay. This will do nothing. </summary>
+        /// <summary> <c>PWMOutputBBB</c> does not support clock delay. This will do nothing. </summary>
         public void SetDelay(float ClockDelay) { }
     }
 }
