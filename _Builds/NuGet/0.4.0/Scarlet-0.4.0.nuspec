@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>HuskyRobotics.Scarlet</id>
+    <version>0.4.0</version>
+    <title>ScarletAPI</title>
+    <authors>Cai Biesinger, Jaden Bottemiller</authors>
+    <owners>Baldstrom</owners>
+    <licenseUrl>https://github.com/huskyroboticsteam/Scarlet/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/huskyroboticsteam/Scarlet</projectUrl>
+    <iconUrl>https://github.com/huskyroboticsteam/Scarlet/blob/master/_Logo/ScarletLogo.ico?raw=true</iconUrl>
+    <releaseNotes>Please read the documentation found here: https://goo.gl/DHLg6z</releaseNotes>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Home of Scarlet, a C# library designed for robotics applications. Contains IO handling for Raspberry Pi and BeagleBone Black, Communications, Filters, and Sensors.</description>
+    <copyright>Copyright 2017</copyright>
+    <tags>io bbb beaglebone raspberry pi robotics</tags>
+  </metadata>
+</package>
