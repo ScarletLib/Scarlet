@@ -120,6 +120,27 @@ namespace Scarlet.TestSuite
                     }
                     while(true) { Thread.Sleep(50); } // Program needs to be running to receive.
                 }
+                case "mtk3339":
+                {
+                        BBBPinManager.AddMappingUART(BBBPin.P9_24);
+                        BBBPinManager.AddMappingUART(BBBPin.P9_26);
+                        BBBPinManager.ApplyPinSettings(BBBPinManager.ApplicationMode.APPLY_REGARDLESS);
+                        IUARTBus UART = UARTBBB.UARTBus1;
+                        Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Press any key to stop.");
+                        while(Console.KeyAvailable) { Console.ReadKey(); }
+                        byte[] Buffer = new byte[32];
+                        while(true)
+                        {
+                            Thread.Sleep(10);
+                            if(UART.BytesAvailable() > 0)
+                            {
+                                int Count = UART.Read(32, Buffer);
+                                Console.Write(System.Text.Encoding.ASCII.GetString(UtilMain.SubArray(Buffer, 0, Count)));
+                            }
+                            if (Console.KeyAvailable) { break; }
+                        }
+                        break;
+                }
             }
         }
 
