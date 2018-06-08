@@ -248,9 +248,9 @@ namespace Scarlet.Components.Sensors
         /// <remarks> This only needs to be done once, as they are hard-coded on the chip, so will never change. </remarks>
         private CompensationParameters ReadCompVals()
         {
-            byte[] RegistersLow = Read((byte)Register.CALIBRATION_LOW, 25);
+            byte[] RegistersLow = Read((byte)Register.CALIBRATION_LOW, 26);
             byte[] RegistersHigh = Read((byte)Register.CALIBRATION_HIGH, 7);
-            if (RegistersLow == null || RegistersLow.Length != 25 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
+            if (RegistersLow == null || RegistersLow.Length != 26 || RegistersHigh == null || RegistersHigh.Length != 7) { throw new Exception("Failed to get suitable compensation data from device."); }
             CompensationParameters Output = new CompensationParameters()
             {
                 T1 = (ushort)(RegistersLow[0] << 8 | RegistersLow[1]),
@@ -264,14 +264,15 @@ namespace Scarlet.Components.Sensors
                 P6 = (short)(RegistersLow[16] << 8 | RegistersLow[17]),
                 P7 = (short)(RegistersLow[18] << 8 | RegistersLow[19]),
                 P8 = (short)(RegistersLow[20] << 8 | RegistersLow[21]),
-                P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]),
-                H1 = RegistersLow[24],
+                P9 = (short)(RegistersLow[22] << 8 | RegistersLow[23]), // Register A0 appears to be skipped.
+                H1 = RegistersLow[25],
                 H2 = (short)(RegistersHigh[0] << 8 | RegistersHigh[1]),
                 H3 = RegistersHigh[2],
                 H4 = (short)(RegistersHigh[3] << 4 | (RegistersHigh[4] & 0b0000_1111)),
                 H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
                 H6 = (sbyte)(RegistersHigh[6])
             };
+            Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "Got BME280 compensation data: " + UtilMain.BytesToNiceString(RegistersLow, true) + " and " + UtilMain.BytesToNiceString(RegistersHigh, true));
             return Output;
         }
 
@@ -293,7 +294,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Stores the factory-set compensation values used during calculation of final readings. </summary>
-        private struct CompensationParameters
+        public struct CompensationParameters
         {
             public ushort T1;
             public short T2;
