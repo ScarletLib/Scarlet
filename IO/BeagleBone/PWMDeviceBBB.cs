@@ -38,6 +38,9 @@ namespace Scarlet.IO.BeagleBone
         public static PWMDeviceBBB PWMDevice1 { get; private set; }
         public static PWMDeviceBBB PWMDevice2 { get; private set; }
 
+        /// <summary> Gets the PWM output corresponding to a given pin on the BeagleBone Black. </summary>
+        /// <param name="Pin"> The pin to find a PWM output associated with. </param>
+        /// <returns> A <c>PWMOutputBBB</c>, or null if the given pin is not valid. </returns>
         public static PWMOutputBBB GetFromPin(BBBPin Pin)
         {
             switch (Pin)
