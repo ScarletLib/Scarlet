@@ -1,4 +1,5 @@
 ﻿using Scarlet.IO;
+using Scarlet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Components.Inputs
 {
+    /// <summary>
+    /// 200kSa/s 4-ch Analogue to Digital Converter
+    /// Datasheet: http://www.ti.com/lit/ds/symlink/tlv2544.pdf
+    /// </summary>
     public class TLV2544
     {
         public class AnalogueInTLV254x : IAnalogueIn
@@ -15,46 +20,66 @@ namespace Scarlet.Components.Inputs
             private TLV2544 Parent;
             private byte Channel;
 
+            public AnalogueInTLV254x(TLV2544 Parent, byte Channel)
+            {
+                this.Parent = Parent;
+                this.Channel = Channel;
+            }
+
             public void Dispose() { }
 
-            public double GetInput()
-            {
-                return 0;
-            }
+            public double GetInput() => (double)((this.Parent.GetRawInput(this.Channel)) / GetRawRange()) / GetRange();
 
-            public double GetRange()
-            {
-                return 0;
-            }
+            public double GetRange() => this.Parent.GetRange();
 
-            public long GetRawInput()
-            {
-                return 0;
-            }
+            public long GetRawInput() => this.Parent.GetRawInput(this.Channel);
 
-            public long GetRawRange()
-            {
-                return 0;
-            }
+            public long GetRawRange() => 2 << 12;
         }
 
-        public static readonly Configuration DefaultConfig;
+        public static readonly Configuration DefaultConfig = new Configuration()
+        {
+            VoltageRef = VoltageReference.INTERNAL_4V,
+            UseLongSample = false,
+            ConversionClockSrc = ConversionClockSrc.INTERNAL,
+            ConversionMode = ConversionMode.SINGLE_SHOT,
+            UseEOCPin = false,
+            FIFOTriggerLevel = FIFOTrigger.FIFO_8b
+        };
+        public readonly AnalogueInTLV254x[] Inputs;
 
         private readonly ISPIBus Bus;
         private readonly IDigitalOut CS;
         private Configuration Config = DefaultConfig;
+        private sbyte ReuseChannel = -1;
+        private double ExtRefVoltage;
 
-        public TLV2544(ISPIBus SPIBus, IDigitalOut ChipSelect)
+        public TLV2544(ISPIBus SPIBus, IDigitalOut ChipSelect, double ExtRefVoltage = double.NaN)
         {
             this.Bus = SPIBus;
             this.CS = ChipSelect;
+            this.ExtRefVoltage = ExtRefVoltage;
+            this.Inputs = new AnalogueInTLV254x[4];
+            for (byte i = 0; i < this.Inputs.Length; i++) { this.Inputs[i] = new AnalogueInTLV254x(this, i); }
         }
 
         /// <summary> Applies the specified configuration, and prepares the device for use. </summary>
         /// <param name="Config"> The configuration to apply. </param>
         public void Configure(Configuration Config)
         {
+            if (Config.VoltageRef == VoltageReference.EXTERNAL && this.ExtRefVoltage == double.NaN) { throw new InvalidOperationException("If using an external reference voltage, you must supply it in the TLV2544 constructor."); }
             this.Config = Config;
+            DoCommand(Command.WRITE_CONF, 0x000); // Power-up requirement
+            ushort ConfigReg = 0x000;
+            ConfigReg = (ushort)(ConfigReg | ((Config.VoltageRef == VoltageReference.EXTERNAL) ? (0b1 << 11) : (0b0 << 11)));
+            ConfigReg = (ushort)(ConfigReg | ((Config.VoltageRef == VoltageReference.INTERNAL_2V) ? (0b1 << 10) : (0b0 << 10)));
+            ConfigReg = (ushort)(ConfigReg | (Config.UseLongSample ? (0b1 << 9) : (0b0 << 9)));
+            ConfigReg = (ushort)(ConfigReg | (((byte)Config.ConversionClockSrc) & 0b11) << 7);
+            ConfigReg = (ushort)(ConfigReg | (((byte)Config.ConversionMode) & 0b1111) << 3);
+            ConfigReg = (ushort)(ConfigReg | (Config.UseEOCPin ? (0b1 << 2) : (0b0 << 2)));
+            ConfigReg = (ushort)(ConfigReg | ((byte)Config.FIFOTriggerLevel) & 0b11);
+            DoCommand(Command.WRITE_CONF, ConfigReg);
+            if (Config.ConversionMode != ConversionMode.SINGLE_SHOT && Config.ConversionMode != ConversionMode.REPEAT) { this.ReuseChannel = -1; }
         }
 
         /// <summary> Applies the default configuration, and prepares the device for use. </summary>
@@ -69,6 +94,29 @@ namespace Scarlet.Components.Inputs
             DoCommand(Command.WRITE_CONF, 0x000); // Power-up requirement
             Configure(this.Config);
             Thread.Sleep(20);
+        }
+
+        private ushort GetRawInput(byte Channel)
+        {
+            if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
+            {
+                ushort ReturnCmd = DoCommand(Command.SEL_CH0);
+                ushort Read = DoCommand(Command.READ_FIFO);
+                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Read back " + ReturnCmd + " and " + Read);
+                return Read;
+            }
+            return 0;
+        }
+
+        private double GetRange()
+        {
+            switch (this.Config.VoltageRef)
+            {
+                case VoltageReference.EXTERNAL: return this.ExtRefVoltage;
+                case VoltageReference.INTERNAL_2V: return 2; // TODO: Check this.
+                case VoltageReference.INTERNAL_4V: return 4;
+                default: return double.NaN;
+            }
         }
 
         /// <summary> Does a 12b read/write with the specified command. </summary>
@@ -86,17 +134,16 @@ namespace Scarlet.Components.Inputs
 
         public struct Configuration
         {
-            VoltageReference VoltageRef;
-            bool UseLongSample;
-            ConversionClockSrc ConversionClockSrc;
-            ConversionMode ConversionMode;
+            public VoltageReference VoltageRef;
+            public bool UseLongSample;
+            public ConversionClockSrc ConversionClockSrc;
+            public ConversionMode ConversionMode;
 
             /// <summary> If true, pin 4 outputs "End of COnversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
             /// End of Conversion: "This output goes from a high-to-low logic level at the end of the sampling period and remains low until the conversion is complete and data are ready for transfer. EOC is used in conversion mode 00 only."
             /// ~Interrupt: "This pin can also be programmed as an interrupt output signal to the host processor. The falling edge of ~INT indicates data are ready for output. The following ~CS↓ or ~FS clears ~INT."
-            bool UseEOCPin;
-
-            FIFOTrigger FIFOTriggerLevel;
+            public bool UseEOCPin;
+            public FIFOTrigger FIFOTriggerLevel;
         }
 
         public enum VoltageReference { INTERNAL_4V, INTERNAL_2V, EXTERNAL }
@@ -109,18 +156,18 @@ namespace Scarlet.Components.Inputs
             SCLK_QUARTER = 0b10
         }
 
-        public enum ConversionMode
+        public enum ConversionMode : byte
         {
-            SINGLE_SHOT,
-            REPEAT,
-            SWEEP_MODE0,
-            SWEEP_MODE1,
-            SWEEP_MODE2,
-            SWEEP_MODE3,
-            REPEAT_SWEEP_MODE0,
-            REPEAT_SWEEP_MODE1,
-            REPEAT_SWEEP_MODE2,
-            REPEAT_SWEEP_MODE3
+            SINGLE_SHOT = 0b00_00,
+            REPEAT = 0b01_00,
+            SWEEP_MODE0 = 0b10_00,
+            SWEEP_MODE1 = 0b10_01,
+            SWEEP_MODE2 = 0b10_10,
+            SWEEP_MODE3 = 0b10_11,
+            REPEAT_SWEEP_MODE0 = 0b11_00,
+            REPEAT_SWEEP_MODE1 = 0b11_01,
+            REPEAT_SWEEP_MODE2 = 0b11_10,
+            REPEAT_SWEEP_MODE3 = 0b11_11
         }
 
         public enum FIFOTrigger : byte
@@ -143,7 +190,7 @@ namespace Scarlet.Components.Inputs
             SEL_TEST1 = 0xB,
             SEL_TEST2 = 0xC,
             SEL_TEST3 = 0xD,
-            FIFO_READ = 0xE
+            READ_FIFO = 0xE
         }
     }
 }
