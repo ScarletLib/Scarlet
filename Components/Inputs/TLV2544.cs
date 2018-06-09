@@ -28,7 +28,7 @@ namespace Scarlet.Components.Inputs
 
             public void Dispose() { }
 
-            public double GetInput() => (double)((this.Parent.GetRawInput(this.Channel)) / GetRawRange()) / GetRange();
+            public double GetInput() => ((double)(this.Parent.GetRawInput(this.Channel)) / GetRawRange()) / GetRange();
 
             public double GetRange() => this.Parent.GetRange();
 
@@ -96,13 +96,41 @@ namespace Scarlet.Components.Inputs
             Thread.Sleep(20);
         }
 
+        public ushort Test1()
+        {
+            ushort Read = DoCommand(Command.SEL_TEST1);
+            return Read;
+        }
+
+        public ushort Test2()
+        {
+            ushort Read = DoCommand(Command.SEL_TEST2);
+            return Read;
+        }
+
+        public ushort ReadConfig()
+        {
+            ushort Read = DoCommand(Command.READ_CONF);
+            return Read;
+        }
+
         private ushort GetRawInput(byte Channel)
         {
+            Command ChSel;
+            switch(Channel)
+            {
+                case 0: ChSel = Command.SEL_CH0; break;
+                case 1: ChSel = Command.SEL_CH1; break;
+                case 2: ChSel = Command.SEL_CH2; break;
+                case 3: ChSel = Command.SEL_CH3; break;
+                default: ChSel = Command.SEL_CH0; break;
+            }
             if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
             {
-                ushort ReturnCmd = DoCommand(Command.SEL_CH0);
+                ushort ReturnCmd = DoCommand(ChSel);
+                ushort ReturnCmd2 = DoCommand(ChSel);
                 ushort Read = DoCommand(Command.READ_FIFO);
-                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Read back " + ReturnCmd + " and " + Read);
+                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Read back " + ReturnCmd + "and " + ReturnCmd2 + " and " + Read);
                 return Read;
             }
             return 0;
@@ -126,7 +154,8 @@ namespace Scarlet.Components.Inputs
         private ushort DoCommand(Command Command, ushort Data = 0x000)
         {
             byte[] DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111) };
-            byte[] DataIn = this.Bus.Write(this.CS, DataOut, DataOut.Length);
+            byte[] DataIn = this.Bus.Write(this.CS, new byte[] { DataOut[0], DataOut[1] }, DataOut.Length);
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Sent " + UtilMain.BytesToNiceString(DataOut, true) + ", got " + UtilMain.BytesToNiceString(DataIn, true));
             return (ushort)(Command == Command.READ_CONF ?
                 (((DataIn[0] & 0b0000_1111) << 8) | (DataIn[1])) :
                 (DataIn[0] << 4) | ((DataIn[1] & 0b1111_0000) >> 4));
