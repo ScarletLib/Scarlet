@@ -28,13 +28,13 @@ namespace Scarlet.Components.Inputs
 
             public void Dispose() { }
 
-            public double GetInput() => ((double)(this.Parent.GetRawInput(this.Channel)) / GetRawRange()) / GetRange();
+            public double GetInput() => ((double)(this.Parent.GetRawInput(this.Channel)) / GetRawRange()) * GetRange();
 
             public double GetRange() => this.Parent.GetRange();
 
             public long GetRawInput() => this.Parent.GetRawInput(this.Channel);
 
-            public long GetRawRange() => 2 << 12;
+            public long GetRawRange() => 4095;
         }
 
         public static readonly Configuration DefaultConfig = new Configuration()
@@ -71,7 +71,7 @@ namespace Scarlet.Components.Inputs
             this.Config = Config;
             DoCommand(Command.WRITE_CONF, 0x000); // Power-up requirement
             ushort ConfigReg = 0x000;
-            ConfigReg = (ushort)(ConfigReg | ((Config.VoltageRef == VoltageReference.EXTERNAL) ? (0b1 << 11) : (0b0 << 11)));
+            ConfigReg = (ushort)(ConfigReg | ((Config.VoltageRef != VoltageReference.EXTERNAL) ? (0b1 << 11) : (0b0 << 11)));
             ConfigReg = (ushort)(ConfigReg | ((Config.VoltageRef == VoltageReference.INTERNAL_2V) ? (0b1 << 10) : (0b0 << 10)));
             ConfigReg = (ushort)(ConfigReg | (Config.UseLongSample ? (0b1 << 9) : (0b0 << 9)));
             ConfigReg = (ushort)(ConfigReg | (((byte)Config.ConversionClockSrc) & 0b11) << 7);
@@ -99,21 +99,21 @@ namespace Scarlet.Components.Inputs
         public ushort Test1()
         {
             ushort Read = DoCommand(Command.SEL_TEST1, 0, true);
-            Read = DoCommand(Command.SEL_TEST1);
+            Read = DoCommand(Command.READ_FIFO);
             return Read;
         }
 
         public ushort Test2()
         {
             ushort Read = DoCommand(Command.SEL_TEST2, 0, true);
-            Read = DoCommand(Command.SEL_TEST2);
+            Read = DoCommand(Command.READ_FIFO);
             return Read;
         }
 
         public ushort Test3()
         {
             ushort Read = DoCommand(Command.SEL_TEST3, 0, true);
-            Read = DoCommand(Command.SEL_TEST3);
+            Read = DoCommand(Command.READ_FIFO);
             return Read;
         }
 
@@ -136,10 +136,10 @@ namespace Scarlet.Components.Inputs
             }
             if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
             {
-                ushort ReturnCmd = DoCommand(ChSel);
-                ushort ReturnCmd2 = DoCommand(ChSel);
+                ushort ReturnCmd = DoCommand(ChSel, 0, true);
+                //ushort ReturnCmd2 = DoCommand(ChSel);
                 ushort Read = DoCommand(Command.READ_FIFO);
-                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Read back " + ReturnCmd + "and " + ReturnCmd2 + " and " + Read);
+                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Read back " + ReturnCmd + " and " + Read);
                 return Read;
             }
             return 0;
