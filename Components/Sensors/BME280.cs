@@ -8,7 +8,7 @@ namespace Scarlet.Components.Sensors
     /// Bosch BME280 - Integrated Air Humidity, Pressure and Temperature Sensor
     /// Datasheet v1.1: https://download.mikroe.com/documents/datasheets/BST-BME280_DS001-11.pdf
     /// Datasheet v1.19: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf
-    ///     NOTE: This is for a similar device, the BMP280 (P for pressure only). THis describes register LSB/MSB order, but has no info about humidity.
+    ///     NOTE: This is for a similar device, the BMP280 (P for pressure only). This describes register LSB/MSB order, but has no info about humidity.
     /// </summary>
     public class BME280 : ISensor
     {
