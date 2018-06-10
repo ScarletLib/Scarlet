@@ -98,13 +98,22 @@ namespace Scarlet.Components.Inputs
 
         public ushort Test1()
         {
-            ushort Read = DoCommand(Command.SEL_TEST1);
+            ushort Read = DoCommand(Command.SEL_TEST1, 0, true);
+            Read = DoCommand(Command.SEL_TEST1);
             return Read;
         }
 
         public ushort Test2()
         {
-            ushort Read = DoCommand(Command.SEL_TEST2);
+            ushort Read = DoCommand(Command.SEL_TEST2, 0, true);
+            Read = DoCommand(Command.SEL_TEST2);
+            return Read;
+        }
+
+        public ushort Test3()
+        {
+            ushort Read = DoCommand(Command.SEL_TEST3, 0, true);
+            Read = DoCommand(Command.SEL_TEST3);
             return Read;
         }
 
@@ -151,10 +160,14 @@ namespace Scarlet.Components.Inputs
         /// <param name="Command"> The command (4 MSb) to send. </param>
         /// <param name="Data"> The data (12 LSb) to send. </param>
         /// <returns> The 12b data returned by the device. </returns>
-        private ushort DoCommand(Command Command, ushort Data = 0x000)
+        private ushort DoCommand(Command Command, ushort Data = 0x000, bool Long = false)
         {
-            byte[] DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111) };
-            byte[] DataIn = this.Bus.Write(this.CS, new byte[] { DataOut[0], DataOut[1] }, DataOut.Length);
+            byte[] DataOut;
+            if (!Long) { DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111) }; }
+            else { DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111), 0, 0, 0 }; }
+            byte[] DataOutCopy = new byte[DataOut.Length];
+            Array.Copy(DataOut, DataOutCopy, DataOut.Length);
+            byte[] DataIn = this.Bus.Write(this.CS, DataOutCopy, DataOutCopy.Length);
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Sent " + UtilMain.BytesToNiceString(DataOut, true) + ", got " + UtilMain.BytesToNiceString(DataIn, true));
             return (ushort)(Command == Command.READ_CONF ?
                 (((DataIn[0] & 0b0000_1111) << 8) | (DataIn[1])) :
@@ -216,9 +229,9 @@ namespace Scarlet.Components.Inputs
             POWER_DOWN = 0x8,
             READ_CONF = 0x9,
             WRITE_CONF = 0xA,
-            SEL_TEST1 = 0xB,
-            SEL_TEST2 = 0xC,
-            SEL_TEST3 = 0xD,
+            SEL_TEST1 = 0xB, // Half-scale
+            SEL_TEST2 = 0xC, // GND
+            SEL_TEST3 = 0xD, // Full-scale
             READ_FIFO = 0xE
         }
     }
