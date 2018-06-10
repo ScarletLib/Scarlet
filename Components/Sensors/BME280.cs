@@ -21,7 +21,6 @@ namespace Scarlet.Components.Sensors
             PressureOversampling = Oversampling.OS_1x,
             MeasurePressure = true,
             TemperatureOversampling = Oversampling.OS_1x,
-            MeasureTemperature = true,
 
             Mode = Mode.NORMAL,
             StandbyTime = StandbyTime.TIME_500us,
@@ -41,6 +40,7 @@ namespace Scarlet.Components.Sensors
         private readonly bool IsSPI;
 
         private CompensationParameters CompParams;
+        private Config Configuration;
 
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
@@ -57,8 +57,10 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Sets the device's registers to match the given <c>Configuration</c>. </summary>
+        /// <param name="Configuration"> The configuration to apply. </param>
         public void Configure(Config Configuration)
         {
+            this.Configuration = Configuration;
             this.CompParams = ReadCompVals();
             ChangeMode(Mode.SLEEP);
 
@@ -67,13 +69,15 @@ namespace Scarlet.Components.Sensors
             byte osrs_h = (byte)(Configuration.MeasureHumidity ? (byte)Configuration.HumidityOversampling : 0);
             byte Ctrl_Hum = (byte)((RawData[0] & 0b1111_1000) | osrs_h & 0b111);
 
-            byte osrs_t = (byte)(Configuration.MeasureTemperature ? (byte)Configuration.TemperatureOversampling : 0);
+            byte osrs_t = (byte)Configuration.TemperatureOversampling;
             byte osrs_p = (byte)(Configuration.MeasurePressure ? (byte)Configuration.PressureOversampling : 0);
             byte Ctrl_Meas = (byte)(((osrs_t << 5) & 0b1110_0000) | ((osrs_p << 2) & 0b0001_1100) | ((byte)Mode.SLEEP & 0b0000_0011)); // Stays in SLEEP mode, we'll exit once these writes are all done.
 
             byte Config = (byte)((((byte)Configuration.StandbyTime << 5) & 0b1110_0000) | (((byte)Configuration.IIRFilterTimeConstant << 2) & 0b0001_1100) | (RawData[3] & 0b0000_0010) | (Configuration.Use3WireSPI ? 1 : 0));
 
-            WriteRegister(new byte[] { (byte)Register.CTRL_HUM, (byte)Register.CTRL_MEAS, (byte)Register.CONFIG }, new byte[] { Ctrl_Hum, Ctrl_Meas, Config });
+            Write((byte)Register.CTRL_HUM, Ctrl_Hum);
+            Write((byte)Register.CTRL_MEAS, Ctrl_Meas);
+            Write((byte)Register.CONFIG, Config);
 
             ChangeMode(Configuration.Mode);
         }
@@ -82,11 +86,12 @@ namespace Scarlet.Components.Sensors
         public void Configure() => Configure(DefaultConfig);
 
         /// <summary> Changes the acquisition mode of the device, or brings it in/out of SLEEP. </summary>
+        /// <param name="NewMode"> The <c>Mode</c> to put the device into. </param>
         public void ChangeMode(Mode NewMode)
         {
             byte Config = Read((byte)Register.CTRL_MEAS, 1)[0];
             Config = (byte)((Config & 0b1111_1100) | ((byte)NewMode & 0b0000_0011));
-            WriteSingle((byte)Register.CTRL_MEAS, Config);
+            Write((byte)Register.CTRL_MEAS, Config);
         }
 
         /// <summary> Gets the sensor's current readings in an easy to store format. </summary>
@@ -108,7 +113,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Restarts the device. </summary>
-        public void Reset() => WriteSingle((byte)Register.RESET, 0x6B);
+        public void Reset() => Write((byte)Register.RESET, 0x6B);
 
         /// <summary> Gets new readings from the device. </summary>
         /// <exception cref="Exception"> If getting readings from the device fails. </exception>
@@ -123,8 +128,8 @@ namespace Scarlet.Components.Sensors
 
             int IntTempCal = ProcessTemperatureInternal(RawTemperature);
             this.Temperature = ProcessTemperature(IntTempCal);
-            this.Pressure = ProcessPressure(RawPressure, IntTempCal);
-            this.Humidity = ProcessHumidity(RawHumidity, IntTempCal);
+            this.Pressure = (this.Configuration.MeasurePressure ? (ProcessPressure(RawPressure, IntTempCal)) : double.NaN);
+            this.Humidity = (this.Configuration.MeasureHumidity ? (ProcessHumidity(RawHumidity, IntTempCal)) : double.NaN);
         }
 
         #region Read/Write
@@ -146,42 +151,10 @@ namespace Scarlet.Components.Sensors
         /// <summary> Writes a single register. </summary>
         /// <param name="Register"> The register address to write to. </param>
         /// <param name="Data"> The data to write. </param>
-        private void WriteSingle(byte Register, byte Data)
+        private void Write(byte Register, byte Data)
         {
             if (this.IsSPI) { this.SPIBus.Write(this.SPICS, new byte[] { (byte)(Register & 0b0111_1111), Data }, 2); }
-            else { this.I2CBus.Write(this.I2CAddress, new byte[] { Register, Data }); }
-        }
-
-        /// <summary> Writes data into registers at each given location. Useful for write coalescing. Data[i] will be written into Registers[i] for each i. </summary>
-        /// <param name="Registers"> The registers to write to. </param>
-        /// <param name="Data"> The data to write to each register. </param>
-        /// <exception cref="InvalidOperationException"> If Data or Registers are null or 0 length, or if their lengths don't match. </exception>
-        private void WriteRegister(byte[] Registers, byte[] Data)
-        {
-            if (Registers == null || Data == null || Registers.Length == 0 || Data.Length == 0 || Registers.Length != Data.Length) { throw new InvalidOperationException("Register and Data must have contents and matching length."); }
-            byte[] DataOut = new byte[Registers.Length * 2];
-            for (int i = 0; i < Registers.Length; i++)
-            {
-                if (this.IsSPI) { DataOut[i * 2] = (byte)(Registers[i] & 0b0111_1111); }
-                else { DataOut[i * 2] = Registers[i]; }
-                DataOut[(i * 2) + 1] = Data[i];
-            }
-
-            if (this.IsSPI) { this.SPIBus.Write(this.SPICS, DataOut, DataOut.Length); }
-            else { this.I2CBus.Write(this.I2CAddress, DataOut); }
-        }
-
-        /// <summary> Writes data into registers as if the device had auto-increment. </summary>
-        /// <param name="StartRegister"> The first register to write data into. </param>
-        /// <param name="Data"> The data to write into the registers. </param>
-        /// <exception cref="InvalidOperationException"> If Data is null or empty, or the write would go past register 0xFF. </exception>
-        private void WriteSequential(byte StartRegister, byte[] Data)
-        {
-            if (Data == null || Data.Length == 0) { throw new InvalidOperationException("Data must have contents."); }
-            if (StartRegister + Data.Length > 0xFF) { throw new InvalidOperationException("Cannot write past register 0xFF."); }
-            byte[] Registers = new byte[Data.Length];
-            for (byte i = 0; i < Registers.Length; i++) { Registers[i] = (byte)(StartRegister + i); }
-            WriteRegister(Registers, Data);
+            else { this.I2CBus.WriteRegister(this.I2CAddress, Register, new byte[] { Data }); }
         }
         #endregion
 
@@ -204,7 +177,7 @@ namespace Scarlet.Components.Sensors
         /// <returns> The external temperature reading in increments of 0.01 degrees Celsius. </returns>
         private double ProcessTemperature(int TempInternal)
         {
-            return ((TempInternal * 5 + 128) >> 8) / 100.00D;
+            return (((TempInternal * 5) + 128) >> 8) / 100.00D;
         }
 
         /// <summary> Gets the pressure reading. </summary>
@@ -219,7 +192,7 @@ namespace Scarlet.Components.Sensors
             Var2 = Var2 + ((Var1 * this.CompParams.P5) << 17);
             Var2 = Var2 + (((long)this.CompParams.P4) << 35);
             Var1 = ((Var1 * Var1 * this.CompParams.P3) >> 8) + ((Var1 * this.CompParams.P2) << 12);
-            Var1 = (((((long)1) << 47) + Var1)) * (this.CompParams.P1) >> 33;
+            Var1 = (((((long)1) << 47) + Var1)) * ((this.CompParams.P1) >> 33);
             if (Var1 == 0) { return 0; }
             P = 1048576 - RawPress;
             P = (((P << 31) - Var2) * 3125) / Var1;
@@ -286,7 +259,6 @@ namespace Scarlet.Components.Sensors
             public Oversampling PressureOversampling;
             public bool MeasurePressure;
             public Oversampling TemperatureOversampling;
-            public bool MeasureTemperature;
 
             public Mode Mode;
             public StandbyTime StandbyTime;
