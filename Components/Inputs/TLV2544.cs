@@ -1,11 +1,7 @@
-﻿using Scarlet.IO;
-using Scarlet.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
+using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Inputs
 {
@@ -26,22 +22,30 @@ namespace Scarlet.Components.Inputs
                 this.Channel = Channel;
             }
 
-            public void Dispose() { }
-
+            /// <summary> Gets the current ADC input level. </summary>
+            /// <returns> The current input in Volts. </returns>
             public double GetInput() => ((double)(this.Parent.GetRawInput(this.Channel)) / GetRawRange()) * GetRange();
 
+            /// <summary> Gets the maximum input value. Depends on voltage reference used. </summary>
+            /// <returns> The maximum input voltage, in Volts. </returns>
             public double GetRange() => this.Parent.GetRange();
 
+            /// <summary> Gets the raw digital input value, without voltage reference scaling. </summary>
+            /// <returns> The raw ADC input, in Volt-bits. Between 0 and <c>GetRawRange()</c>. </returns>
             public long GetRawInput() => this.Parent.GetRawInput(this.Channel);
 
+            /// <summary> The maximum digital value that the ADC can output. THis is fixed per chip type. </summary>
+            /// <returns> The maximum an unsigned 12bit number can hold, 4095, as this is a 12b ADC. </returns>
             public long GetRawRange() => 4095;
+
+            public void Dispose() { }
         }
 
         public static readonly Configuration DefaultConfig = new Configuration()
         {
             VoltageRef = VoltageReference.INTERNAL_4V,
             UseLongSample = false,
-            ConversionClockSrc = ConversionClockSrc.INTERNAL,
+            ConversionClockSrc = ConversionClockSrc.SCLK,
             ConversionMode = ConversionMode.SINGLE_SHOT,
             UseEOCPin = false,
             FIFOTriggerLevel = FIFOTrigger.FIFO_8b
@@ -51,7 +55,7 @@ namespace Scarlet.Components.Inputs
         private readonly ISPIBus Bus;
         private readonly IDigitalOut CS;
         private Configuration Config = DefaultConfig;
-        private sbyte ReuseChannel = -1;
+        private sbyte ReuseChannel = -1; // TODO: Implement channel re-use to speed up repeated channel reads.
         private double ExtRefVoltage;
 
         public TLV2544(ISPIBus SPIBus, IDigitalOut ChipSelect, double ExtRefVoltage = double.NaN)
@@ -79,7 +83,7 @@ namespace Scarlet.Components.Inputs
             ConfigReg = (ushort)(ConfigReg | (Config.UseEOCPin ? (0b1 << 2) : (0b0 << 2)));
             ConfigReg = (ushort)(ConfigReg | ((byte)Config.FIFOTriggerLevel) & 0b11);
             DoCommand(Command.WRITE_CONF, ConfigReg);
-            if (Config.ConversionMode != ConversionMode.SINGLE_SHOT && Config.ConversionMode != ConversionMode.REPEAT) { this.ReuseChannel = -1; }
+            this.ReuseChannel = -1;
         }
 
         /// <summary> Applies the default configuration, and prepares the device for use. </summary>
@@ -96,98 +100,96 @@ namespace Scarlet.Components.Inputs
             Thread.Sleep(20);
         }
 
-        public ushort Test1()
+        /// <summary> Tests the internal reference voltages to check if output values are reasonable. </summary>
+        /// <returns> Whether each reading was within 0.5% of the expected value. </returns>
+        public bool Test()
         {
-            ushort Read = DoCommand(Command.SEL_TEST1, 0, true);
-            Read = DoCommand(Command.READ_FIFO);
-            return Read;
+            ushort HalfScale = DoInputRead(-1);
+            ushort GND = DoInputRead(-2);
+            ushort FullScale = DoInputRead(-3);
+            return (Math.Abs(HalfScale - (4095 / 2)) < 21) && (Math.Abs(FullScale - 4095) < 21) && (Math.Abs(GND) < 21);
         }
 
-        public ushort Test2()
-        {
-            ushort Read = DoCommand(Command.SEL_TEST2, 0, true);
-            Read = DoCommand(Command.READ_FIFO);
-            return Read;
-        }
+        /// <summary> Gets the currently applied configuration. </summary>
+        /// <returns> The configuration that the ADC is using, as from the CONFIG register. </returns>
+        public ushort ReadConfig() => DoCommand(Command.READ_CONF);
 
-        public ushort Test3()
-        {
-            ushort Read = DoCommand(Command.SEL_TEST3, 0, true);
-            Read = DoCommand(Command.READ_FIFO);
-            return Read;
-        }
+        private ushort GetRawInput(byte Channel) => DoInputRead((sbyte)Channel);
 
-        public ushort ReadConfig()
-        {
-            ushort Read = DoCommand(Command.READ_CONF);
-            return Read;
-        }
-
-        private ushort GetRawInput(byte Channel)
-        {
-            Command ChSel;
-            switch(Channel)
-            {
-                case 0: ChSel = Command.SEL_CH0; break;
-                case 1: ChSel = Command.SEL_CH1; break;
-                case 2: ChSel = Command.SEL_CH2; break;
-                case 3: ChSel = Command.SEL_CH3; break;
-                default: ChSel = Command.SEL_CH0; break;
-            }
-            if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
-            {
-                ushort ReturnCmd = DoCommand(ChSel, 0, true);
-                //ushort ReturnCmd2 = DoCommand(ChSel);
-                ushort Read = DoCommand(Command.READ_FIFO);
-                Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Read back " + ReturnCmd + " and " + Read);
-                return Read;
-            }
-            return 0;
-        }
-
+        /// <summary> Gets the current full-scale voltage. </summary>
+        /// <returns> The voltage represented by a reading of 4095 on an input. </returns>
         private double GetRange()
         {
             switch (this.Config.VoltageRef)
             {
                 case VoltageReference.EXTERNAL: return this.ExtRefVoltage;
-                case VoltageReference.INTERNAL_2V: return 2; // TODO: Check this.
+                case VoltageReference.INTERNAL_2V: return 2;
                 case VoltageReference.INTERNAL_4V: return 4;
                 default: return double.NaN;
             }
         }
 
+        private ushort DoInputRead(sbyte Channel)
+        {
+            Command ChSel;
+            switch (Channel)
+            {
+                case 0: ChSel = Command.SEL_CH0; break;
+                case 1: ChSel = Command.SEL_CH1; break;
+                case 2: ChSel = Command.SEL_CH2; break;
+                case 3: ChSel = Command.SEL_CH3; break;
+                case -1: ChSel = Command.SEL_TEST1; break;
+                case -2: ChSel = Command.SEL_TEST2; break;
+                case -3: ChSel = Command.SEL_TEST3; break;
+                default: ChSel = Command.SEL_CH0; break;
+            }
+            if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
+            {
+                if (this.Config.ConversionClockSrc == ConversionClockSrc.SCLK)
+                {
+                    ushort StartRead = DoCommand(ChSel, Long: true);
+                    return DoCommand(Command.READ_FIFO);
+                }
+            }
+            return 0;
+        }
+
         /// <summary> Does a 12b read/write with the specified command. </summary>
         /// <param name="Command"> The command (4 MSb) to send. </param>
         /// <param name="Data"> The data (12 LSb) to send. </param>
+        /// <param name="Long"> Whether to send out additional SCLK pulses for the ADC to do sampling (required for SCLK-based sampling). </param>
         /// <returns> The 12b data returned by the device. </returns>
         private ushort DoCommand(Command Command, ushort Data = 0x000, bool Long = false)
         {
             byte[] DataOut;
-            if (!Long) { DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111) }; }
-            else { DataOut = new byte[] { (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111)), (byte)(Data & 0b1111_1111), 0, 0, 0 }; }
-            byte[] DataOutCopy = new byte[DataOut.Length];
-            Array.Copy(DataOut, DataOutCopy, DataOut.Length);
-            byte[] DataIn = this.Bus.Write(this.CS, DataOutCopy, DataOutCopy.Length);
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "[TLV2544Cai] Sent " + UtilMain.BytesToNiceString(DataOut, true) + ", got " + UtilMain.BytesToNiceString(DataIn, true));
+            if (!Long) { DataOut = new byte[2]; }
+            else if (!this.Config.UseLongSample) { DataOut = new byte[4]; }
+            else { DataOut = new byte[6]; }
+            DataOut[0] = (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111));
+            DataOut[1] = (byte)(Data & 0b1111_1111);
+            byte[] DataIn = this.Bus.Write(this.CS, DataOut, DataOut.Length);
             return (ushort)(Command == Command.READ_CONF ?
                 (((DataIn[0] & 0b0000_1111) << 8) | (DataIn[1])) :
                 (DataIn[0] << 4) | ((DataIn[1] & 0b1111_0000) >> 4));
         }
 
+        #region Structs and Enums
         public struct Configuration
         {
             public VoltageReference VoltageRef;
             public bool UseLongSample;
-            public ConversionClockSrc ConversionClockSrc;
-            public ConversionMode ConversionMode;
 
-            /// <summary> If true, pin 4 outputs "End of COnversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
+            /// <summary> If true, pin 4 outputs "End of Conversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
             /// End of Conversion: "This output goes from a high-to-low logic level at the end of the sampling period and remains low until the conversion is complete and data are ready for transfer. EOC is used in conversion mode 00 only."
             /// ~Interrupt: "This pin can also be programmed as an interrupt output signal to the host processor. The falling edge of ~INT indicates data are ready for output. The following ~CS↓ or ~FS clears ~INT."
             public bool UseEOCPin;
-            public FIFOTrigger FIFOTriggerLevel;
+
+            internal ConversionClockSrc ConversionClockSrc; // Internal because currently we only support SCLK source.
+            internal ConversionMode ConversionMode; // Internal because currently we only support single-shot mode.
+            internal FIFOTrigger FIFOTriggerLevel; // Internal because currently we only support single-shot mode (and FIFO doesn't matter in that case).
         }
 
+        /// <summary> Note that to use the 4V internal reference, Vcc must be at 5V (does not work in 3.3V mode). </summary>
         public enum VoltageReference { INTERNAL_4V, INTERNAL_2V, EXTERNAL }
 
         public enum ConversionClockSrc : byte
@@ -234,5 +236,6 @@ namespace Scarlet.Components.Inputs
             SEL_TEST3 = 0xD, // Full-scale
             READ_FIFO = 0xE
         }
+        #endregion
     }
 }
