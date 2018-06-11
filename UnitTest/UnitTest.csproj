@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComponentTesting\MAX31855Tests.cs" />
+    <Compile Include="ComponentTesting\MTK3339Tests.cs" />
     <Compile Include="FilterTesting\TestLowPass.cs" />
     <Compile Include="MotorTesting\TestablePWMOutput.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
