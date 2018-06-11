@@ -1,4 +1,5 @@
-﻿using Scarlet.IO;
+﻿using Scarlet.Components.Sensors;
+using Scarlet.IO;
 using Scarlet.IO.BeagleBone;
 using Scarlet.Utilities;
 using System;
@@ -124,21 +125,13 @@ namespace Scarlet.TestSuite
                 {
                         BBBPinManager.AddMappingUART(BBBPin.P9_24);
                         BBBPinManager.AddMappingUART(BBBPin.P9_26);
-                        BBBPinManager.ApplyPinSettings(BBBPinManager.ApplicationMode.APPLY_REGARDLESS);
+                        BBBPinManager.ApplyPinSettings(BBBPinManager.ApplicationMode.APPLY_IF_NONE);
                         IUARTBus UART = UARTBBB.UARTBus1;
                         Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Press any key to stop.");
                         while(Console.KeyAvailable) { Console.ReadKey(); }
-                        byte[] Buffer = new byte[32];
-                        while(true)
-                        {
-                            Thread.Sleep(10);
-                            if(UART.BytesAvailable() > 0)
-                            {
-                                int Count = UART.Read(32, Buffer);
-                                Console.Write(System.Text.Encoding.ASCII.GetString(UtilMain.SubArray(Buffer, 0, Count)));
-                            }
-                            if (Console.KeyAvailable) { break; }
-                        }
+                        MTK3339 GPS = new MTK3339(UART);
+                        while (!Console.KeyAvailable) { Thread.Sleep(10); }
+                        GPS.Stop();
                         break;
                 }
             }

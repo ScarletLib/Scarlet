@@ -12,16 +12,45 @@ namespace Scarlet.Components.Sensors
     {
         public string System { get; set; }
 
-        private IUARTBus UART;
-
         public Data GPSData { get; private set; }
+
+        private readonly IUARTBus UART;
+        private readonly Thread ParseThread;
+        private bool Continue = true;
 
         public MTK3339(IUARTBus UART)
         {
             this.UART = UART;
-            
+            this.GPSData = new Data();
+            this.ParseThread = new Thread(new ThreadStart(DoParse));
+            this.ParseThread.Start();
         }
 
+        private void DoParse()
+        {
+            string DataStream = "";
+            this.UART.Flush();
+            while(this.Continue)
+            {
+                byte[] Buffer = new byte[64];
+                int ReadQty = this.UART.Read(Buffer.Length, Buffer);
+                if (ReadQty <= 0) { continue; }
+                DataStream += Encoding.ASCII.GetString(UtilMain.SubArray(Buffer, 0, ReadQty));
+                int IndexOfEnd = DataStream.IndexOf("\n");
+                if (IndexOfEnd != -1)
+                {
+                    string Packet = DataStream.Substring(0, IndexOfEnd + 2).Trim();
+                    bool Success = InterpretPacket(Packet);
+                    Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "[MTK3339] Decoded packet \"" + Packet + "\", with success: " + Success);
+                    DataStream = DataStream.Substring(IndexOfEnd + 2); // If there is data left, it's the beginning of the next packet.
+                }
+                else { Thread.Sleep(10); }
+            }
+        }
+
+        /// <summary> Attempts to interpret and process a packet. </summary>
+        /// <param name="Packet"> The received packet to process. </param>
+        /// <returns> Whether packet processing succeeded. </returns>
         private bool InterpretPacket(string Packet)
         {
             if (string.IsNullOrEmpty(Packet)) { return false; }
@@ -31,17 +60,20 @@ namespace Scarlet.Components.Sensors
             if (!byte.TryParse(Packet.Substring(End + 1, 2), NumberStyles.HexNumber, CultureInfo.CurrentCulture, out byte ActualChecksum)) { return false; }
             if (ActualChecksum != ExpectedChecksum) { return false; }
 
-            string[] Words = Packet.Split(',');
+            string[] Words = TrimPacket(Packet).Split(',');
             if (Words.Length < 2) { return false; }
             switch (Words[0])
             {
                 case "GPGGA": // GPS Fix Data
+
                     break;
                 case "GPVTG": // Track made good + Ground speed
                     break;
                 case "GPGSA": // GPS DOP and active satellites
                     break;
                 case "GPGSV": // Satellites in view
+                    break;
+                case "GPRMC": // Minimum data set
                     break;
                 default:
                     Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "MTK3339 received unknown packet: \"" + Packet + "\".");
@@ -80,8 +112,10 @@ namespace Scarlet.Components.Sensors
 
         public bool Test() => false;//HasFix();
 
-        /// <summary> This sensor does not UpdateState(), as data is pushed rather than pulled. Does nothing. </summary>
+        /// <summary> This sensor does not use UpdateState(), as data is pushed rather than pulled. Does nothing. </summary>
         public void UpdateState() { }
+
+        public void Stop() { this.Continue = false; }
 
         public DataUnit GetData()
         {
@@ -97,10 +131,20 @@ namespace Scarlet.Components.Sensors
         public struct Data
         {
             public Satellite[] Satellites;
-            public int SatellitesInView;
             public int SatellitesInUse;
             public bool HaveFix;
             public bool FixIs3D;
+
+            public DateTime Time;
+            public double Latitude;
+            public double Longitude;
+            public byte FixQuality;
+
+            public double HorizontalDOP;
+            public double Altitude;
+            public double GeoidalSeparation;
+            public double TimeSinceLastDiffUpdate;
+            public int DiffStationID;
         }
 
         public struct Satellite
