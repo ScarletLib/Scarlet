@@ -26,6 +26,36 @@ namespace Scarlet.Components.Sensors
             this.ParseThread.Start();
         }
 
+        public bool Test() => false;//HasFix();
+
+        /// <summary> This sensor does not use UpdateState(), as data is pushed rather than pulled. Does nothing. </summary>
+        public void UpdateState() { }
+
+        /// <summary> Stops parsing data from the sensor. </summary>
+        public void Stop() { this.Continue = false; }
+
+        public DataUnit GetData()
+        {
+            return new DataUnit("MTK3339")
+            {
+                //{ "HasFix", HasFix() }, // TODO: This needs to be stored from last reading instead of re-checked.
+                //{ "Lat", this.Latitude},
+                // { "Lon", this.Longitude}
+            }
+            .SetSystem(this.System);
+        }
+
+        /// <summary> Sets the rate at which the GPS sends data back. </summary>
+        /// <param name="IntervalMS"> The time between samples, in ms. Must be between 100 and 10000. (0.1Hz to 10Hz) </param>
+        /// <returns> Always true. (To be implemented) </returns>
+        /// <exception cref="InvalidOperationException"> If the requested update rate is out of the acceptable range. </exception>
+        public bool SetUpdateInterval(int IntervalMS)
+        {
+            if (IntervalMS > 10000 || IntervalMS < 100) { throw new InvalidOperationException("Update interval must be between 100 and 10000 ms."); }
+            string Packet = AppendChecksum("$PMTK220," + IntervalMS + "*");
+            return DoCommand(Encoding.ASCII.GetBytes(Packet + "\r\n"), 3000);
+        }
+
         private void DoParse()
         {
             string DataStream = "";
@@ -75,11 +105,20 @@ namespace Scarlet.Components.Sensors
                     break;
                 case "GPRMC": // Minimum data set
                     break;
+                case "PMTK001": // Command acknowledge
+                    break;
                 default:
                     Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "MTK3339 received unknown packet: \"" + Packet + "\".");
                     return false;
             }
 
+            return true;
+        }
+
+        // TODO: Implement response checking and timeout.
+        private bool DoCommand(byte[] DataOut, int TimeoutMS)
+        {
+            this.UART.Write(DataOut);
             return true;
         }
 
@@ -98,6 +137,13 @@ namespace Scarlet.Components.Sensors
             return Checksum;
         }
 
+        private string AppendChecksum(string Packet)
+        {
+            byte? Checksum = GetChecksum(Packet, false);
+            if (Checksum == null) { return ""; } // Discard the packet
+            else { return Packet + ((byte)Checksum).ToString("X2"); }
+        }
+
         /// <summary> SPlits out the packet data, starting at '$' (exclusive) and ending at '*' (exclusive). </summary>
         /// <param name="PacketContents"> The packet to trim. </param>
         /// <returns> A packet, without leading $ or trailing checksum or '*'. </returns>
@@ -108,24 +154,6 @@ namespace Scarlet.Components.Sensors
             int End = PacketContents.IndexOf('*');
             if (Start == -1 || End == -1) { return null; }
             return PacketContents.Substring(Start + 1, (End - (Start + 1)));
-        }
-
-        public bool Test() => false;//HasFix();
-
-        /// <summary> This sensor does not use UpdateState(), as data is pushed rather than pulled. Does nothing. </summary>
-        public void UpdateState() { }
-
-        public void Stop() { this.Continue = false; }
-
-        public DataUnit GetData()
-        {
-            return new DataUnit("MTK3339")
-            {
-                //{ "HasFix", HasFix() }, // TODO: This needs to be stored from last reading instead of re-checked.
-                //{ "Lat", this.Latitude},
-               // { "Lon", this.Longitude}
-            }
-            .SetSystem(this.System);
         }
 
         public struct Data

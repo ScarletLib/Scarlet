@@ -130,6 +130,8 @@ namespace Scarlet.TestSuite
                         Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Press any key to stop.");
                         while(Console.KeyAvailable) { Console.ReadKey(); }
                         MTK3339 GPS = new MTK3339(UART);
+                        Thread.Sleep(1000);
+                        GPS.SetUpdateInterval(1000);
                         while (!Console.KeyAvailable) { Thread.Sleep(10); }
                         GPS.Stop();
                         break;
