@@ -49,6 +49,7 @@ namespace Scarlet.Components.Sensors
             this.I2CAddress = DeviceAddress;
         }
 
+        /// <summary> WARNING: <c>BME280</c> has not been tested with SPI. </summary>
         public BME280(ISPIBus SPIBus, IDigitalOut ChipSelect)
         {
             this.IsSPI = true;
