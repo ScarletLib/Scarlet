@@ -86,11 +86,22 @@ namespace Scarlet.Components.Outputs
                     ushort OnTicks = (ushort)(Math.Max((this.DutyCycle * 4096) - 1, 0)); // For how many ticks the output should be on.
                     ushort OffTime = (ushort)((DelayTicks + OnTicks) % 4096); // The time when the state should be negated.
 
-                    this.Config[1] = (byte)((this.Config[1] & 0b1111_0000) | ((DelayTicks >> 8) & 0b1111)); // ON_MSB
-                    this.Config[0] = (byte)(DelayTicks & 0b1111_1111); // ON_LSB
+                    if (!this.Polarity)
+                    {
+                        this.Config[1] = (byte)((this.Config[1] & 0b1111_0000) | ((DelayTicks >> 8) & 0b1111)); // ON_MSB
+                        this.Config[0] = (byte)(DelayTicks & 0b1111_1111); // ON_LSB
 
-                    this.Config[3] = (byte)((this.Config[3] & 0b1111_0000) | ((OffTime >> 8) & 0b1111)); // OFF_MSB
-                    this.Config[2] = (byte)(OffTime & 0b1111_1111); // OFF_LSB
+                        this.Config[3] = (byte)((this.Config[3] & 0b1111_0000) | ((OffTime >> 8) & 0b1111)); // OFF_MSB
+                        this.Config[2] = (byte)(OffTime & 0b1111_1111); // OFF_LSB
+                    }
+                    else
+                    {
+                        this.Config[1] = (byte)((this.Config[1] & 0b1111_0000) | ((OffTime >> 8) & 0b1111)); // ON_MSB
+                        this.Config[0] = (byte)(OffTime & 0b1111_1111); // ON_LSB
+
+                        this.Config[3] = (byte)((this.Config[3] & 0b1111_0000) | ((DelayTicks >> 8) & 0b1111)); // OFF_MSB
+                        this.Config[2] = (byte)(DelayTicks & 0b1111_1111); // OFF_LSB
+                    }
                 }
 
                 this.Parent.SetChannelData(this.Channel, this.Config);
