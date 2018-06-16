@@ -265,5 +265,14 @@ namespace Scarlet.Components.Outputs
             else { Register = (byte)((Channel * 4) + FirstLEDRegister); } // Single LED channel
             this.Bus.WriteRegister(this.PartAddress, Register, Data);
         }
+
+        ~PCA9685()
+        {
+            try
+            {
+                this.Bus.WriteRegister(this.PartAddress, 0x00, new byte[] { 0x11 }); // Attempts to put this device into SLEEP mode to shut down outputs.
+            }
+            catch { } // Meh, oh well.
+        }
     }
 }
