@@ -42,6 +42,9 @@ namespace Scarlet.Components.Sensors
         private CompensationParameters CompParams;
         private Config Configuration;
 
+        /// <summary> Initializes a <c>BME280</c> environmental sensor, using the I2C protocol (the device supports SPI as well). </summary>
+        /// <param name="I2CBus"> The I2C bus used to communicate with the device. </param>
+        /// <param name="DeviceAddress"> The I2C address of the device, 0x76 or 0x77 usually. </param>
         public BME280(II2CBus I2CBus, byte DeviceAddress = 0x76)
         {
             this.IsSPI = false;
@@ -50,6 +53,8 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> WARNING: <c>BME280</c> has not been tested with SPI. </summary>
+        /// <param name="SPIBus"> The SPI bus used to communicate with the device. </param>
+        /// <param name="ChipSelect"> The output to use to signal chip select to the device. </param>
         public BME280(ISPIBus SPIBus, IDigitalOut ChipSelect)
         {
             this.IsSPI = true;
