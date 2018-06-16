@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using Scarlet.IO;
-using Scarlet.Utilities;
 
 namespace Scarlet.Components.Inputs
 {
@@ -58,6 +57,10 @@ namespace Scarlet.Components.Inputs
         private sbyte ReuseChannel = -1; // TODO: Implement channel re-use to speed up repeated channel reads.
         private double ExtRefVoltage;
 
+        /// <summary> Prepares a TI TLV2544 ADC for use. </summary>
+        /// <param name="SPIBus"> The SPI bus used to communicate with the device. </param>
+        /// <param name="ChipSelect"> The output used as chip select for the device. </param>
+        /// <param name="ExtRefVoltage"> Set this to the reference voltage only if using an external voltage reference. Expected values are between 0 and 5.5V. Leave as NaN if using internal reference, then select your desired reference via <c>Configure(...)</c>. </param>
         public TLV2544(ISPIBus SPIBus, IDigitalOut ChipSelect, double ExtRefVoltage = double.NaN)
         {
             this.Bus = SPIBus;
@@ -129,6 +132,9 @@ namespace Scarlet.Components.Inputs
             }
         }
 
+        /// <summary> Reads an input channel. </summary>
+        /// <param name="Channel"> 0 to 4 for regular input channels, -1 to -3 for test voltages. </param>
+        /// <returns> The raw ADC reading, which needs further processing and referencing in order to be a usable voltage. </returns>
         private ushort DoInputRead(sbyte Channel)
         {
             Command ChSel;
