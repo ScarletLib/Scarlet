@@ -1,8 +1,7 @@
-﻿using Scarlet.IO;
-using Scarlet.Utilities;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Threading;
+using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Outputs
 {
@@ -71,6 +70,8 @@ namespace Scarlet.Components.Outputs
 
             public void Reset() { this.Config = new byte[] { 0x00, 0x00, 0x00, 0x10 }; }
 
+            public void Dispose() { }
+
             private void SetConfig()
             {
                 // Full on/off bits
@@ -106,8 +107,6 @@ namespace Scarlet.Components.Outputs
 
                 this.Parent.SetChannelData(this.Channel, this.Config);
             }
-
-            public void Dispose() { throw new NotImplementedException(); }
         }
 
         /// <summary>
@@ -152,10 +151,13 @@ namespace Scarlet.Components.Outputs
         // - Software reset
 
         /// <summary> Prepares the PCA9685 device for use. </summary>
-        /// <param name="Bus"> The I2C bus that the devie will communicate over. </param>
         /// <remarks> During setup, there will be quite a bit of communication with the device (70+ bytes). </remarks>
+        /// <param name="Bus"> The I2C bus that the device will communicate over. </param>
         /// <param name="Address"> The I2C address set via the device's physical address pins. </param>
         /// <param name="ExtOscFreq"> If there is an external oscillator, set the frequency here. If there isn't, set to -1. </param>
+        /// <param name="InvertMode"> Sets device-wide output invert mode. </param>
+        /// <param name="DriverMode"> Sets device-wide output driver configuration. </param>
+        /// <param name="DisableMode"> Sets device-wide output disable behaviour. </param>
         /// <exception cref="ArgumentException"> If invalid oscillator frequency is provided. </exception>
         public PCA9685(II2CBus Bus, byte Address, int ExtOscFreq = -1, OutputInvert InvertMode = OutputInvert.Regular, OutputDriverMode DriverMode = OutputDriverMode.TotemPole, OutputDisableBehaviour DisableMode = OutputDisableBehaviour.Low)
         {
@@ -173,38 +175,12 @@ namespace Scarlet.Components.Outputs
             ReadAllStates();
         }
 
-        private void SetupDevice()
-        {
-            // Enable register auto-increment to make reads/writes much faster
-            byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode register pre: 0x" + ModeSettingPre.ToString("X1"));
-            byte ModeSettingNew = (byte)((ModeSettingPre & 0b0111_1111) | 0b0010_0000); // Set bit 5 (AI) to 1 to enable auto-increment, but don't set bit 7 (RESET).
-            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { ModeSettingNew });
-
-            // Set the output modes
-            byte Mode2 = 0b0000_0000;
-            Mode2 |= (byte)(((byte)this.InvertMode & 0b1) << 4);
-            Mode2 |= (byte)(((byte)this.DriverMode & 0b1) << 2);
-            Mode2 |= (byte)((byte)this.DisableMode & 0b11);
-            this.Bus.WriteRegister(this.PartAddress, Mode2Register, new byte[] { Mode2 });
-        }
-
-        internal void ReadAllStates()
-        {
-            byte[] OutputData = this.Bus.ReadRegister(this.PartAddress, FirstLEDRegister, 64);
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 states: " + UtilMain.BytesToNiceString(OutputData, true));
-            if (OutputData == null || OutputData.Length != 64) { throw new Exception("Reading PCA9685 output state data did not return the correct amount of bytes (64)."); }
-            for (int i = 0; i < 16; i++)
-            {
-                byte[] ChannelData = new byte[] { OutputData[i * 4 + 0], OutputData[i * 4 + 1], OutputData[i * 4 + 2], OutputData[i * 4 + 3] };
-                this.Outputs[i].Config = ChannelData;
-            }
-        }
-
         /// <summary> Sets all channel's enabled status at once (single bus transaction). </summary>
+        /// <param name="Enable"> Whether all outputs should be enabled or disabled. </param>
         public void SetEnabledAll(bool Enable) => this.AllOutputs.SetEnabled(Enable);
 
         /// <summary> Sets all channel's duty cycle at once (single bus transaction). </summary>
+        /// <param name="DutyCycle"> The duty cycle (between 0.0 and 1.0 to set all channels to. </param>
         public void SetOutputAll(float DutyCycle) => this.AllOutputs.SetOutput(DutyCycle);
 
         /// <summary> Sets the device's PWM output frequency (common to all channels). Note that outputs will stop working briefly during this process. </summary>
@@ -215,8 +191,8 @@ namespace Scarlet.Components.Outputs
             // 25 MHz internal oscillator
             int Oscillator = (this.ExtOscFreq == -1 ? 25000000 : this.ExtOscFreq);
             int TempPrescale = (int)Math.Round(Oscillator / (4096 * Frequency)) - 1;
-            if(TempPrescale < 3) { TempPrescale = 3; }
-            if(TempPrescale > 255) { TempPrescale = 255; }
+            if (TempPrescale < 3) { TempPrescale = 3; }
+            if (TempPrescale > 255) { TempPrescale = 255; }
             byte PrescaleVal = (byte)(TempPrescale);
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Setting PCA9685 frequency prescaler value to " + PrescaleVal + ".");
 
@@ -228,16 +204,16 @@ namespace Scarlet.Components.Outputs
             // Set the frequency prescaler register.
             this.Bus.WriteRegister(this.PartAddress, PrescaleRegister, new byte[] { PrescaleVal });
 
-            //TODO Disabled
             // Set the SLEEP bit back to what it was.
             this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0110_1111) }); // Make sure we don't set bit 7 (RESET).
             Thread.Sleep(1); // 0.5ms minimum
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode now: 0x" + this.Bus.ReadRegister(this.PartAddress, (byte)Mode1Register, 1)[0].ToString("X1"));
+            
             // If SLEEP was previously 0, we may need to RESTART.
             if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
             {
                 byte AfterWake = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
-                if((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
+                if ((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
                 {
                     Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Rebooting PCA9685.");
                     this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(AfterWake & 0b1000_0000) });
@@ -265,7 +241,18 @@ namespace Scarlet.Components.Outputs
             byte ModeSettingNewExt = (byte)((ModeSettingPreExt & 0b0111_1111) | 0b0101_0000); // Set bits 6 and 4 (EXTCLK & SLEEP), but not bit 7 (SLEEP).
             this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { ModeSettingNewExt });
             Thread.Sleep(1); // Probably not needed, but may as well.
+        }
 
+        internal void ReadAllStates()
+        {
+            byte[] OutputData = this.Bus.ReadRegister(this.PartAddress, FirstLEDRegister, 64);
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 states: " + UtilMain.BytesToNiceString(OutputData, true));
+            if (OutputData == null || OutputData.Length != 64) { throw new Exception("Reading PCA9685 output state data did not return the correct amount of bytes (64)."); }
+            for (int i = 0; i < 16; i++)
+            {
+                byte[] ChannelData = new byte[] { OutputData[(i * 4) + 0], OutputData[(i * 4) + 1], OutputData[(i * 4) + 2], OutputData[(i * 4) + 3] };
+                this.Outputs[i].Config = ChannelData;
+            }
         }
 
         internal void SetChannelData(byte Channel, byte[] Data)
@@ -275,6 +262,22 @@ namespace Scarlet.Components.Outputs
             if (Channel == 255) { Register = AllLEDRegister; }
             else { Register = (byte)((Channel * 4) + FirstLEDRegister); } // Single LED channel
             this.Bus.WriteRegister(this.PartAddress, Register, Data);
+        }
+
+        private void SetupDevice()
+        {
+            // Enable register auto-increment to make reads/writes much faster
+            byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
+            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode register pre: 0x" + ModeSettingPre.ToString("X1"));
+            byte ModeSettingNew = (byte)((ModeSettingPre & 0b0111_1111) | 0b0010_0000); // Set bit 5 (AI) to 1 to enable auto-increment, but don't set bit 7 (RESET).
+            this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { ModeSettingNew });
+
+            // Set the output modes
+            byte Mode2 = 0b0000_0000;
+            Mode2 |= (byte)(((byte)this.InvertMode & 0b1) << 4);
+            Mode2 |= (byte)(((byte)this.DriverMode & 0b1) << 2);
+            Mode2 |= (byte)((byte)this.DisableMode & 0b11);
+            this.Bus.WriteRegister(this.PartAddress, Mode2Register, new byte[] { Mode2 });
         }
 
         ~PCA9685()
