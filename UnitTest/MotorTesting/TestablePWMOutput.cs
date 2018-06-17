@@ -11,9 +11,12 @@ namespace UnitTest
     {
         public float Frequency { get; private set; }
         public float DutyCycle { get; private set; }
+        public float Delay { get; private set; }
         public bool Enabled { get; private set; }
 
         public void Dispose() { }
+
+        public void SetDelay(float ClockDelay) { this.Delay = ClockDelay; }
 
         public void SetEnabled(bool Enable) { this.Enabled = Enable; }
 

@@ -88,7 +88,6 @@
     <Compile Include="Controllers\PID.cs" />
     <Compile Include="Filters\Average.cs" />
     <Compile Include="Filters\Filter.cs" />
-    <Compile Include="Filters\Kalman.cs" />
     <Compile Include="Filters\LowPass.cs" />
     <Compile Include="IO\BeagleBone\AnalogueInBBB.cs" />
     <Compile Include="IO\BeagleBone\BBBPin.cs" />
