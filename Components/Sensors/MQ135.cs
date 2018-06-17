@@ -13,28 +13,29 @@ namespace Scarlet.Components.Sensors
     {
         public string System { get; set; }
         private IAnalogueIn Input;
-        private int Resistor;
-        private float SupplyVoltage;
+        private double Slope, Intercept;
         private int ResistanceCal = 41763;
         private float LastReading, Temperature, Humidity;
 
         /* Typical circuit setup:
          * 
-         *   V+    MQ135
-         *   ^-----/\/\/\----o----> Analogue Input
-         *                   |
-         *           RL      |
-         *   v-----/\/\/\----/
+         *   V+    MQ135      RS
+         *   ^-----/\/\/\---/\/\/\---o----> Analogue Input
+         *                           |
+         *               RL          |
+         *   v---------/\/\/\--------/
          *  GND
          *  
-         *  Where the MQ135 resistance changes based on pollutant concentration in the air, RL is constant and specified in <c>Resistor</c>.
+         *  Where the MQ135 resistance changes based on pollutant concentration in the air.
+         *  The resistor network yields a linear equation relating the sensor's resistance to the output voltage, which is defined by <c>Slope</c> and <c>Intercept</c>.
+         *  So Resistance = (Slope * Input) + Intercept.
          */
 
-        public MQ135(IAnalogueIn Input, int Resistor, float SupplyVoltage = 5)
+        public MQ135(IAnalogueIn Input, double Slope, double Intercept)
         {
             this.Input = Input;
-            this.Resistor = Resistor;
-            this.SupplyVoltage = SupplyVoltage;
+            this.Slope = Slope;
+            this.Intercept = Intercept;
             this.Humidity = 0.65F;
             this.Temperature = 20;
         }
@@ -60,11 +61,11 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets the most recent sensor reading. </summary>
         /// <returns> The estimated total ppm of pollutants in the air. </returns>
-        public float GetReading() => CalculatePPM(this.Input, this.Resistor, this.ResistanceCal, this.SupplyVoltage, true, this.Humidity, this.Temperature);
+        public float GetReading() => CalculatePPM(this.Input, this.Slope, this.Intercept, this.ResistanceCal, true, this.Humidity, this.Temperature);
 
         /// <summary> Gets the most recent sensor reading, without applying temperature or humidity compensation. </summary>
         /// <returns> The estimated total ppm of pollutants in the air. </returns>
-        public float GetReadingUncalibrated() => CalculatePPM(this.Input, this.Resistor, this.ResistanceCal, this.SupplyVoltage, false, 0, 0);
+        public float GetReadingUncalibrated() => CalculatePPM(this.Input, this.Slope, this.Intercept, this.ResistanceCal, false, 0, 0);
 
         /// <summary> Applies some basic calibration to the sensor to compensate for air temperature. </summary>
         /// <remarks> Defaults to 20 C. </remarks>
@@ -89,13 +90,13 @@ namespace Scarlet.Components.Sensors
         /// <param name="Resistance"> The measured resistance of the sensor, in the specific calibration conditions as listed above. Should be near 42K. </param>
         public void CalibrateResistance(int Resistance) { this.ResistanceCal = Resistance; }
 
-        public static float CalculatePPM(IAnalogueIn Input, int Resistor, int ResistanceCal, float SupplyVoltage, bool UseCal, float Humidity, float Temperature)
+        public static float CalculatePPM(IAnalogueIn Input, double Slope, double Intercept, int ResistanceCal, bool UseCal, float Humidity, float Temperature)
         {
-            double SensorResistance = ((Resistor * SupplyVoltage) / Input.GetInput()) - Resistor; // R2 = ((R1 * Vin) / Vout) - R1
+            double SensorResistance = Slope * Input.GetInput() + Intercept;
             double ResistanceRatio = SensorResistance / ResistanceCal;
             double CalibrationMult = (UseCal ? GetCalibrationMultipler(Humidity, Temperature) : 1.0);
             Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "MQ135 Calculated resistance: " + SensorResistance + ", Ratio: " + ResistanceRatio);
-            if (ResistanceRatio < 0.358 || ResistanceRatio > 2.428) { throw new Exception("Sensor values are out of spec. Cannot get reading."); }
+            if (ResistanceRatio < 0.358 || ResistanceRatio > 2.428) { return -1; }
             return (float)(116.6020682 * Math.Pow(ResistanceRatio, -2.769034857));
         }
 
