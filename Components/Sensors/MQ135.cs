@@ -13,7 +13,7 @@ namespace Scarlet.Components.Sensors
     {
         public string System { get; set; }
         private IAnalogueIn Input;
-        private double Slope, Intercept;
+        private double RS, RL, SupplyVoltage;
         private int ResistanceCal = 41763;
         private float LastReading, Temperature, Humidity;
 
@@ -27,15 +27,14 @@ namespace Scarlet.Components.Sensors
          *  GND
          *  
          *  Where the MQ135 resistance changes based on pollutant concentration in the air.
-         *  The resistor network yields a linear equation relating the sensor's resistance to the output voltage, which is defined by <c>Slope</c> and <c>Intercept</c>.
-         *  So Resistance = (Slope * Input) + Intercept.
          */
 
-        public MQ135(IAnalogueIn Input, double Slope, double Intercept)
+        public MQ135(IAnalogueIn Input, double RS, double RL, double SupplyVoltage = 5)
         {
             this.Input = Input;
-            this.Slope = Slope;
-            this.Intercept = Intercept;
+            this.RS = RS;
+            this.RL = RL;
+            this.SupplyVoltage = SupplyVoltage;
             this.Humidity = 0.65F;
             this.Temperature = 20;
         }
@@ -61,11 +60,11 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets the most recent sensor reading. </summary>
         /// <returns> The estimated total ppm of pollutants in the air. </returns>
-        public float GetReading() => CalculatePPM(this.Input, this.Slope, this.Intercept, this.ResistanceCal, true, this.Humidity, this.Temperature);
+        public float GetReading() => CalculatePPM(this.Input, this.RS, this.RL, this.SupplyVoltage, this.ResistanceCal, true, this.Humidity, this.Temperature);
 
         /// <summary> Gets the most recent sensor reading, without applying temperature or humidity compensation. </summary>
         /// <returns> The estimated total ppm of pollutants in the air. </returns>
-        public float GetReadingUncalibrated() => CalculatePPM(this.Input, this.Slope, this.Intercept, this.ResistanceCal, false, 0, 0);
+        public float GetReadingUncalibrated() => CalculatePPM(this.Input, this.RS, this.RL, this.SupplyVoltage, this.ResistanceCal, false, 0, 0);
 
         /// <summary> Applies some basic calibration to the sensor to compensate for air temperature. </summary>
         /// <remarks> Defaults to 20 C. </remarks>
@@ -90,9 +89,9 @@ namespace Scarlet.Components.Sensors
         /// <param name="Resistance"> The measured resistance of the sensor, in the specific calibration conditions as listed above. Should be near 42K. </param>
         public void CalibrateResistance(int Resistance) { this.ResistanceCal = Resistance; }
 
-        public static float CalculatePPM(IAnalogueIn Input, double Slope, double Intercept, int ResistanceCal, bool UseCal, float Humidity, float Temperature)
+        public static float CalculatePPM(IAnalogueIn Input, double RS, double RL, double SupplyVoltage, int ResistanceCal, bool UseCal, float Humidity, float Temperature)
         {
-            double SensorResistance = Slope * Input.GetInput() + Intercept;
+            double SensorResistance = ((RL * SupplyVoltage) / Input.GetInput()) - (RS + RL);
             double ResistanceRatio = SensorResistance / ResistanceCal;
             double CalibrationMult = (UseCal ? GetCalibrationMultipler(Humidity, Temperature) : 1.0);
             Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "MQ135 Calculated resistance: " + SensorResistance + ", Ratio: " + ResistanceRatio);
