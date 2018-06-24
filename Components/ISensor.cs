@@ -16,5 +16,8 @@ namespace Scarlet.Components
 
         /// <summary> The sensor's purpose, like "GroundTemp". i.e. What does it measure? </summary>
         string System { get; set; }
+
+        /// <summary> Whether to output extended debug information. Actual output varies by sensor. </summary>
+        bool TraceLogging { get; set; }
     }
 }

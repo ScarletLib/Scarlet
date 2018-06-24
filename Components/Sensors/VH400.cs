@@ -15,6 +15,7 @@ namespace Scarlet.Components.Sensors
     public class VH400 : ISensor
     {
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
         private IAnalogueIn Input;
         private double LastReading;
         public double VoltageMultiplier;

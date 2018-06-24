@@ -16,6 +16,7 @@ namespace Scarlet.Components.Sensors
         private ushort LastReading;
         private byte Speed = (byte)RefreshSpeed.REGULAR;
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         /// <summary> Determines how often readins are taken. DOUBLE is fastest, QUARTER is slowest. </summary>
         /// <remarks>

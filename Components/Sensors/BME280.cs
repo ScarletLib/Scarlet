@@ -13,6 +13,7 @@ namespace Scarlet.Components.Sensors
     public class BME280 : ISensor
     {
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         public static readonly Config DefaultConfig = new Config()
         {
@@ -95,6 +96,7 @@ namespace Scarlet.Components.Sensors
         /// <param name="NewMode"> The <c>Mode</c> to put the device into. </param>
         public void ChangeMode(Mode NewMode)
         {
+            if (this.TraceLogging) { Log.Trace(this, "Changing mode to " + NewMode.ToString()); }
             byte Config = Read((byte)Register.CTRL_MEAS, 1)[0];
             Config = (byte)((Config & 0b1111_1100) | ((byte)NewMode & 0b0000_0011));
             Write((byte)Register.CTRL_MEAS, Config);
@@ -115,6 +117,7 @@ namespace Scarlet.Components.Sensors
         public bool Test()
         {
             byte[] DeviceData = Read((byte)Register.DEV_ID, 1);
+            if (this.TraceLogging) { Log.Trace(this, "Testing returned " + UtilMain.BytesToNiceString(DeviceData, false) + ", expected 0x60."); }
             return (DeviceData != null) && (DeviceData.Length > 0) && (DeviceData[0] == 0x60);
         }
 
@@ -131,6 +134,8 @@ namespace Scarlet.Components.Sensors
             int RawPressure = (RawData[0] << 12) | (RawData[1] << 4) | ((RawData[2] & 0b1111_0000) >> 4);
             int RawTemperature = (RawData[3] << 12) | (RawData[4] << 4) | ((RawData[5] & 0b1111_0000) >> 4);
             int RawHumidity = (RawData[6] << 8) | (RawData[7]);
+
+            if (this.TraceLogging) { Log.Trace(this, "Got raw data, press: " + RawPressure + ", temp: " + RawTemperature + ", humid: " + RawHumidity); }
 
             int IntTempCal = ProcessTemperatureInternal(RawTemperature);
             this.Temperature = ProcessTemperature(IntTempCal);
@@ -253,7 +258,7 @@ namespace Scarlet.Components.Sensors
                 H5 = (short)(((RegistersHigh[4] & 0b1111_0000) >> 4) | RegistersHigh[5] << 4),
                 H6 = (sbyte)(RegistersHigh[6])
             };
-            Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "Got BME280 compensation data: " + UtilMain.BytesToNiceString(RegistersLow, true) + " and " + UtilMain.BytesToNiceString(RegistersHigh, true));
+            if (this.TraceLogging) { Log.Trace(this, "Got BME280 compensation data: " + UtilMain.BytesToNiceString(RegistersLow, true) + " and " + UtilMain.BytesToNiceString(RegistersHigh, true)); }
             return Output;
         }
 

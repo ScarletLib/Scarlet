@@ -11,6 +11,7 @@ namespace Scarlet.Components.Sensors
     public class INA226 : ISensor
     {
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         private II2CBus Bus;
         private byte Address;
@@ -93,7 +94,7 @@ namespace Scarlet.Components.Sensors
             this.CurrentMultiplier = Math.Abs(MaxCurrent) / Math.Pow(2, 15);
             this.CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
             this.CurrentMultiplier = (0.00512D / this.CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
-            Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 is using current multiplier " + this.CurrentMultiplier + " A/count (calibration value " + this.CalibrationVal + ").");
+            if (this.TraceLogging) { Log.Trace(this, "Using current multiplier " + this.CurrentMultiplier + " A/count (calibration value " + this.CalibrationVal + ")."); }
             this.Bus.WriteRegister16(this.Address, (byte)Register.Calibration, UtilData.SwapBytes(this.CalibrationVal));
         }
 
@@ -171,7 +172,7 @@ namespace Scarlet.Components.Sensors
         public bool Test()
         {
             ushort MfgID = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.ManufacturerID));
-            if (MfgID != 0x5449) { Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 mfg check returned 0x" + MfgID.ToString("X4") + " (expecting 0x5449)."); }
+            if (this.TraceLogging) { Log.Trace(this, "Manufacturer check returned 0x" + MfgID.ToString("X4") + " (expected 0x5449)."); }
             return MfgID == 0x5449;
         }
 
@@ -182,7 +183,7 @@ namespace Scarlet.Components.Sensors
             this.LastReading[1] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.BusVoltage));
             this.LastReading[2] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Power));
             this.LastReading[3] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Current));
-            //Log.Output(Log.Severity.DEBUG, Log.Source.SENSORS, "INA226 data retrieval returned " + this.LastReading[0].ToString("X4") + "," + this.LastReading[1].ToString("X4") + "," + this.LastReading[2].ToString("X4") + "," + this.LastReading[3].ToString("X4"));
+            if (this.TraceLogging) { Log.Trace(this, "Returned data: " + this.LastReading[0].ToString("X4") + "," + this.LastReading[1].ToString("X4") + "," + this.LastReading[2].ToString("X4") + "," + this.LastReading[3].ToString("X4")); }
         }
     }
 }

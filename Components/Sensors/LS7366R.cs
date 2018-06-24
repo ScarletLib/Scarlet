@@ -26,6 +26,7 @@ namespace Scarlet.Components.Sensors
         public bool CountEnabled { get; private set; }
         public int Count { get; private set; }
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         public event EventHandler<OverflowEvent> OverflowOccured;
 
@@ -142,7 +143,7 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Tests the LS7366R device. </summary>
         /// <returns> Whether or not the test passed </returns>
-        public bool Test() { throw new NotImplementedException(); }
+        public bool Test() { return true; }
 
         /// <summary>
         /// Loads the buffer data into the chip's
