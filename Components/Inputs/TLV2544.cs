@@ -151,11 +151,8 @@ namespace Scarlet.Components.Inputs
             }
             if (this.Config.ConversionMode == ConversionMode.SINGLE_SHOT)
             {
-                if (this.Config.ConversionClockSrc == ConversionClockSrc.SCLK)
-                {
-                    ushort StartRead = DoCommand(ChSel, Long: true);
-                    return DoCommand(Command.READ_FIFO);
-                }
+                ushort StartRead = DoCommand(ChSel, Long: true);
+                return DoCommand(Command.READ_FIFO);
             }
             return 0;
         }
@@ -163,14 +160,34 @@ namespace Scarlet.Components.Inputs
         /// <summary> Does a 12b read/write with the specified command. </summary>
         /// <param name="Command"> The command (4 MSb) to send. </param>
         /// <param name="Data"> The data (12 LSb) to send. </param>
-        /// <param name="Long"> Whether to send out additional SCLK pulses for the ADC to do sampling (required for SCLK-based sampling). </param>
+        /// <param name="Long"> Whether to send out additional SCLK pulses for the ADC to do sampling. </param>
         /// <returns> The 12b data returned by the device. </returns>
         private ushort DoCommand(Command Command, ushort Data = 0x000, bool Long = false)
         {
             byte[] DataOut;
-            if (!Long) { DataOut = new byte[2]; }
-            else if (!this.Config.UseLongSample) { DataOut = new byte[4]; }
-            else { DataOut = new byte[6]; }
+            if (!Long) { DataOut = new byte[2]; } // Regular command, no sampling.
+            else
+            {
+                switch (this.Config.ConversionClockSrc) // We are doing sampling, determine the correct number of SCLKs.
+                {
+                    case ConversionClockSrc.SCLK:
+                        DataOut = (this.Config.UseLongSample ? new byte[2 + 4] : new byte[2 + 2]);
+                        break;
+                    case ConversionClockSrc.SCLK_HALF:
+                        DataOut = (this.Config.UseLongSample ? new byte[2 + 7] : new byte[2 + 4]);
+                        break;
+                    case ConversionClockSrc.SCLK_QUARTER:
+                        DataOut = (this.Config.UseLongSample ? new byte[2 + 14] : new byte[2 + 7]);
+                        break;
+                    case ConversionClockSrc.INTERNAL: // Here we assume 8 SCLKs (1 byte) takes longer than 4us, or 8us for long sample. This is true as long as SPI port speed is lower than 2MHz and 1MHz respectively.
+                        DataOut = (this.Config.UseLongSample ? new byte[2 + 1] : new byte[2 + 1]); // TODO: Implement a port speed check to make sure this is long enough.
+                        break;
+                    default:
+                        DataOut = new byte[2];
+                        break;
+                }
+            }
+
             DataOut[0] = (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111));
             DataOut[1] = (byte)(Data & 0b1111_1111);
             byte[] DataIn = this.Bus.Write(this.CS, DataOut, DataOut.Length);
@@ -190,7 +207,7 @@ namespace Scarlet.Components.Inputs
             /// ~Interrupt: "This pin can also be programmed as an interrupt output signal to the host processor. The falling edge of ~INT indicates data are ready for output. The following ~CS↓ or ~FS clears ~INT."
             public bool UseEOCPin;
 
-            internal ConversionClockSrc ConversionClockSrc; // Internal because currently we only support SCLK source.
+            public ConversionClockSrc ConversionClockSrc;
             internal ConversionMode ConversionMode; // Internal because currently we only support single-shot mode.
             internal FIFOTrigger FIFOTriggerLevel; // Internal because currently we only support single-shot mode (and FIFO doesn't matter in that case).
         }
