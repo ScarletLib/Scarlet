@@ -179,8 +179,8 @@ namespace Scarlet.Components.Inputs
                     case ConversionClockSrc.SCLK_QUARTER:
                         DataOut = (this.Config.UseLongSample ? new byte[2 + 14] : new byte[2 + 7]);
                         break;
-                    case ConversionClockSrc.INTERNAL: // Here we assume 8 SCLKs (1 byte) takes longer than 4us, or 8us for long sample. This is true as long as SPI port speed is lower than 2MHz and 1MHz respectively.
-                        DataOut = (this.Config.UseLongSample ? new byte[2 + 1] : new byte[2 + 1]); // TODO: Implement a port speed check to make sure this is long enough.
+                    case ConversionClockSrc.INTERNAL: // We are assuming the time between The two SPI transactions is at least 4us for short, or 8us for long sampling. This seems to always be true on the Pi, but is not guaranteed.
+                        DataOut = new byte[2]; // No need for additional SCLKs.
                         break;
                     default:
                         DataOut = new byte[2];
@@ -200,7 +200,7 @@ namespace Scarlet.Components.Inputs
         public struct Configuration
         {
             public VoltageReference VoltageRef;
-            public bool UseLongSample;
+            public bool UseLongSample; // TODO: Check if long sampling is working.
 
             /// <summary> If true, pin 4 outputs "End of Conversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
             /// End of Conversion: "This output goes from a high-to-low logic level at the end of the sampling period and remains low until the conversion is complete and data are ready for transfer. EOC is used in conversion mode 00 only."
