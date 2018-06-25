@@ -10,11 +10,12 @@ namespace Scarlet.IO.RaspberryPi
     {
         private const int DEFAULT_SPEED = 50000;
 
-        private int BusNum;
+        private readonly int BusNum;
+        private readonly object BusLock = new object();
 
         public SPIBusPi(int Bus)
         {
-            BusNum = Bus;
+            this.BusNum = Bus;
             RaspberryPi.SPISetup(Bus, DEFAULT_SPEED);
         }
 
@@ -23,9 +24,13 @@ namespace Scarlet.IO.RaspberryPi
         /// <summary> Simultaneously writes/reads data to/from the device. </summary>
         public byte[] Write(IDigitalOut DeviceSelect, byte[] Data, int DataLength)
         {
-            DeviceSelect.SetOutput(false);
-            byte[] DataReturn = RaspberryPi.SPIRW(BusNum, Data, DataLength);
-            DeviceSelect.SetOutput(true);
+            byte[] DataReturn;
+            lock (this.BusLock)
+            {
+                DeviceSelect.SetOutput(false);
+                DataReturn = RaspberryPi.SPIRW(BusNum, Data, DataLength);
+                DeviceSelect.SetOutput(true);
+            }
             return DataReturn;
         }
 
