@@ -7,6 +7,7 @@ namespace Scarlet.Components.Motors
     {
         private readonly IPWMOutput PWMOut;
         public int Position { get; private set; }
+        public bool TraceLogging { get; set; }
 
         private bool Enabled;
 

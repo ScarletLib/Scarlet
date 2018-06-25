@@ -12,6 +12,7 @@ namespace Scarlet.Components.Sensors
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         private IUARTBus UART;
 

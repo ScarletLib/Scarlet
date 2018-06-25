@@ -15,6 +15,7 @@ namespace Scarlet.Components.Sensors
         private IDigitalOut ChipSelect;
         private uint LastReading;
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         /// <summary>
         /// Lists the possible reported faults.

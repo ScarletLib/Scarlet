@@ -12,5 +12,8 @@ namespace Scarlet.Components
 
         /// <summary> Updates the subsystem. This should be passed through to all subcomponents. </summary>
         void UpdateState();
+
+        /// <summary> Whether to output extended debug information. Actual output varies by subsystem. </summary>
+        bool TraceLogging { get; set; }
     }
 }

@@ -9,5 +9,8 @@ namespace Scarlet.Components
 
         /// <summary> Enables or disables the motor immediately. </summary>
         void SetEnabled(bool Enabled);
+
+        /// <summary> Whether to output extended debug information. Actual output varies by motor. </summary>
+        bool TraceLogging { get; set; }
     }
 }

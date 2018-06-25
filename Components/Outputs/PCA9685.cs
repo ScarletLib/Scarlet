@@ -129,6 +129,8 @@ namespace Scarlet.Components.Outputs
         /// </summary>
         public enum OutputDisableBehaviour { Low = 0, DriverDependent = 1, HighImpedance = 2 }
 
+        public bool TraceLogging { get; set; }
+
         public PWMOutputPCA9685[] Outputs { get; private set; }
         private PWMOutputPCA9685 AllOutputs;
         private II2CBus Bus;
@@ -194,7 +196,7 @@ namespace Scarlet.Components.Outputs
             if (TempPrescale < 3) { TempPrescale = 3; }
             if (TempPrescale > 255) { TempPrescale = 255; }
             byte PrescaleVal = (byte)(TempPrescale);
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Setting PCA9685 frequency prescaler value to " + PrescaleVal + ".");
+            if (this.TraceLogging) { Log.Trace(this, "Setting frequency pre-scaler value to " + PrescaleVal + "."); }
 
             // Put the oscillator in sleep mode.
             byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
@@ -207,7 +209,7 @@ namespace Scarlet.Components.Outputs
             // Set the SLEEP bit back to what it was.
             this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(ModeSettingPre & 0b0110_1111) }); // Make sure we don't set bit 7 (RESET).
             Thread.Sleep(1); // 0.5ms minimum
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode now: 0x" + this.Bus.ReadRegister(this.PartAddress, (byte)Mode1Register, 1)[0].ToString("X1"));
+            if (this.TraceLogging) { Log.Trace(this, "Mode now: 0x" + this.Bus.ReadRegister(this.PartAddress, (byte)Mode1Register, 1)[0].ToString("X1")); }
             
             // If SLEEP was previously 0, we may need to RESTART.
             if ((ModeSettingPre & 0b0001_0000) == 0b0001_0000)
@@ -215,7 +217,7 @@ namespace Scarlet.Components.Outputs
                 byte AfterWake = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
                 if ((AfterWake & 0b1000_0000) == 0b1000_0000) // We need to RESTART.
                 {
-                    Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Rebooting PCA9685.");
+                    if (this.TraceLogging) { Log.Trace(this, "Rebooting component..."); }
                     this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { (byte)(AfterWake & 0b1000_0000) });
                     Thread.Sleep(10);
                     SetupDevice();
@@ -246,7 +248,7 @@ namespace Scarlet.Components.Outputs
         internal void ReadAllStates()
         {
             byte[] OutputData = this.Bus.ReadRegister(this.PartAddress, FirstLEDRegister, 64);
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 states: " + UtilMain.BytesToNiceString(OutputData, true));
+            if (this.TraceLogging) { Log.Trace(this, "Current states: " + UtilMain.BytesToNiceString(OutputData, true)); }
             if (OutputData == null || OutputData.Length != 64) { throw new Exception("Reading PCA9685 output state data did not return the correct amount of bytes (64)."); }
             for (int i = 0; i < 16; i++)
             {
@@ -268,7 +270,7 @@ namespace Scarlet.Components.Outputs
         {
             // Enable register auto-increment to make reads/writes much faster
             byte ModeSettingPre = this.Bus.ReadRegister(this.PartAddress, Mode1Register, 1)[0];
-            Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "PCA9685 mode register pre: 0x" + ModeSettingPre.ToString("X1"));
+            if (this.TraceLogging) { Log.Trace(this, "Mode register before change: 0x" + ModeSettingPre.ToString("X1")); }
             byte ModeSettingNew = (byte)((ModeSettingPre & 0b0111_1111) | 0b0010_0000); // Set bit 5 (AI) to 1 to enable auto-increment, but don't set bit 7 (RESET).
             this.Bus.WriteRegister(this.PartAddress, Mode1Register, new byte[] { ModeSettingNew });
 
