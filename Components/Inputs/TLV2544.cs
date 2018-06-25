@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Inputs
 {
@@ -12,8 +13,8 @@ namespace Scarlet.Components.Inputs
     {
         public class AnalogueInTLV254x : IAnalogueIn
         {
-            private TLV2544 Parent;
-            private byte Channel;
+            private readonly TLV2544 Parent;
+            private readonly byte Channel;
 
             public AnalogueInTLV254x(TLV2544 Parent, byte Channel)
             {
@@ -50,14 +51,16 @@ namespace Scarlet.Components.Inputs
             FIFOTriggerLevel = FIFOTrigger.FIFO_8b
         };
         public readonly AnalogueInTLV254x[] Inputs;
+        public bool TraceLogging { get; set; }
 
         private readonly ISPIBus Bus;
         private readonly IDigitalOut CS;
         private Configuration Config = DefaultConfig;
         private sbyte ReuseChannel = -1; // TODO: Implement channel re-use to speed up repeated channel reads.
-        private double ExtRefVoltage;
+        private readonly double ExtRefVoltage;
 
         /// <summary> Prepares a TI TLV2544 ADC for use. </summary>
+        /// <remarks> If <c>ConversionClockSource.INTERNAL</c> is used, there must be at least 4us or 8us of delay between SPI transactions for short and long sampling respectively. </remarks>
         /// <param name="SPIBus"> The SPI bus used to communicate with the device. </param>
         /// <param name="ChipSelect"> The output used as chip select for the device. </param>
         /// <param name="ExtRefVoltage"> Set this to the reference voltage only if using an external voltage reference. Expected values are between 0 and 5.5V. Leave as NaN if using internal reference, then select your desired reference via <c>Configure(...)</c>. </param>
@@ -190,7 +193,9 @@ namespace Scarlet.Components.Inputs
 
             DataOut[0] = (byte)((((byte)Command << 4) & 0b1111_0000) | ((Data >> 8) & 0b0000_1111));
             DataOut[1] = (byte)(Data & 0b1111_1111);
+            if (this.TraceLogging) { Log.Trace(this, "Sending command: " + UtilMain.BytesToNiceString(DataOut, true)); }
             byte[] DataIn = this.Bus.Write(this.CS, DataOut, DataOut.Length);
+            if (this.TraceLogging) { Log.Trace(this, "Received: " + UtilMain.BytesToNiceString(DataIn, true)); }
             return (ushort)(Command == Command.READ_CONF ?
                 (((DataIn[0] & 0b0000_1111) << 8) | (DataIn[1])) :
                 (DataIn[0] << 4) | ((DataIn[1] & 0b1111_0000) >> 4));
