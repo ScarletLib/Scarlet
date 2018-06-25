@@ -216,6 +216,7 @@ namespace Scarlet.Components.Sensors
 
         private float X, Y, Z;
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via

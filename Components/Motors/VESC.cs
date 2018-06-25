@@ -56,6 +56,7 @@ namespace Scarlet.Components.Motors
         private bool Stopped; // Whether or not the motor is stopped
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
         public int TargetRPM { get; private set; } // Target RPM of the motor
+        public bool TraceLogging { get; set; }
 
         /// <summary> Initializes a VESC Motor controller </summary>
         /// <param name="UARTBus"> UART output to control the motor controller </param>
