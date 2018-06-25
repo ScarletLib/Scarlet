@@ -59,6 +59,7 @@ namespace Scarlet.Components.Sensors
         public void UpdateState() => this.LastReading = GetReading();
 
         /// <summary> Gets the most recent sensor reading. </summary>
+        /// <remarks> Currently, temperature/humidity calibration settings are not applied. </remarks>
         /// <returns> The estimated total ppm of pollutants in the air. </returns>
         public float GetReading() => CalculatePPM(this.Input, this.RS, this.RL, this.SupplyVoltage, this.ResistanceCal, true, this.Humidity, this.Temperature);
 
@@ -69,6 +70,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Applies some basic calibration to the sensor to compensate for air temperature. </summary>
         /// <remarks> Defaults to 20 C. </remarks>
         /// <param name="Temperature"> The current air temperature in degrees C, between -10 and 45. </param>
+        [Obsolete("This does not yet apply any calibration.")]
         public void CalibrateTemperature(float Temperature)
         {
             if (Temperature < -10 || Temperature > 45) { throw new Exception("MQ135 only works in -10 to 45 C temperatures."); }
@@ -78,6 +80,7 @@ namespace Scarlet.Components.Sensors
         /// <summary> Applies some basic calibration to the sensor to compensate for environmental humidity. </summary>
         /// <remarks> Defaults to 65% RH. </remarks>
         /// <param name="Humidity"> % Relative Humidity value, between 0.0 and 0.95. </param>
+        [Obsolete("This does not yet apply any calibration.")]
         public void CalibrateHumidity(float Humidity)
         {
             if (Humidity < 0 || Humidity > 0.95) { throw new Exception("MQ135 only works in 0 to 95% RH environment."); }
