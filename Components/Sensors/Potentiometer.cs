@@ -17,6 +17,7 @@ namespace Scarlet.Components.Sensors
         private readonly bool Invert;
         public event EventHandler<PotentiometerTurn> Turned;
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         public Potentiometer(IAnalogueIn Input, int Degrees, bool Invert = false)
         {

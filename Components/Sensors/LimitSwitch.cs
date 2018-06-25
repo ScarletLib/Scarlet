@@ -13,6 +13,7 @@ namespace Scarlet.Components.Sensors
         public event EventHandler<LimitSwitchToggle> SwitchToggle;
         public bool State { get => (this.Invert ? !Input.GetInput() : Input.GetInput()); }
         public string System { get; set; } 
+        public bool TraceLogging { get; set; }
 
         /// <param name="Input"> Must also implement IInterruptSource. </param>
         public LimitSwitch(IDigitalIn Input, bool Invert = false)
