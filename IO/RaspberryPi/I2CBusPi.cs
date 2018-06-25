@@ -10,6 +10,7 @@ namespace Scarlet.IO.RaspberryPi
     {
 
         private int[] DeviceIDs;
+        private readonly object BusLock = new object();
 
         public I2CBusPi()
         {
@@ -26,9 +27,12 @@ namespace Scarlet.IO.RaspberryPi
         {
             CheckDev(Address);
             byte[] Buffer = new byte[DataLength];
-            for (int i = 0; i < DataLength; i++)
+            lock (this.BusLock)
             {
-                Buffer[i] = RaspberryPi.I2CRead(this.DeviceIDs[Address]);
+                for (int i = 0; i < DataLength; i++)
+                {
+                    Buffer[i] = RaspberryPi.I2CRead(this.DeviceIDs[Address]);
+                }
             }
             return Buffer;
         }
@@ -38,9 +42,12 @@ namespace Scarlet.IO.RaspberryPi
         {
             CheckDev(Address);
             byte[] Data = new byte[DataLength];
-            for(int i = 0; i < DataLength; i++)
+            lock (this.BusLock)
             {
-                Data[i] = RaspberryPi.I2CReadRegister8(this.DeviceIDs[Address], (byte)(Register + i));
+                for (int i = 0; i < DataLength; i++)
+                {
+                    Data[i] = RaspberryPi.I2CReadRegister8(this.DeviceIDs[Address], (byte)(Register + i));
+                }
             }
             return Data;
         }
@@ -49,35 +56,37 @@ namespace Scarlet.IO.RaspberryPi
         public void Write(byte Address, byte[] Data)
         {
             CheckDev(Address);
-            foreach (byte Byte in Data) { RaspberryPi.I2CWrite(this.DeviceIDs[Address], Byte); }
+            lock (this.BusLock)
+            {
+                foreach (byte Byte in Data) { RaspberryPi.I2CWrite(this.DeviceIDs[Address], Byte); }
+            }
         }
 
         /// <summary> Selects the register in the given device, then writes the given data. </summary>
         public void WriteRegister(byte Address, byte Register, byte[] Data)
         {
             CheckDev(Address);
-            for (int i = 0; i < Data.Length; i++)
+            lock (this.BusLock)
             {
-                RaspberryPi.I2CWriteRegister8(this.DeviceIDs[Address], (byte)(Register + i), Data[i]);
+                for (int i = 0; i < Data.Length; i++)
+                {
+                    RaspberryPi.I2CWriteRegister8(this.DeviceIDs[Address], (byte)(Register + i), Data[i]);
+                }
             }
         }
 
         public void WriteRegister16(byte Address, byte Register, ushort Data)
         {
             CheckDev(Address);
-            RaspberryPi.I2CWriteRegister16(this.DeviceIDs[Address], Register, Data);
+            lock (this.BusLock) { RaspberryPi.I2CWriteRegister16(this.DeviceIDs[Address], Register, Data); }
         }
 
         public ushort ReadRegister16(byte Address, byte Register)
         {
             CheckDev(Address);
-            return RaspberryPi.I2CReadRegister16(this.DeviceIDs[Address], Register);
+            lock (this.BusLock) { return RaspberryPi.I2CReadRegister16(this.DeviceIDs[Address], Register); }
         }
 
-        public void Dispose()
-        {
-            // TODO: Implement this
-            throw new NotImplementedException();
-        }
+        public void Dispose() { }
     }
 }
