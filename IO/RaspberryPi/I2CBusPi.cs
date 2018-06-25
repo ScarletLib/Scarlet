@@ -8,21 +8,17 @@ namespace Scarlet.IO.RaspberryPi
 {
     public class I2CBusPi : II2CBus
     {
-
-        private int[] DeviceIDs;
         private readonly object BusLock = new object();
+        private int[] DeviceIDs;
 
         public I2CBusPi()
         {
             this.DeviceIDs = new int[0x7F];
         }
 
-        private void CheckDev(byte Address)
-        {
-            if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
-        }
-
-        /// <summary> Reads raw data from the device at the given address. </summary>
+        /// <summary> Reads 8-bit data from the device at the given address. </summary>
+        /// <param name="Address"> The address of the device to read from. </param>
+        /// <param name="DataLength"> How many bytes to read. </param>
         public byte[] Read(byte Address, int DataLength)
         {
             CheckDev(Address);
@@ -37,7 +33,10 @@ namespace Scarlet.IO.RaspberryPi
             return Buffer;
         }
 
-        /// <summary> Requests data from the given device at the specified register. </summary>
+        /// <summary> Requests 8-bit data from the given device at the specified register. </summary>
+        /// <param name="Address"> The address of the device to read from. </param>
+        /// <param name="Register"> The register to start reading data from. </param>
+        /// <param name="DataLength"> How many bytes to read. If more than 1, subsequent registers are polled. </param>
         public byte[] ReadRegister(byte Address, byte Register, int DataLength)
         {
             CheckDev(Address);
@@ -53,6 +52,8 @@ namespace Scarlet.IO.RaspberryPi
         }
 
         /// <summary> Writes the data as given to the device at the specified address. </summary>
+        /// <param name="Address"> The address of the device to write data to. </param>
+        /// <param name="Data"> The 8-bit data to write to the device. </param>
         public void Write(byte Address, byte[] Data)
         {
             CheckDev(Address);
@@ -63,6 +64,9 @@ namespace Scarlet.IO.RaspberryPi
         }
 
         /// <summary> Selects the register in the given device, then writes the given data. </summary>
+        /// <param name="Address"> The address of the device to write data to. </param>
+        /// <param name="Register"> The register to start writing data at. </param>
+        /// <param name="Data"> The 8-bit data to write. If more than 1 byte, subsequent registers are written. </param>
         public void WriteRegister(byte Address, byte Register, byte[] Data)
         {
             CheckDev(Address);
@@ -75,18 +79,32 @@ namespace Scarlet.IO.RaspberryPi
             }
         }
 
+        /// <summary> Writes data to a 16-bit register. </summary>
+        /// <param name="Address"> The address of the device to write to. </param>
+        /// <param name="Register"> The register to write data to. </param>
+        /// <param name="Data"> The 16-bit data to write to the register. </param>
         public void WriteRegister16(byte Address, byte Register, ushort Data)
         {
             CheckDev(Address);
             lock (this.BusLock) { RaspberryPi.I2CWriteRegister16(this.DeviceIDs[Address], Register, Data); }
         }
 
+        /// <summary> Reads data from a 16-bit register. </summary>
+        /// <param name="Address"> The address of the device to read from. </param>
+        /// <param name="Register"> The register to read from. </param>
+        /// <returns> The 16-bit data in the register. </returns>
         public ushort ReadRegister16(byte Address, byte Register)
         {
             CheckDev(Address);
             lock (this.BusLock) { return RaspberryPi.I2CReadRegister16(this.DeviceIDs[Address], Register); }
         }
 
+        /// <summary> Does nothing. </summary>
         public void Dispose() { }
+
+        private void CheckDev(byte Address)
+        {
+            if (this.DeviceIDs[Address] < 1) { this.DeviceIDs[Address] = RaspberryPi.I2CSetup(Address); }
+        }
     }
 }
