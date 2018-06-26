@@ -94,7 +94,7 @@ namespace Scarlet.Utilities
         }
 
         /// <summary> Manually flushes the output to the file. If AutoFlush is true, this is ignored. </summary>
-        public void Flush() { if (!AutoFlush && !FileOpened) { this.Writer.Flush(); } }
+        public void Flush() { if (!AutoFlush && FileOpened) { this.Writer.Flush(); } }
 
         private void CheckOpened() { if (!FileOpened) { throw new Exception("Attempting to write to closed file..."); } }
 
