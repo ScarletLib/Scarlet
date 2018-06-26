@@ -12,3 +12,6 @@ packages
 # Scarlet: Logs
 **/Logs
 /desktop.ini
+
+# Plugins
+**/StyleCop.Cache

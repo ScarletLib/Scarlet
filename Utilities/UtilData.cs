@@ -54,12 +54,17 @@ namespace Scarlet.Utilities
                 { typeof(uint), () => { Result.Add(ToUInt(Bytes.GetRange(i, sizeof(uint)).ToArray())); i += sizeof(uint); }},
                 { typeof(ulong), () => { Result.Add(ToULong(Bytes.GetRange(i, sizeof(ulong)).ToArray())); i += sizeof(ulong); }},
                 { typeof(ushort), () => { Result.Add(ToUShort(Bytes.GetRange(i, sizeof(ushort)).ToArray())); i += sizeof(ushort); }},
-                { typeof(byte), () => { Result.Add(Bytes.GetRange(i, sizeof(byte)).ToArray()); i += sizeof(byte); }},
+                { typeof(byte), () => { Result.Add(Bytes[i]); i += sizeof(byte); }},
             };
             foreach (Type t in Types)
             {
                 if (!Switch.ContainsKey(t)) { throw new Exception("Unsupported type " + t); }
-                if (i + Marshal.SizeOf(t) >= Input.Length) { throw new Exception("Not enough bytes to parse these types"); }
+                if (i + Marshal.SizeOf(t) > Input.Length)
+                {
+                    int TotalSize = 0;
+                    foreach (Type T in Types) { TotalSize += Marshal.SizeOf(T); }
+                    throw new Exception("Not enough bytes to parse these types. Given: " + Input.Length + ", Expected: " + TotalSize);
+                }
                 Switch[t].Invoke();
             }
             return Result;
