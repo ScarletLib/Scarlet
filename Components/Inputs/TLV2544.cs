@@ -56,7 +56,6 @@ namespace Scarlet.Components.Inputs
         private readonly ISPIBus Bus;
         private readonly IDigitalOut CS;
         private Configuration Config = DefaultConfig;
-        private sbyte ReuseChannel = -1; // TODO: Implement channel re-use to speed up repeated channel reads.
         private readonly double ExtRefVoltage;
 
         /// <summary> Prepares a TI TLV2544 ADC for use. </summary>
@@ -89,7 +88,6 @@ namespace Scarlet.Components.Inputs
             ConfigReg = (ushort)(ConfigReg | (Config.UseEOCPin ? (0b1 << 2) : (0b0 << 2)));
             ConfigReg = (ushort)(ConfigReg | ((byte)Config.FIFOTriggerLevel) & 0b11);
             DoCommand(Command.WRITE_CONF, ConfigReg);
-            this.ReuseChannel = -1;
         }
 
         /// <summary> Applies the default configuration, and prepares the device for use. </summary>
@@ -205,7 +203,7 @@ namespace Scarlet.Components.Inputs
         public struct Configuration
         {
             public VoltageReference VoltageRef;
-            public bool UseLongSample; // TODO: Check if long sampling is working.
+            public bool UseLongSample;
 
             /// <summary> If true, pin 4 outputs "End of Conversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
             /// End of Conversion: "This output goes from a high-to-low logic level at the end of the sampling period and remains low until the conversion is complete and data are ready for transfer. EOC is used in conversion mode 00 only."
