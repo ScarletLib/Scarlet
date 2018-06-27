@@ -4,18 +4,15 @@ using Scarlet.Utilities;
 namespace Scarlet.Filters
 {
     /// <summary> 
-    /// The Average filter is intended for use as an average-gathering system, using a rolling average 
-    /// with "roll-length" <see cref="FilterCount"/> or continuous average.
+    /// The Average filter is intended for use as an average-gathering system.
+    /// Takes averages using a rolling average with "roll-length" <see cref="FilterCount"/> or continuous average. 
     /// </summary>
     /// <remarks>
     /// Intended Usage:
-    /// * Construct Average filter given a rolling
-    ///   filter length, <see cref="FilterCount"/>. Setting
-    ///   FilterCount to null puts the filter into continuous mode.
-    /// * Iteratively add values into the filter
-    ///   using <see cref="Feed(T)"/>
-    /// * Get the filter output by calling
-    ///   <see cref="GetOutput"/>
+    /// * Construct Average filter given a rolling filter length, <see cref="FilterCount"/>. 
+    ///   Setting FilterCount to null puts the filter into continuous mode.
+    /// * Iteratively add values into the filter using <see cref="Feed(T)"/>
+    /// * Get the filter output by calling <see cref="GetOutput"/>
     /// </remarks>
     /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
     public class Average<T> : IFilter<T> where T : IComparable

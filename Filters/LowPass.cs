@@ -6,12 +6,9 @@ namespace Scarlet.Filters
     /// <summary> The Low Pass filter is intended for use as a low pass filter with time constant <see cref="LPFk"/>. </summary>
     /// <remarks>
     /// Implementation Details:
-    /// * Construct Low Pass filter given a time constant
-    ///   <see cref="LPFk"/>
-    /// * Iteratively add values into the filter
-    ///   using <see cref="Feed(T)"/>
-    /// * Get the filter output by calling
-    ///   <see cref="GetOutput"/>
+    /// * Construct Low Pass filter given a time constant <see cref="LPFk"/>
+    /// * Iteratively add values into the filter using <see cref="Feed(T)"/>
+    /// * Get the filter output by calling <see cref="GetOutput"/>
     /// </remarks>
     /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
     public class LowPass<T> : IFilter<T> where T : IComparable
