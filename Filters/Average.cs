@@ -35,7 +35,7 @@ namespace Scarlet.Filters
         /// Roll length for the average filter. 
         /// If this value is null, the filter is set to continuous mode (as opposed to a roll mode). 
         /// </param>
-        public Average(int? FilterCount = null)
+        public Average(int? FilterCount = 10)
         {
             // Assert that T is a numeric type
             if (!UtilData.IsNumericType(typeof(T)))
@@ -66,11 +66,8 @@ namespace Scarlet.Filters
         /// <param name="Input"> Value to feed into the filter. </param>
         public void Feed(T Input)
         {
-            // Increase number of iterations by 1
-            this.Iterations++;
-
             // Value to divide sum by at the end of the computation
-            int Divisor = this.Iterations;
+            int Divisor = this.Iterations == 0 ? 1 : this.Iterations;
 
             // Store input as a dynamic type since we know T is a numeric
             dynamic dynamicInput = Input;
@@ -102,6 +99,9 @@ namespace Scarlet.Filters
 
             // Add one to the count if the average was the same after this cycle, otherwise reset it
             if ((dynamic)LastOutput == (dynamic)this.Output) { NumCyclesAverageSame++; } else { NumCyclesAverageSame = 0; }
+
+            // Increase number of iterations by 1
+            this.Iterations++;
         }
 
         /// <summary> Rate is irrelevant to average filter, so this is no different than using <see cref="Feed(T)">Feed()</see>. </summary>

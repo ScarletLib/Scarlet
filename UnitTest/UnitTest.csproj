@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="ComponentTesting\BME280Tests.cs" />
     <Compile Include="ComponentTesting\MAX31855Tests.cs" />
+    <Compile Include="FilterTesting\TestAverage.cs" />
     <Compile Include="FilterTesting\TestLowPass.cs" />
     <Compile Include="MotorTesting\TestablePWMOutput.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
