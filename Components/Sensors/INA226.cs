@@ -13,9 +13,9 @@ namespace Scarlet.Components.Sensors
         public string System { get; set; }
         public bool TraceLogging { get; set; }
 
-        private II2CBus Bus;
-        private byte Address;
-        private double Resistor;
+        private readonly II2CBus Bus;
+        private readonly byte Address;
+        private readonly double Resistor;
 
         public double CurrentMultiplier { get; private set; }
         private ushort CalibrationVal;
@@ -63,39 +63,20 @@ namespace Scarlet.Components.Sensors
 
         // TODO: Implement alert pin configuration.
 
-        /// <summary> Prepares the INA226 device for usee. </summary>
+        /// <summary> Prepares the INA226 device for use. </summary>
         /// <param name="Bus"> The I2C bus the device is connected to. </param>
         /// <param name="DeviceAddress"> The I2C address of the device. Set by hardware pin connections. </param>
         /// <param name="MaxCurrent"> The absolute maximum current that you expect to measure with this. Used to set amplifier scaling. Usually set to the connected device's max current, like motor stall current. </param>
         /// <param name="Resistor"> The resistance of the current shunt path. This should be measured with the best possible precision, as slight error here can cause large measurement error. </param>
         /// <param name="Avg"> How many samples you want the chip to average for voltage/current/power values. Will stabilize readings, but reduce high-frequency response (usually not needed anyways). </param>
-        /// <param name="VBusTime"> Determines how long the ADC samples to measure power supply voltage. Longer (slower) times will stabilize readings, but reduce high requency response (usually not needed anyways). </param>
-        /// <param name="VShuntTime"> Determines how long the ADC samples to measure shunt voltage drop. Longer (slower) times will stabilize readings, but reduce high requency response (usually not needed anyways). </param>
+        /// <param name="VBusTime"> Determines how long the ADC samples to measure power supply voltage. Longer (slower) times will stabilize readings, but reduce high frequency response (usually not needed anyways). </param>
+        /// <param name="VShuntTime"> Determines how long the ADC samples to measure shunt voltage drop. Longer (slower) times will stabilize readings, but reduce high frequency response (usually not needed anyways). </param>
         public INA226(II2CBus Bus, byte DeviceAddress, float MaxCurrent, double Resistor, AveragingMode Avg = AveragingMode.Last1, ConversionTime VBusTime = ConversionTime.Time1100us, ConversionTime VShuntTime = ConversionTime.Time1100us)
         {
             this.Bus = Bus;
             this.Address = DeviceAddress;
             this.Resistor = Resistor;
             SetConfig(MaxCurrent, Avg, VBusTime, VShuntTime);
-        }
-
-        /// <summary> Sets configuration and calibration registers with these settings. </summary>
-        private void SetConfig(float MaxCurrent, AveragingMode Avg, ConversionTime VBusTime, ConversionTime VShuntTime)
-        {
-            // Sets Configuration Register
-            ushort Config = 0b0100_0000_0000_0111;
-            Config |= (ushort)(((ushort)Avg << 9) & 0b0000_1110_0000_0000); // Averaging mode
-            Config |= (ushort)(((ushort)VBusTime << 6) & 0b0000_0001_1100_0000); // VBus conversion time
-            Config |= (ushort)(((ushort)VShuntTime << 3) & 0b0000_0000_0011_1000); // VShunt conversion time
-            Config = UtilData.SwapBytes(Config);
-            this.Bus.WriteRegister16(this.Address, (byte)Register.Configuration, Config);
-
-            // Sets Calibration Register
-            this.CurrentMultiplier = Math.Abs(MaxCurrent) / Math.Pow(2, 15);
-            this.CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
-            this.CurrentMultiplier = (0.00512D / this.CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
-            if (this.TraceLogging) { Log.Trace(this, "Using current multiplier " + this.CurrentMultiplier + " A/count (calibration value " + this.CalibrationVal + ")."); }
-            this.Bus.WriteRegister16(this.Address, (byte)Register.Calibration, UtilData.SwapBytes(this.CalibrationVal));
         }
 
         /// <summary> Gets the VBus pin voltage at the last UpdateState() call. </summary>
@@ -135,14 +116,16 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Interprets the calculated current data out of the raw data. </summary>
         /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <param name="CurrentMultiplier"> The translation between bits and Amps. Usually <see cref="CurrentMultiplier"/>. </param>
         /// <returns> The current, in Amps. Increments depend on scaling, which is configured by shunt resistance and max current. </returns>
-        public static double ConvertCurrentFromRaw(ushort[] RawData, double CurrentMultipler)
+        public static double ConvertCurrentFromRaw(ushort[] RawData, double CurrentMultiplier)
         {
-            return RawData[3] * CurrentMultipler; // TODO: Check this, as it might be negative.
+            return RawData[3] * CurrentMultiplier; // TODO: Check this, as it might be negative.
         }
 
         /// <summary> Interprets the calculated power data out of the raw data. </summary>
         /// <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+        /// <param name="CurrentMultiplier"> The translation between bits and Amps. Usually <see cref="CurrentMultiplier"/>. </param>
         /// <returns> The power, in Watts. Increments depend on scaling, which is configured by shunt resistance and max current. Always positive. </returns>
         public static double ConvertPowerFromRaw(ushort[] RawData, double CurrentMultiplier) => RawData[2] * (CurrentMultiplier * 25);
 
@@ -184,6 +167,29 @@ namespace Scarlet.Components.Sensors
             this.LastReading[2] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Power));
             this.LastReading[3] = UtilData.SwapBytes(this.Bus.ReadRegister16(this.Address, (byte)Register.Current));
             if (this.TraceLogging) { Log.Trace(this, "Returned data: " + this.LastReading[0].ToString("X4") + "," + this.LastReading[1].ToString("X4") + "," + this.LastReading[2].ToString("X4") + "," + this.LastReading[3].ToString("X4")); }
+        }
+
+        /// <summary> Sets configuration and calibration registers with these settings. </summary>
+        /// <param name="MaxCurrent"> The maximum current that the device is expected to measure. </param>
+        /// <param name="Avg"> The averaging mode to use. </param>
+        /// <param name="VBusTime"> The bus voltage conversion time to use. </param>
+        /// <param name="VShuntTime"> The shunt voltage conversion time to use. </param>
+        private void SetConfig(float MaxCurrent, AveragingMode Avg, ConversionTime VBusTime, ConversionTime VShuntTime)
+        {
+            // Sets Configuration Register
+            ushort Config = 0b0100_0000_0000_0111;
+            Config |= (ushort)(((ushort)Avg << 9) & 0b0000_1110_0000_0000); // Averaging mode
+            Config |= (ushort)(((ushort)VBusTime << 6) & 0b0000_0001_1100_0000); // VBus conversion time
+            Config |= (ushort)(((ushort)VShuntTime << 3) & 0b0000_0000_0011_1000); // VShunt conversion time
+            Config = UtilData.SwapBytes(Config);
+            this.Bus.WriteRegister16(this.Address, (byte)Register.Configuration, Config);
+
+            // Sets Calibration Register
+            this.CurrentMultiplier = Math.Abs(MaxCurrent) / Math.Pow(2, 15);
+            this.CalibrationVal = (ushort)Math.Ceiling(0.00512D / (this.CurrentMultiplier * this.Resistor));
+            this.CurrentMultiplier = (0.00512D / this.CalibrationVal) / this.Resistor; // Since rounding the value may have slightly changed the multiplier, make sure we are using what the device will.
+            if (this.TraceLogging) { Log.Trace(this, "Using current multiplier " + this.CurrentMultiplier + " A/count (calibration value " + this.CalibrationVal + ")."); }
+            this.Bus.WriteRegister16(this.Address, (byte)Register.Calibration, UtilData.SwapBytes(this.CalibrationVal));
         }
     }
 }
