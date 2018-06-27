@@ -1,21 +1,25 @@
-﻿using Scarlet.IO;
-using System;
+﻿using System;
+using Scarlet.IO;
 
 namespace Scarlet.Components.Outputs
 {
     public class RGBLED
     {
-        private IPWMOutput Red, Green, Blue;
-        /// <summary> Flips colour outputs. E.g. 0x14 Green will become 0xEB if enabled. </summary>
+        private readonly IPWMOutput Red, Green, Blue;
+
+        /// <summary> Gets or sets a value indicating whether colour outputs should be flipped. E.g. 0x14 Green will become 0xEB if enabled. </summary>
         public bool Inverted { get; set; }
-        /// <summary> Factor to scale red output by. Value of 1 will provide no scaling. </summary>
+
+        /// <summary> Gets or sets the factor to scale red output by. Value of 1 will provide no scaling. </summary>
         public float RedScale { get; set; }
-        /// <summary> Factor to scale green output by. Value of 1 will provide no scaling. </summary>
+
+        /// <summary> Gets or sets the factor to scale green output by. Value of 1 will provide no scaling. </summary>
         public float GreenScale { get; set; }
-        /// <summary> Factor to scale blue output by. Value of 1 will provide no scaling. </summary>
+
+        /// <summary> Gets or sets the factor to scale blue output by. Value of 1 will provide no scaling. </summary>
         public float BlueScale { get; set; }
 
-        /// <summary> Provides easy output controls for an RBG LED. </summary>
+        /// <summary> Provides easy output controls for an RGB LED. </summary>
         /// <param name="Red"> PWM output for the red LED channel. </param>
         /// <param name="Green"> PWM output for the green LED channel. </param>
         /// <param name="Blue"> PWM channel for the blue LED channel. </param>
@@ -31,7 +35,7 @@ namespace Scarlet.Components.Outputs
         }
 
         /// <summary> Sets the LED's colour. </summary>
-        /// <remarks> If Inverted is set, colour gradients are reversed. E.g. 0x14 Green will become 0xEB. </remarks>
+        /// <remarks> If <see cref="Inverted"/> is set, colour gradients are reversed. E.g. 0x14 Green will become 0xEB. </remarks>
         /// <param name="Colour"> The colour to output, in standard form like 0x811426 for 0x81 Red, 0x14 Green, 0x26 Blue. </param>
         public void SetOutput(uint Colour)
         {
@@ -56,7 +60,7 @@ namespace Scarlet.Components.Outputs
         {
             bool Increasing = Worst < Best;
             if ((Increasing && (Now > Best || Now < Worst)) || // Outside range
-                (!Increasing) && (Now < Best || Now > Worst) ||
+                ((!Increasing) && (Now < Best || Now > Worst)) ||
                 Worst == Best || Worst == double.NaN || Best == double.NaN) { return 0xFFFFFF; }
 
             double Fraction = 0;
@@ -68,6 +72,7 @@ namespace Scarlet.Components.Outputs
         }
 
         /// <summary> Sets the frequency of the PWM outputs for all channels. </summary>
+        /// <param name="Frequency"> The frequency to set the PWM output to. </param>
         public void SetFrequency(int Frequency)
         {
             this.Red.SetFrequency(Frequency);
@@ -76,6 +81,7 @@ namespace Scarlet.Components.Outputs
         }
 
         /// <summary> Sets the enabled state of all three PWM channels. </summary>
+        /// <param name="Enable"> Enables/disables the PWM outputs. </param>
         public void SetEnabled(bool Enable)
         {
             this.Red.SetEnabled(Enable);
