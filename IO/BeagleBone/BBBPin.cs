@@ -1,6 +1,5 @@
-﻿using BBBCSIO;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using BBBCSIO;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -16,10 +15,11 @@ namespace Scarlet.IO.BeagleBone
         NONE, GPIO, PWM, ADC, I2C, SPI, UART, CAN
     }
 
-    static class Pin
+    internal static class Pin
     {
         private static Dictionary<BBBPin, PinData> PinInfo = new Dictionary<BBBPin, PinData>()
         {
+            // P8
             { BBBPin.P8_03, new PinData(0x818, 6, 38, GpioEnum.GPIO_38, 1) },
             { BBBPin.P8_04, new PinData(0x81C, 7, 39, GpioEnum.GPIO_39, 1) },
             { BBBPin.P8_05, new PinData(0x808, 2, 34, GpioEnum.GPIO_34, 1) },
@@ -65,6 +65,7 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P8_45, new PinData(0x8A0, 40, 70, GpioEnum.GPIO_70, 2) },
             { BBBPin.P8_46, new PinData(0x8A4, 41, 71, GpioEnum.GPIO_71, 2) },
 
+            // P9
             { BBBPin.P9_11, new PinData(0x870, 28, 30, GpioEnum.GPIO_30, 0) },
             { BBBPin.P9_12, new PinData(0x878, 30, 60, GpioEnum.GPIO_60, 0) },
             { BBBPin.P9_13, new PinData(0x874, 29, 31, GpioEnum.GPIO_31, 0) },
@@ -78,7 +79,7 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P9_21, new PinData(0x954, 85, 3, GpioEnum.GPIO_3, 0) },
             { BBBPin.P9_22, new PinData(0x950, 84, 2, GpioEnum.GPIO_2, 0) },
             { BBBPin.P9_23, new PinData(0x844, 17, 49, GpioEnum.GPIO_49, 0) },
-            { BBBPin.P9_24, new PinData(0x984, 97, 15, GpioEnum.GPIO_15, 0) }, // 
+            { BBBPin.P9_24, new PinData(0x984, 97, 15, GpioEnum.GPIO_15, 0) },
             { BBBPin.P9_25, new PinData(0x9AC, 107, 117, GpioEnum.GPIO_117, 2) },
             { BBBPin.P9_26, new PinData(0x980, 96, 14, GpioEnum.GPIO_14, 0) },
             { BBBPin.P9_27, new PinData(0x9A4, 105, 115, GpioEnum.GPIO_115, 0) },
@@ -86,22 +87,25 @@ namespace Scarlet.IO.BeagleBone
             { BBBPin.P9_29, new PinData(0x994, 101, 111, GpioEnum.GPIO_111, 2) },
             { BBBPin.P9_30, new PinData(0x998, 102, 112, GpioEnum.GPIO_112, 2) },
             { BBBPin.P9_31, new PinData(0x990, 100, 110, GpioEnum.GPIO_110, 0) },
+
             // Pins P9_33 to P9_40 are ADC inputs, and don't have addresses.
             { BBBPin.P9_41, new PinData(0x9B4, 97, 20, GpioEnum.GPIO_20, 0) },
             { BBBPin.P9_42, new PinData(0x964, 89, 7, GpioEnum.GPIO_7, 0) }
         };
 
-        /// <summary> Converts a Scarlet BBBPin to a BBBCSIO GpioEnum. </summary>
+        /// <summary> Converts a Scarlet <see cref="BBBPin"/> to a BBBCSIO <see cref="BBBCSIO.GpioEnum"/>. </summary>
+        /// <param name="Pin"> The pin to translate. </param>
         public static GpioEnum PinToGPIO(BBBPin Pin)
         {
             if (PinInfo.ContainsKey(Pin)) { return PinInfo[Pin].GPIO; }
             else { return GpioEnum.GPIO_NONE; }
         }
 
-        /// <summary> Converts a Scarlet BBBPin to a BBBCSIO A2DPinEnum. </summary>
+        /// <summary> Converts a Scarlet <see cref="BBBPin"/> to a BBBCSIO <see cref="A2DPortEnum"/>. </summary>
+        /// <param name="Pin"> The pin to translate. </param>
         public static A2DPortEnum PinToA2D(BBBPin Pin)
         {
-            switch(Pin)
+            switch (Pin)
             {
                 case BBBPin.P9_39: return A2DPortEnum.AIN_0;
                 case BBBPin.P9_40: return A2DPortEnum.AIN_1;
@@ -114,18 +118,22 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        /// <summary> Determines if the given pin can be used in the system mode, or if it used by another device. </summary>
+        /// <summary> Determines if the given pin can be used in the given system mode, or if it used by another device. </summary>
+        /// <param name="Pin"> The pin to check. </param>
+        /// <param name="Mode"> The system mode to check the pin's usability in. </param>
         public static bool CheckPin(BBBPin Pin, SystemMode Mode)
         {
             if (!PinInfo.ContainsKey(Pin)) { return false; }
 
-            if(Mode == SystemMode.DEFAULT) { return PinInfo[Pin].Devices == 0; } // No devices must be present.
-            else if(Mode == SystemMode.NO_STORAGE) { return (PinInfo[Pin].Devices & 0b1111_1110) == 0; } // No devices except for eMMC must be present.
-            else if(Mode == SystemMode.NO_HDMI) { return (PinInfo[Pin].Devices & 0b1111_1101) == 0; } // No devices except for HDMI must be present.
+            if (Mode == SystemMode.DEFAULT) { return PinInfo[Pin].Devices == 0; } // No devices must be present.
+            else if (Mode == SystemMode.NO_STORAGE) { return (PinInfo[Pin].Devices & 0b1111_1110) == 0; } // No devices except for eMMC must be present.
+            else if (Mode == SystemMode.NO_HDMI) { return (PinInfo[Pin].Devices & 0b1111_1101) == 0; } // No devices except for HDMI must be present.
             return false; // Invalid system mode.
         }
 
-        /// <summary> Returns the memory address offset for each pin. Returns 0x000 if not found or invalid input. </summary>
+        /// <summary> Gets the memory address offset for a given pin. </summary>
+        /// <param name="Pin"> The pin to get the address for. </param>
+        /// <returns> The memory address offset for the given pin. 0x000 if not found or invalid pin. </returns>
         internal static int GetOffset(BBBPin Pin)
         {
             if (PinInfo.ContainsKey(Pin)) { return PinInfo[Pin].Offset; }
@@ -133,6 +141,11 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary> Creates a 8-bit pin mode from the specified parameters. </summary>
+        /// <param name="FastSlew"> Whether to use fast edges. </param>
+        /// <param name="EnableReceiver"> Whether to turn on input capabilities. </param>
+        /// <param name="Resistor"> The resistor configuration to apply. </param>
+        /// <param name="ModeID"> The pin's intended use. </param>
+        /// <returns> The 8-bit pin configuration value for use in the device tree overlay. </returns>
         internal static byte GetPinMode(bool FastSlew, bool EnableReceiver, ResistorState Resistor, byte ModeID)
         {
             // Bit | Function           | Modes
@@ -152,7 +165,7 @@ namespace Scarlet.IO.BeagleBone
             if (!FastSlew) { Output |= 0b0100_0000; }
             if (EnableReceiver) { Output |= 0b0010_0000; }
             if (Resistor == ResistorState.PULL_UP) { Output |= 0b0001_0000; }
-            else if(Resistor == ResistorState.NONE) { Output |= 0b0000_1000; }
+            else if (Resistor == ResistorState.NONE) { Output |= 0b0000_1000; }
             if (ModeID >= 0b000 && ModeID <= 0b111) { Output |= ModeID; }
             return Output;
         }
@@ -175,7 +188,10 @@ namespace Scarlet.IO.BeagleBone
             }
         }
 
-        /// <summary> Gets the mux mode that needs to be used for the given pin usage. Returns 255 if invalid usage provided. </summary>
+        /// <summary> Gets the mux mode that needs to be used for the given pin usage. </summary>
+        /// <param name="Pin"> The pin to get the mode of. </param>
+        /// <param name="Mode"> The desired pin usage mode. </param>
+        /// <returns> The mode ID corresponding to the desired use mode for this pin, or 255 if invalid usage provided. </returns>
         internal static byte GetModeID(BBBPin Pin, BBBPinMode Mode)
         {
             // Definitely not the prettiest code in the world.
@@ -192,12 +208,12 @@ namespace Scarlet.IO.BeagleBone
                 case BBBPin.P8_09:
                 case BBBPin.P8_10:
                 case BBBPin.P8_11:
-                case BBBPin.P8_12://
+                case BBBPin.P8_12:
                 case BBBPin.P8_14:
                 case BBBPin.P8_15:
                 case BBBPin.P8_16:
                 case BBBPin.P8_17:
-                case BBBPin.P8_18://
+                case BBBPin.P8_18:
                 case BBBPin.P8_20:
                 case BBBPin.P8_21:
                 case BBBPin.P8_22:
@@ -211,8 +227,8 @@ namespace Scarlet.IO.BeagleBone
                 case BBBPin.P8_30:
                 case BBBPin.P8_31:
                 case BBBPin.P8_32:
-                case BBBPin.P8_33://
-                case BBBPin.P8_35://
+                case BBBPin.P8_33:
+                case BBBPin.P8_35:
                 case BBBPin.P8_39:
                 case BBBPin.P8_40:
                 case BBBPin.P8_41:
@@ -245,7 +261,6 @@ namespace Scarlet.IO.BeagleBone
                     if (Mode == BBBPinMode.GPIO) { return 7; }
                     else if (Mode == BBBPinMode.PWM) { return 3; }
                     else { return 255; }
-
 
                 // P9 Header
                 case BBBPin.P9_11:
@@ -338,7 +353,5 @@ namespace Scarlet.IO.BeagleBone
             }
             return 255;
         }
-
     }
-
 }

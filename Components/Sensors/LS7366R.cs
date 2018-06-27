@@ -1,11 +1,6 @@
-﻿using Scarlet.IO;
+﻿using System;
+using Scarlet.IO;
 using Scarlet.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Scarlet.Components.Sensors
 {
@@ -16,19 +11,19 @@ namespace Scarlet.Components.Sensors
     /// </summary>
     public class LS7366R : ISensor
     {
-        private const float LOAD_READ_DELAY = 0.02f; // seconds
-
-        private IDigitalOut ChipSelect;
-        private IDigitalOut CountEnable;
-        private ISPIBus SPIBus;
-        private volatile bool HadEvent;
-
         public bool CountEnabled { get; private set; }
         public int Count { get; private set; }
         public string System { get; set; }
         public bool TraceLogging { get; set; }
 
         public event EventHandler<OverflowEvent> OverflowOccured;
+
+        private const float LOAD_READ_DELAY = 0.02f; // seconds
+
+        private IDigitalOut ChipSelect;
+        private IDigitalOut CountEnable;
+        private ISPIBus SPIBus;
+        private volatile bool HadEvent;
 
         public static readonly Configuration DefaultConfig = new Configuration()
         {
@@ -50,7 +45,6 @@ namespace Scarlet.Components.Sensors
             FlagOnBW = false,
             FlagOnCY = false,
         };
-
 
         /// <summary> Initializes the LS7366R SPI encoder counter chip. </summary>
         /// <param name="SPIBus"> SPI Bus to communicate with </param>
@@ -93,16 +87,11 @@ namespace Scarlet.Components.Sensors
             MDR1 |= (byte)(BWFlg << 6);
             MDR1 |= (byte)(CYFlg << 7);
 
-            // Clear MDR0 to zero
-            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_001_000 }, 1);
-            // Clear MDR1 to zero
-            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_010_000 }, 1);
-            // Write MDR0
-            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 2);
-            // Write MDR1
-            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
-            // Clear CNT to zero
-            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_100_000 }, 1);
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_001_000 }, 1); // Clear MDR0 to zero
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_010_000 }, 1); // Clear MDR1 to zero
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_001_000, MDR0 }, 2); // Write MDR0
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2); // Write MDR1
+            this.SPIBus.Write(this.ChipSelect, new byte[] { 0b00_100_000 }, 1); // Clear CNT to zero
         }
 
         /// <summary> Configures device with a default configuration </summary>
@@ -118,23 +107,22 @@ namespace Scarlet.Components.Sensors
         public void EnableCount(bool Enable)
         {
             this.CountEnable?.SetOutput(Enable);
+
             // Read MDR1
             byte MDR1 = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_010_000, 0 }, 2)[1];
+
             // If the count enable on the chip is different, then change it
             if (((MDR1 & 0b00000100) != 0b00000100) != Enable)
             {
                 // Flip the CEN bit in MDR1
                 if (!Enable) { MDR1 |= 0b00000100; }
                 else { MDR1 &= 0b11111011; }
+
                 // Write the new MDR1 to the chip
                 this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_010_000, MDR1 }, 2);
             }
             this.CountEnabled = Enable;
         }
-
-        /// <summary> Event called on an overflow </summary>
-        /// <param name="Event"> Event to be passed in to the invoke upon overflow. </param>
-        protected virtual void OnOverflow(OverflowEvent Event) { OverflowOccured?.Invoke(this, Event); }
 
         /// <summary> Receives external events. </summary>
         /// <param name="Sender"> Sender of the event </param>
@@ -156,9 +144,9 @@ namespace Scarlet.Components.Sensors
 
             // LOAD OTR
             this.SPIBus.Write(this.ChipSelect, new byte[] { 0b11_101_000 }, 1);
-            //Thread.Sleep((int)(LOAD_READ_DELAY * 1000));
+            
             // READ OTR
-            byte[] Output = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0}, 5);
+            byte[] Output = this.SPIBus.Write(this.ChipSelect, new byte[] { 0b01_101_000, 0, 0, 0, 0 }, 5);
 
             // Convert output to int
             int IntOut = Output[4];
@@ -171,6 +159,7 @@ namespace Scarlet.Components.Sensors
             byte STRO = STR[1];
             if ((STRO >> 7) == 1) { OnOverflow(new OverflowEvent() { Overflow = true, Underflow = false }); }
             if ((STRO >> 6) == 1) { OnOverflow(new OverflowEvent() { Overflow = false, Underflow = true }); }
+
             // Reset over/under-flow bits
             STRO = (byte)(0b00111111 & STRO);
             this.SPIBus.Write(this.ChipSelect, new byte[] { 0b10_110_000, STRO }, 2);
@@ -185,6 +174,10 @@ namespace Scarlet.Components.Sensors
                 { "Count", this.Count }
             }.SetSystem(this.System);
         }
+
+        /// <summary> Event called on an overflow </summary>
+        /// <param name="Event"> Event to be passed in to the invoke upon overflow. </param>
+        protected virtual void OnOverflow(OverflowEvent Event) { OverflowOccured?.Invoke(this, Event); }
 
         /// <summary> Structure for the configuration of the device. </summary>
         public struct Configuration
@@ -240,7 +233,6 @@ namespace Scarlet.Components.Sensors
             BYTE_2,
             BYTE_1
         }
-
     }
 
     /// <summary>
@@ -249,8 +241,7 @@ namespace Scarlet.Components.Sensors
     /// </summary>
     public class OverflowEvent : EventArgs
     {
-        public bool Overflow;
-        public bool Underflow;
+        public bool Overflow { get; set; }
+        public bool Underflow { get; set; }
     }
-
 }
