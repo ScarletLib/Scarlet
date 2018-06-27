@@ -1,17 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scarlet.Filters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace UnitTest.FilterTesting
 {
     [TestClass]
     public class AverageTest
     {
-
+        /// <summary> Tests basic construction of the Average filter. </summary>
         [TestMethod]
         public void TestInitialization()
         {
@@ -22,6 +18,7 @@ namespace UnitTest.FilterTesting
             Assert.ThrowsException<ArgumentException>(() => new Average<string>());
         }
 
+        /// <summary> Tests the roll mode functionality of the average filter. </summary>
         [TestMethod]
         public void TestRollMode()
         {
@@ -35,12 +32,13 @@ namespace UnitTest.FilterTesting
             {
                 testAverage.Feed(firstSet[i]);
                 CurSum += firstSet[i];
-                Assert.IsTrue(Math.Abs(CurSum / (i + 1) - testAverage.GetOutput()) <= 2 * double.Epsilon);
+                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - testAverage.GetOutput()) <= 2 * double.Epsilon);
             }
             for (int i = 0; i < secondSet.Length; i++) { testAverage.Feed(secondSet[i]); }
             Assert.AreEqual(GetAverage(secondSet), testAverage.GetOutput());
         }
 
+        /// <summary> Tests the continuous mode functionality of the average filter </summary>
         [TestMethod]
         public void TestContinuousMode()
         {
@@ -53,11 +51,14 @@ namespace UnitTest.FilterTesting
             {
                 testAverage.Feed(set[i]);
                 CurSum += set[i];
-                Assert.IsTrue(Math.Abs(CurSum / (i + 1) - testAverage.GetOutput()) <= 2 * double.Epsilon);
+                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - testAverage.GetOutput()) <= 2 * double.Epsilon);
             }
             Assert.AreEqual(GetAverage(set), testAverage.GetOutput());
         }
 
+        /// <summary> Gets the average value of a set of doubles </summary>
+        /// <param name="Vals"> Set of doubles to average </param>
+        /// <returns> Average of <see cref="Vals">Vals</see> </returns>
         private double GetAverage(double[] Vals)
         {
             double Sum = 0.0;
@@ -65,13 +66,16 @@ namespace UnitTest.FilterTesting
             return Sum / Vals.Length;
         }
 
+        /// <summary> Returns a random double array </summary>
+        /// <param name="Length"> Desired length of the new array </param>
+        /// <param name="Max"> Max element value (in the positive and negative range) </param>
+        /// <returns> The new array with the desired length and max element value </returns>
         private double[] GetRandDoubleArray(int Length, double Max = 1.0)
         {
             Random random = new Random();
             double[] retArr = new double[Length];
-            for (int i = 0; i < Length; i++) { retArr[i] = random.NextDouble() * Max; }
+            for (int i = 0; i < Length; i++) { retArr[i] = (random.NextDouble() - 0.5) * Max * 2.0; }
             return retArr;
         }
-
     }
 }
