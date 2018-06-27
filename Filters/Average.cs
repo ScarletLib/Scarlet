@@ -24,11 +24,11 @@ namespace Scarlet.Filters
         private T Output; // Filter output
         private dynamic[] AverageArray; // Stored average array
         private dynamic CurSum; // Current sum of the average array 
-        private int Index, // The current index of the average filter (when in roll mode)
-                    Iterations; // The number of iterations through the average filter
+        private int Index; // The current index of the average filter (when in roll mode)
+        private int Iterations; // The number of iterations through the average filter
         private int NumCyclesAverageSame; // Number of cycles that the average has stayed the same
 
-        /// <summary> Construct an average filter with given roll-length; give null for continuous mode.</summary>
+        /// <summary> Construct an average filter with given roll-length; give null for continuous mode. </summary>
         /// <remarks> To use this as a continuous (non-rolling) average filter, set <see cref="FilterCount"/> to null </remarks>
         /// <param name="FilterCount"> 
         /// Roll length for the average filter. 
@@ -37,11 +37,7 @@ namespace Scarlet.Filters
         public Average(int? FilterCount = 10)
         {
             // Assert that T is a numeric type
-            if (!UtilData.IsNumericType(typeof(T)))
-            {
-                Log.Output(Log.Severity.ERROR, Log.Source.OTHER, "Average filter cannot be instantiated with non-numeric type.");
-                throw new ArgumentException("Cannot create filter of non-numeric type: " + typeof(T).ToString());
-            } 
+            if (!UtilData.IsNumericType(typeof(T))) { throw new ArgumentException("Cannot create filter of non-numeric type: " + typeof(T).ToString()); } 
 
             this.Output = default(T);
             this.CurSum = 0;

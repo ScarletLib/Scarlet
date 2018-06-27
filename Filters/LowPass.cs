@@ -39,11 +39,7 @@ namespace Scarlet.Filters
         public LowPass(double LPFk = 0.25, double SteadyStateEpsilon = 0)
         {
             // Assert that T is numeric
-            if (!UtilData.IsNumericType(typeof(T)))
-            {
-                Log.Output(Log.Severity.ERROR, Log.Source.OTHER, "Low-pass filter cannot be instantiated with non-numeric type.");
-                throw new ArgumentException("Cannot create filter of non-numeric type: " + typeof(T).ToString());
-            } 
+            if (!UtilData.IsNumericType(typeof(T))) { throw new ArgumentException("Cannot create filter of non-numeric type: " + typeof(T).ToString()); } 
 
             this.Output = default(T);
             this.LPFk = LPFk;

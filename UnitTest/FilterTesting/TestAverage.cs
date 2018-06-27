@@ -58,7 +58,7 @@ namespace UnitTest.FilterTesting
 
         /// <summary> Gets the average value of a set of doubles </summary>
         /// <param name="Vals"> Set of doubles to average </param>
-        /// <returns> Average of <see cref="Vals">Vals</see> </returns>
+        /// <returns> Average of <see cref="Vals"/> </returns>
         private double GetAverage(double[] Vals)
         {
             double Sum = 0.0;
