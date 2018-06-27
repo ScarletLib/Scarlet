@@ -1,5 +1,5 @@
-﻿using BBBCSIO;
-using System;
+﻿using System;
+using BBBCSIO;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -13,8 +13,9 @@ namespace Scarlet.IO.BeagleBone
 
         public static UARTBusBBB UARTBus4 { get; private set; }
 
-        /// <summary> Prepares the given UART busses for use. Should only be called from BeagleBone.Initialize(). </summary>
-        static internal void Initialize(bool[] EnableBuses)
+        /// <summary> Prepares the given UART buses for use. Should only be called from <see cref="BeagleBone.Initialize(SystemMode, bool)"/>. </summary>
+        /// <param name="EnableBuses"> Whether to enable each of the UART buses. </param>
+        internal static void Initialize(bool[] EnableBuses)
         {
             if (EnableBuses == null || EnableBuses.Length != 4) { throw new Exception("Invalid enable array given to UARTBBB.Initialize."); }
             if (EnableBuses[0]) { UARTBus1 = new UARTBusBBB(BBBPin.P9_24, BBBPin.P9_26); }
@@ -23,8 +24,10 @@ namespace Scarlet.IO.BeagleBone
             if (EnableBuses[3]) { UARTBus4 = new UARTBusBBB(BBBPin.P9_13, BBBPin.P9_11); }
         }
 
-        /// <summary> Converts a pin number to tha corresponding UART bus ID. 255 if invalid. </summary>
-        static internal byte PinToUARTBus(BBBPin Pin)
+        /// <summary> Converts a pin number to the corresponding UART bus ID.</summary>
+        /// <param name="Pin"> The pin to translate. </param>
+        /// <returns> The corresponding UART bus ID, or 255 if the input is invalid.</returns>
+        internal static byte PinToUARTBus(BBBPin Pin)
         {
             switch (Pin)
             {
@@ -42,9 +45,9 @@ namespace Scarlet.IO.BeagleBone
             return 255;
         }
 
-        static internal bool PinIsTX(BBBPin Pin)
+        internal static bool PinIsTX(BBBPin Pin)
         {
-            switch(Pin)
+            switch (Pin)
             {
                 case BBBPin.P9_24:
                 case BBBPin.P9_21:
@@ -61,7 +64,8 @@ namespace Scarlet.IO.BeagleBone
 
         public UARTRate BaudRate
         {
-            get {
+            get
+            {
                 switch (this.Port.BaudRate)
                 {
                     case SerialPortBaudRateEnum.BAUDRATE_0: return UARTRate.BAUD_0;
@@ -87,7 +91,8 @@ namespace Scarlet.IO.BeagleBone
                 }
                 return UARTRate.BAUD_0;
             }
-            set {
+            set
+            {
                 switch (value)
                 {
                     case UARTRate.BAUD_0: this.Port.BaudRate = SerialPortBaudRateEnum.BAUDRATE_0; break;
@@ -114,9 +119,11 @@ namespace Scarlet.IO.BeagleBone
                 }
             }
         }
+
         public UARTBitCount BitLength
         {
-            get {
+            get
+            {
                 switch (this.Port.BitLength)
                 {
                     case SerialPortBitLengthEnum.BITLENGTH_5: return UARTBitCount.BITS_5;
@@ -126,7 +133,8 @@ namespace Scarlet.IO.BeagleBone
                 }
                 return UARTBitCount.BITS_NONE;
             }
-            set {
+            set
+            {
                 switch (value)
                 {
                     case UARTBitCount.BITS_5: this.Port.BitLength = SerialPortBitLengthEnum.BITLENGTH_5; break;
@@ -137,11 +145,12 @@ namespace Scarlet.IO.BeagleBone
                 }
             }
         }
+
         public UARTParity Parity
         {
             get
             {
-                switch(this.Port.Parity)
+                switch (this.Port.Parity)
                 {
                     case SerialPortParityEnum.PARITY_EVEN: return UARTParity.PARITY_EVEN;
                     case SerialPortParityEnum.PARITY_ODD: return UARTParity.PARITY_ODD;
@@ -158,6 +167,7 @@ namespace Scarlet.IO.BeagleBone
                 }
             }
         }
+
         public UARTStopBits StopBits
         {
             get => ((this.Port.StopBits == SerialPortStopBitsEnum.STOPBITS_ONE) ? UARTStopBits.STOPBITS_1 : UARTStopBits.STOPBITS_2);
@@ -167,7 +177,7 @@ namespace Scarlet.IO.BeagleBone
         internal UARTBusBBB(BBBPin TX, BBBPin RX)
         {
             SerialPortEnum PortNum = SerialPortEnum.UART_NONE;
-            switch(TX)
+            switch (TX)
             {
                 case BBBPin.P9_24:
                 case BBBPin.P9_26: PortNum = SerialPortEnum.UART_1; break;
@@ -179,7 +189,8 @@ namespace Scarlet.IO.BeagleBone
 
                 case BBBPin.P9_13:
                 case BBBPin.P9_11: PortNum = SerialPortEnum.UART_4; break;
-                    // TODO: Implement UART5?
+                
+                // TODO: Implement UART5?
             }
             this.Port = new SerialPortFS(PortNum, SerialPortOpenModeEnum.OPEN_NONBLOCK);
             if (!this.Port.PortIsOpen) { throw new Exception("Could not open UART port."); }
@@ -193,10 +204,6 @@ namespace Scarlet.IO.BeagleBone
 
         public void Flush() { this.Port.Flush(); }
 
-        // TODO: Implement.
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() { this.Port.Dispose(); }
     }
 }
