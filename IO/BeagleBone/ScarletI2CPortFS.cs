@@ -38,7 +38,10 @@ namespace BBBCSIO
     /// <history>
     ///    22 Jan 15  Cynic - Originally written
     ///    20 Jan 18  Cai B - Added error code output for I/O errors
+    ///                       Lines 45, 78, 137, 141, 353 edited.
     /// </history>
+    // CaiB 2018-01-20: Renamed class
+    // public class I2CPortFS : PortFS
     public class ScarletI2CPortFS : PortFS
     {
 
@@ -70,6 +73,8 @@ namespace BBBCSIO
         /// <history>
         ///    22 Jan 15  Cynic - Originally written
         /// </history>
+        // CaiB 2018-01-20: Renamed class and constructor.
+        // public I2CPortFS(I2CPortEnum i2cPortIn) : base(GpioEnum.GPIO_NONE)
         public ScarletI2CPortFS(I2CPortEnum i2cPortIn) : base(GpioEnum.GPIO_NONE)
         {
             i2cPort = i2cPortIn;
@@ -129,7 +134,10 @@ namespace BBBCSIO
             int numWritten = ExternalWrite(i2CPortFD, txByteBuf, numBytes);
             if (numWritten != numBytes)
             {
-                int ErrorCode = Marshal.GetLastWin32Error();
+                int ErrorCode = Marshal.GetLastWin32Error(); // CaiB 2018-01-20: Added
+
+                // CaiB 2018-01-20: Added error code output and nicer output formatting
+                // throw new Exception ("Error writing to I2C device 0x" + devID.ToString("x4") + ", numWritten != numBytes" + numWritten.ToString() + " != " + numBytes.ToString());
                 throw new Exception ("Error writing to I2C device 0x" + devID.ToString("x4") + ", numWritten != numBytes: " + numWritten.ToString() + " != " + numBytes.ToString() + ". Error code " + ErrorCode);
             }
         }
@@ -340,6 +348,8 @@ namespace BBBCSIO
         // these calls are in the libc.so.6 library. We can just say "libc" and mono
         // will figure out which libc.so is the latest version and use that.
 
+        // CaiB 2018-01-20: Added SetLastError.
+        // [DllImport("libc", EntryPoint = "write")]
         [DllImport("libc", EntryPoint = "write", SetLastError = true)]
         static extern int ExternalWrite(int fd, byte[] outBuf, int numBytes);
 
