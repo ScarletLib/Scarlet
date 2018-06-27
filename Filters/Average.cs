@@ -5,18 +5,17 @@ namespace Scarlet.Filters
 {
     /// <summary> 
     /// The Average filter is intended for use as an average-gathering system, using a rolling average 
-    /// with "roll-length" <c>FilterCount</c> or continuous average.
+    /// with "roll-length" <see cref="FilterCount"/> or continuous average.
     /// </summary>
     /// <remarks>
     /// Intended Usage:
     /// * Construct Average filter given a rolling
-    ///   filter length, <see cref="FilterCount">FilterCount</see>. Setting
-    ///   FilterCount to null puts the filter into
-    ///   continuous mode.
+    ///   filter length, <see cref="FilterCount"/>. Setting
+    ///   FilterCount to null puts the filter into continuous mode.
     /// * Iteratively add values into the filter
-    ///   using <see cref="Feed(T)">Feed()</see>
+    ///   using <see cref="Feed(T)"/>
     /// * Get the filter output by calling
-    ///   <see cref="GetOutput">YourFilterInstance.GetOutput()</see>
+    ///   <see cref="GetOutput"/>
     /// </remarks>
     /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
     public class Average<T> : IFilter<T> where T : IComparable
@@ -30,7 +29,7 @@ namespace Scarlet.Filters
         private int NumCyclesAverageSame; // Number of cycles that the average has stayed the same
 
         /// <summary> Construct an average filter with given roll-length; give null for continuous mode.</summary>
-        /// <remarks> To use this as a continuous (non-rolling) average filter, set <c>FilterCount</c> to null </remarks>
+        /// <remarks> To use this as a continuous (non-rolling) average filter, set <see cref="FilterCount"/> to null </remarks>
         /// <param name="FilterCount"> 
         /// Roll length for the average filter. 
         /// If this value is null, the filter is set to continuous mode (as opposed to a roll mode). 
@@ -104,7 +103,7 @@ namespace Scarlet.Filters
             this.Iterations++;
         }
 
-        /// <summary> Rate is irrelevant to average filter, so this is no different than using <see cref="Feed(T)">Feed()</see>. </summary>
+        /// <summary> Rate is irrelevant to average filter, so this is no different than using <see cref="Feed(T)"/>. </summary>
         /// <param name="Input"> Value to feed into the filer. </param>
         /// <param name="Rate"> This value is ignored. </param>
         public void Feed(T Input, T Rate) { this.Feed(Input); }

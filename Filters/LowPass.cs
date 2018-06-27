@@ -3,15 +3,15 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Filters
 {
-    /// <summary> The Low Pass filter is intended for use as a low pass filter with time constant <c>LPFk</c>. </summary>
+    /// <summary> The Low Pass filter is intended for use as a low pass filter with time constant <see cref="LPFk"/>. </summary>
     /// <remarks>
     /// Implementation Details:
     /// * Construct Low Pass filter given a time constant
-    ///   <c>LPFk</c>
+    ///   <see cref="LPFk"/>
     /// * Iteratively add values into the filter
-    ///   using <see cref="Feed(T)">Feed()</see>
+    ///   using <see cref="Feed(T)"/>
     /// * Get the filter output by calling
-    ///   <see cref="GetOutput">YourFilterInstance.GetOutput()</see>
+    ///   <see cref="GetOutput"/>
     /// </remarks>
     /// <typeparam name="T"> A type, which must be a numeric. </typeparam>
     public class LowPass<T> : IFilter<T> where T : IComparable
@@ -33,7 +33,7 @@ namespace Scarlet.Filters
             }
         } // Time constant for the Low Pass Filter from 0 to 1
 
-        /// <summary> Constructs a low pass filter with time constant <see cref="LPFk">LPFk</see>. </summary>
+        /// <summary> Constructs a low pass filter with time constant <see cref="LPFk"/>. </summary>
         /// <param name="LPFk"> Low Pass Filter Time Constant. </param>
         /// <param name="SteadyStateEpsilon"> Allowable difference in output to be considered a steady state system. </param>
         public LowPass(double LPFk = 0.25, double SteadyStateEpsilon = 0)
@@ -78,7 +78,7 @@ namespace Scarlet.Filters
             this.Feed(Input); 
         }
 
-        /// <summary> Resets the low pass filter to the default value of <see cref="T">T</see>.</summary>
+        /// <summary> Resets the low pass filter to the default value of <see cref="T"/>.</summary>
         public void Reset() { this.LastValue = default(T); }
 
         /// <summary> Computes whether or not the low pass filter is in steady state </summary>

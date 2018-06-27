@@ -11,9 +11,9 @@ namespace UnitTest.FilterTesting
         [TestMethod]
         public void TestInitialization()
         {
-            LowPass<double> test0 = new LowPass<double>();
-            LowPass<double> test1 = new LowPass<double>(-3);
-            LowPass<double> test2 = new LowPass<double>(3);
+            LowPass<double> Test0 = new LowPass<double>();
+            LowPass<double> Test1 = new LowPass<double>(-3);
+            LowPass<double> Test2 = new LowPass<double>(3);
             Assert.ThrowsException<ArgumentException>(() => new LowPass<string>());
         }
     }

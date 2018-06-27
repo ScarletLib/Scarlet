@@ -11,10 +11,10 @@ namespace UnitTest.FilterTesting
         [TestMethod]
         public void TestInitialization()
         {
-            int testInt = 2;
-            Average<double> test0 = new Average<double>();
-            Average<double> test1 = new Average<double>(testInt);
-            Average<float> test2 = new Average<float>(null);
+            int TestInt = 2;
+            Average<double> Test0 = new Average<double>();
+            Average<double> Test1 = new Average<double>(TestInt);
+            Average<float> Test2 = new Average<float>(null);
             Assert.ThrowsException<ArgumentException>(() => new Average<string>());
         }
 
@@ -23,19 +23,19 @@ namespace UnitTest.FilterTesting
         public void TestRollMode()
         {
             int LengthTest = 5;
-            Average<double> testAverage = new Average<double>(LengthTest);
-            double[] firstSet = GetRandDoubleArray(LengthTest);
-            double[] secondSet = GetRandDoubleArray(LengthTest);
+            Average<double> TestAverage = new Average<double>(LengthTest);
+            double[] FirstSet = GetRandDoubleArray(LengthTest);
+            double[] SecondSet = GetRandDoubleArray(LengthTest);
 
             double CurSum = 0.0;
-            for (int i = 0; i < firstSet.Length; i++)
+            for (int i = 0; i < FirstSet.Length; i++)
             {
-                testAverage.Feed(firstSet[i]);
-                CurSum += firstSet[i];
-                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - testAverage.GetOutput()) <= 2 * double.Epsilon);
+                TestAverage.Feed(FirstSet[i]);
+                CurSum += FirstSet[i];
+                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - TestAverage.GetOutput()) <= 2 * double.Epsilon);
             }
-            for (int i = 0; i < secondSet.Length; i++) { testAverage.Feed(secondSet[i]); }
-            Assert.AreEqual(GetAverage(secondSet), testAverage.GetOutput());
+            for (int i = 0; i < SecondSet.Length; i++) { TestAverage.Feed(SecondSet[i]); }
+            Assert.AreEqual(GetAverage(SecondSet), TestAverage.GetOutput());
         }
 
         /// <summary> Tests the continuous mode functionality of the average filter </summary>
@@ -43,17 +43,17 @@ namespace UnitTest.FilterTesting
         public void TestContinuousMode()
         {
             int LengthTest = 50;
-            Average<double> testAverage = new Average<double>(null);
+            Average<double> TestAverage = new Average<double>(null);
             double[] set = GetRandDoubleArray(LengthTest);
 
             double CurSum = 0.0;
             for (int i = 0; i < set.Length; i++)
             {
-                testAverage.Feed(set[i]);
+                TestAverage.Feed(set[i]);
                 CurSum += set[i];
-                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - testAverage.GetOutput()) <= 2 * double.Epsilon);
+                Assert.IsTrue(Math.Abs((CurSum / (i + 1)) - TestAverage.GetOutput()) <= 2 * double.Epsilon);
             }
-            Assert.AreEqual(GetAverage(set), testAverage.GetOutput());
+            Assert.AreEqual(GetAverage(set), TestAverage.GetOutput());
         }
 
         /// <summary> Gets the average value of a set of doubles </summary>
@@ -72,10 +72,10 @@ namespace UnitTest.FilterTesting
         /// <returns> The new array with the desired length and max element value </returns>
         private double[] GetRandDoubleArray(int Length, double Max = 1.0)
         {
-            Random random = new Random();
-            double[] retArr = new double[Length];
-            for (int i = 0; i < Length; i++) { retArr[i] = (random.NextDouble() - 0.5) * Max * 2.0; }
-            return retArr;
+            Random Random = new Random();
+            double[] ReturnArray = new double[Length];
+            for (int i = 0; i < Length; i++) { ReturnArray[i] = (Random.NextDouble() - 0.5) * Max * 2.0; }
+            return ReturnArray;
         }
     }
 }
