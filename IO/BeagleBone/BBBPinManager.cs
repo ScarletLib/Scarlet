@@ -1,11 +1,11 @@
-﻿using Scarlet.Utilities;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Scarlet.Utilities;
 
 namespace Scarlet.IO.BeagleBone
 {
@@ -22,8 +22,8 @@ namespace Scarlet.IO.BeagleBone
 
         #region Adding Mappings
         /// <summary>
-        /// Adds a GPIO mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds a GPIO mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="SelectedPin"> The pin to assign as GPIO. </param>
         /// <param name="IsOutput"> Whether this pin will be used as input or output. </param>
@@ -57,10 +57,10 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds a PWM mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds a PWM mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
-        /// <param name="SelectedPin"> The pin to assign as a PWM output. Must be one of the PWM-capable pins. See the BBB chart in OneNote. </param>
+        /// <param name="SelectedPin"> The pin to assign as a PWM output. Must be one of the PWM-capable pins. See the BBB chart in the documentation. </param>
         /// <exception cref="InvalidOperationException"> If this pin cannot be used as a PWM output at this time. Reason will be given. </exception>
         public static void AddMappingPWM(BBBPin SelectedPin)
         {
@@ -96,8 +96,8 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds an I2C mapping to the BBB device tree overlay, preparing the pins for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds an I2C mapping to the BBB device tree overlay, preparing the pins for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="ClockPin"> The pin to use for the I2C clock signal. </param>
         /// <param name="DataPin"> The pin to use for the I2C data signal. </param>
@@ -165,12 +165,12 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds an SPI mapping to the BBB device tree overlay, preparing the pins for use in hardware & kernel.
-        /// To add Slave-/Chip- select lines, use AddMappingSPI_CS().
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds an SPI mapping to the BBB device tree overlay, preparing the pins for use in hardware and kernel.
+        /// To add Slave-/Chip- select lines, use <see cref="AddMappingSPI_CS(BBBPin)"/>.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
-        /// <param name="MISO"> The pin to use as Master-In, Slave-Out data line. Can be BBBPin.NONE if you don't need communication in this direction. </param>
-        /// <param name="MOSI"> The pin to use as Master-Out, Slave-In data line. Can be BBBPin.NONE if you don't need communication in this direction. </param>
+        /// <param name="MISO"> The pin to use as Master-In, Slave-Out data line. Can be <see cref="BBBPin.NONE"/> if you don't need communication in this direction. </param>
+        /// <param name="MOSI"> The pin to use as Master-Out, Slave-In data line. Can be <see cref="BBBPin.NONE"/> if you don't need communication in this direction. </param>
         /// <param name="Clock"> The pin to use as the SPI clock line. </param>
         /// <exception cref="InvalidOperationException"> If one of the given pins cannot be used for the given SPI task at this time. Reason will be given. </exception>
         public static void AddMappingsSPI(BBBPin MISO, BBBPin MOSI, BBBPin Clock)
@@ -219,7 +219,6 @@ namespace Scarlet.IO.BeagleBone
             {
                 if (MISO != BBBPin.NONE && MISO != BBBPin.P9_21) { throw new InvalidOperationException("MISO pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
                 if (MOSI != BBBPin.NONE && MOSI != BBBPin.P9_18) { throw new InvalidOperationException("MOSI pin selected is invalid with the selected clock pin. Make sure that they are part of the same SPI port."); }
-
             }
             else if (Clock == BBBPin.P9_31 || Clock == BBBPin.P9_42) // Port 1
             {
@@ -270,9 +269,9 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds an SPI chip-select mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// To prepare the data/clock lines, use AddMappingsSPI().
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds an SPI chip-select mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// To prepare the data/clock lines, use <see cref="AddMappingsSPI(BBBPin, BBBPin, BBBPin)"/>.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="ChipSelect"> The pin to prepare for use as a chip-select line. It will be treated like a GPIO output, and the pull-up will be enabled. </param>
         /// <exception cref="InvalidOperationException"> If the given pin cannot be used for chip-select at this time. Reason will be given. </exception>
@@ -282,8 +281,8 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds a CAN bus mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds a CAN bus mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="TX"> The pin to use for the transmit line. </param>
         /// <param name="RX"> The pin to use for the receive line. </param>
@@ -349,8 +348,8 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds a UART mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds a UART mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="SelectedPin"> The pin to use for the UART pin (RX or TX). </param>
         /// <exception cref="InvalidOperationException"> If the given pin cannot be used for UART at this time. Reason will be given. </exception>
@@ -385,8 +384,8 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary>
-        /// Adds an ADC mapping to the BBB device tree overlay, preparing the pin for use in hardware & kernel.
-        /// You'll need to call ApplyPinSettings() to actually apply the device tree overlay. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// Adds an ADC mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="SelectedPin"> The pin to prepare for use as ADC input. </param>
         /// <exception cref="InvalidOperationException"> If the given pin cannot be used as an ADC input at this time. Reason will be given. </exception>
@@ -419,7 +418,7 @@ namespace Scarlet.IO.BeagleBone
 
         /// <summary>
         /// Prepares the given CAN bus for use. Assumes device tree changes have already been made external to Scarlet.
-        /// You'll need to call ApplyPinSettings() to actually initialize the bus. Please read the OneNote documentation regarding this, as it is a complex process.
+        /// You'll need to call <see cref="ApplyPinSettings(ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
         /// </summary>
         /// <param name="BusID"> The bus number to prepare for use. </param>
         /// <param name="FD"> Whether or not this bus uses CAN Flexible Data frames. This allows for sending of payloads up to 64 bytes, as opposed to the normal 8. </param>
@@ -435,12 +434,12 @@ namespace Scarlet.IO.BeagleBone
 
         /// <summary>
         /// Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while. Should only be run once per program execution.
-        /// We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the OneNote page for more info.
+        /// We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the documentation for more info.
         /// </summary>
         /// <remarks> If no device tree overlay changes are required, calling this will initialize other systems, like the CAN buses, then do nothing. </remarks>
         /// <param name="Mode">
-        /// The behaviour to use when determining what to do during application of the overlay. Please read the OneNote documentation for a more thorough explanation.
-        /// NO_CHANGES: Does not apply the device tree overlay regardles
+        /// The behaviour to use when determining what to do during application of the overlay. Please read the documentation for a more thorough explanation.
+        /// NO_CHANGES: Does not apply the device tree overlay regardless.
         /// APPLY_IF_NONE: Apply the overlay only if there is no Scarlet overlay already applied.
         /// REMOVE_AND_APPLY: Removes old Scarlet overlays, and applies the new one.
         /// APPLY_REGARDLESS: Blindly applies the current overlay, regardless of current state.
@@ -531,6 +530,7 @@ namespace Scarlet.IO.BeagleBone
                     // Delete the compiled tree file in execution folder
                     File.Delete(CompiledDTFile);
                 }
+
                 // Apply the device tree
                 // Command: echo Scarlet-DT > /sys/devices/platform/bone_capemgr/slots
                 try
@@ -580,6 +580,7 @@ namespace Scarlet.IO.BeagleBone
             List<int> ToRemove = FindScarletOverlays();
             Log.Output(Log.Severity.DEBUG, Log.Source.HARDWAREIO, "Removing overlays: " + ToRemove);
             StreamWriter SlotManager = File.AppendText("/sys/devices/platform/bone_capemgr/slots");
+
             // Command: echo -[NUM] > /sys/devices/platform/bone_capemgr/slots
             ToRemove.ForEach(Num => SlotManager.Write('-' + Num + Environment.NewLine));
             SlotManager.Flush();
@@ -614,7 +615,7 @@ namespace Scarlet.IO.BeagleBone
         }
 
         /// <summary> Uses all of the previously created device tree overlay mappings (using the AddMapping___() functions), and generates a device tree overlay for application via the cape manager. </summary>
-        /// <remarks> This is probably the longest function I've ever written. It's reasonably simple to follwo though, there's just a lot of output it needs to be able to generate. </remarks>
+        /// <remarks> This is probably the longest function I've ever written. It's reasonably simple to follow though, there's just a lot of output it needs to be able to generate. </remarks>
         /// <returns> A list of lines to save to a file, which can then be compiled into a DTBO and applied as an overlay. </returns>
         /// Fragment IDs:
         /// GPIO: 0, 1
@@ -624,13 +625,13 @@ namespace Scarlet.IO.BeagleBone
         /// ADC: 5
         /// CAN: 6, 40, 41
         /// UART: 7, 50, 51, 52, 53
-        static List<string> GenerateDeviceTree()
+        private static List<string> GenerateDeviceTree()
         {
             List<string> Output = new List<string>();
 
             Output.Add("/dts-v1/;");
             Output.Add("/plugin/;");
-            Output.Add("");
+            Output.Add(string.Empty);
             Output.Add("/ {");
             Output.Add("    /* Generated by Scarlet. */");
             Output.Add("    compatible = \"ti,beaglebone\", \"ti,beaglebone-black\";");
@@ -681,6 +682,7 @@ namespace Scarlet.IO.BeagleBone
                                 PWMDev2.Add(Entry.Key, Entry.Value); continue;
                         }
                     }
+
                     // Add PWM pins to exclusive-use list
                     if (PWMDev0.Count > 0)
                     {
@@ -733,6 +735,7 @@ namespace Scarlet.IO.BeagleBone
                                 I2CDev2.Add(Entry.Key, Entry.Value); continue;
                         }
                     }
+
                     // Add I2C pins to exclusive-use list
                     if (I2CDev1.Count > 0)
                     {
@@ -843,8 +846,8 @@ namespace Scarlet.IO.BeagleBone
 
                     foreach (PinAssignment PinAss in GPIOMappings.Values)
                     {
-                        string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                        string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                        string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                        string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                         Output.Add("                    " + Offset + " " + Mode);
                     }
 
@@ -882,8 +885,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in PWMDev0.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -895,8 +898,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in PWMDev1.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -908,8 +911,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in PWMDev2.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -993,8 +996,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in I2CDev1.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1006,8 +1009,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in I2CDev2.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1064,8 +1067,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in SPIDev0.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1077,8 +1080,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in SPIDev1.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1189,8 +1192,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in CANDev0.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1202,8 +1205,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in CANDev1.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1258,8 +1261,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in UARTDev1.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1271,8 +1274,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in UARTDev2.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1284,8 +1287,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in UARTDev3.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
@@ -1297,8 +1300,8 @@ namespace Scarlet.IO.BeagleBone
                         Output.Add("                pinctrl-single,pins = <");
                         foreach (PinAssignment PinAss in UARTDev4.Values)
                         {
-                            string Offset = String.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
-                            string Mode = String.Format("0x{0:X2}", PinAss.Mode);
+                            string Offset = string.Format("0x{0:X3}", (Pin.GetOffset(PinAss.Pin) - 0x800));
+                            string Mode = string.Format("0x{0:X2}", PinAss.Mode);
                             Output.Add("                    " + Offset + " " + Mode);
                         }
                         Output.Add("                >;");
