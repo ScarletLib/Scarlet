@@ -13,6 +13,9 @@ namespace Scarlet.Components
         /// <summary> Updates the subsystem. This should be passed through to all subcomponents. </summary>
         void UpdateState();
 
+        /// <summary> Stops and closes all relevant resources. Called when the program is exiting. </summary>
+        void Exit();
+
         /// <summary> Whether to output extended debug information. Actual output varies by subsystem. </summary>
         bool TraceLogging { get; set; }
     }
