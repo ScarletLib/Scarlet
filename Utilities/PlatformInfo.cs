@@ -24,6 +24,8 @@ namespace Scarlet.Utilities
         /// <summary> Gets the version of the OS. </summary>
         public static OperatingSystems OSVersion { get; private set; }
 
+        private const string UnsupportedDistroName = "UnsupportedUnix";
+
         static PlatformInfo()
         {
             
@@ -37,27 +39,36 @@ namespace Scarlet.Utilities
             OSVersionNumber = OS.VersionString;
 
             // Determine OS Version
+            string Distro = ""; // Only used if platform is unix-based
+
             if (OS.Platform == PlatformID.Win32NT) { OSVersion = OperatingSystems.Windows; }
             else if (OS.Platform == PlatformID.MacOSX) { OSVersion = OperatingSystems.MacOS; }
-            else if (OS.Platform == PlatformID.Unix) { OSVersion = GetUnixOS(); }
+            else if (OS.Platform == PlatformID.Unix)
+            {
+                Distro = QueryUnixDistribution();
+                if (Distro == "Debian") { OSVersion = OperatingSystems.Debian; }
+                else if (Distro == "Ubuntu") { OSVersion = OperatingSystems.Ubuntu; }
+                else { OSVersion = OperatingSystems.Unsupported; }
+            }
             else { OSVersion = OperatingSystems.Unsupported; }
+
+            // Determine OS property
+            if (OSVersion == OperatingSystems.Unsupported && OS.Platform == PlatformID.Unix) { PlatformInfo.OS = "[Unsupported] " + QueryUnixDistribution(); }
+            else if (OSVersion == OperatingSystems.Unsupported) { PlatformInfo.OS = "[Unsupported] " + Enum.GetName(typeof(PlatformID), OS.Platform); }
+            else { PlatformInfo.OS = Enum.GetName(typeof(OperatingSystems), OSVersion); }
+            PlatformInfo.OS += " " + OSVersionNumber;
+            if (OSVersion == OperatingSystems.Unsupported) { Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "PLATFORM NOT SUPPORTED: " + PlatformInfo.OS); }
         }
 
-        /// <summary> Gets the Linux OS by polling a file on the platform. It is assumed that the platform is Unix-based before calling. </summary>
-        /// <returns> The OperatingSystems object for the running Unix-based OS. </returns>
-        private static OperatingSystems GetUnixOS()
+        private static string QueryUnixDistribution()
         {
-            // Try reading /etc/lsb-release file. If it does not exist, OS is unsupported.
             try
             {
                 IEnumerable<string> Stream = File.ReadLines("/etc/lsb-release");
 
                 // Determine the distribution on the file. If it is not in the OperatingSystems enum, it is unsupported
-                string Distribution = Stream.First().Split('=')[1];
-                if (Distribution == "Ubuntu") { return OperatingSystems.Ubuntu; }
-                if (Distribution == "Debian") { return OperatingSystems.Debian; }
-                return OperatingSystems.Unsupported;
-            } catch { return OperatingSystems.Unsupported; }
+                return Stream.First().Split('=')[1];
+            } catch { return UnsupportedDistroName; }
         }
 
         // Info from: http://ozzmaker.com/check-raspberry-software-hardware-version-command-line/
