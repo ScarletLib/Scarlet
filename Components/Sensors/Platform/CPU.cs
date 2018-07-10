@@ -7,45 +7,26 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors.Platform
 {
-    public class CPUMonitor : ISensor
+    public class CPUMonitor
     {
-        public string System { get; set; }
-        public bool TraceLogging { get; set; }
-
         public List<CPU> CPUs { get; private set; }
 
-        public void UpdateState()
+        /// <summary> Creates CPUMonitor immediately gets all CPU information. </summary>
+        public CPUMonitor() { UpdateAllCPUs(); }
+
+        public void UpdateAllCPUs()
         {
             FindCPUs();
-            foreach (CPU CPU in CPUs) { CPU.GetInfo(); }
-        }
-
-        public bool Test() { throw new NotImplementedException(); }
-
-        public DataUnit GetData()
-        {
-            DataUnit CPUData = new DataUnit("CPU Monitor")
-            {
-                { "CPUs ( # )", CPUs.Count }
-            }.SetSystem(System);
-
-            // Add data from each CPU in the sensor 
-            foreach (CPU CPU in CPUs)
-            {
-                CPUData.Add("CPU#" + CPU.ID.ToString() + " Model", CPU.Model);
-                CPUData.Add("CPU#" + CPU.ID.ToString() + " Utilization ( % )", CPU.Utilization);
-                CPUData.Add("CPU#" + CPU.ID.ToString() + " Clock Speed ( Hz )", CPU.ClockSpeed);
-                CPUData.Add("CPU#" + CPU.ID.ToString() + " Cores ( # )", CPU.Cores);
-                CPUData.Add("CPU#" + CPU.ID.ToString() + " Logical Processors ( # )", CPU.LogicalProcessors);
-            }
-
-            return CPUData;
+            foreach(CPU CPU in CPUs) { CPU.UpdateState(); }
         }
 
         private void FindCPUs() { throw new NotImplementedException(); }
 
-        public class CPU
+        public class CPU : ISensor
         {
+            public string System { get; set; }
+            public bool TraceLogging { get; set; }
+
             public readonly int ID;
             public float Utilization { get; private set; }
             public float ClockSpeed { get; private set; }
@@ -55,13 +36,27 @@ namespace Scarlet.Components.Sensors.Platform
 
             internal CPU(int ID) { this.ID = ID; }
 
-            public void GetInfo()
+            public void UpdateState()
             {
                 Utilization = CPUSensor.GetUtilization(ID);
                 Cores = CPUSensor.GetCoreCount(ID);
                 ClockSpeed = CPUSensor.GetRawClockSpeed(ID);
                 LogicalProcessors = CPUSensor.GetLogicalProcessors(ID);
                 Model = CPUSensor.GetModel(ID);
+            }
+
+            public bool Test() { return true; }
+
+            public DataUnit GetData()
+            {
+                return new DataUnit("CPU#" + ID.ToString())
+                {
+                    { "Model", Model },
+                    { "Utilization", Utilization },
+                    { "ClockSpeed", ClockSpeed },
+                    { "Cores", Cores },
+                    { "LogicalProcessors", LogicalProcessors }
+                }.SetSystem(System);
             }
         }
 
