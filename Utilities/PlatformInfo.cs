@@ -18,57 +18,99 @@ namespace Scarlet.Utilities
         /// <summary> Info about the OS, such as <c>"Windows 10.0.17134.112"</c> or <c>"Debian 8.0"</c>. </summary>
         public static string OS { get; private set; }
 
-        /// <summary> Gets the version number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c> </summary>
-        public static string OSVersionNumber { get; private set; }
+        /// <summary> The revision number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c> </summary>
+        public static string OSRevision { get; private set; }
 
-        /// <summary> Gets the version of the OS. </summary>
-        public static OperatingSystems OSVersion { get; private set; }
-
-        private const string UnsupportedDistroName = "UnsupportedUnix";
+        /// <summary> The name of the OS. E.G. "Windows" </summary>
+        public static OperatingSystems OSName { get; private set; }
 
         static PlatformInfo()
         {
-            
+            GetOSInformation();
         }
 
         private static void GetOSInformation()
         {
-            OperatingSystem OS = Environment.OSVersion;
-
-            // Determine OS Version number
-            OSVersionNumber = OS.VersionString;
-
-            // Determine OS Version
-            string Distro = ""; // Only used if platform is unix-based
-
-            if (OS.Platform == PlatformID.Win32NT) { OSVersion = OperatingSystems.Windows; }
-            else if (OS.Platform == PlatformID.MacOSX) { OSVersion = OperatingSystems.MacOS; }
-            else if (OS.Platform == PlatformID.Unix)
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                Distro = QueryUnixDistribution();
-                if (Distro == "Debian") { OSVersion = OperatingSystems.Debian; }
-                else if (Distro == "Ubuntu") { OSVersion = OperatingSystems.Ubuntu; }
-                else { OSVersion = OperatingSystems.Unsupported; }
+                OSName = OperatingSystems.Windows;
+                OSRevision = Environment.OSVersion.Version.ToString();
+                OS = Environment.OSVersion.VersionString;
             }
-            else { OSVersion = OperatingSystems.Unsupported; }
+            else if (Environment.OSVersion.Platform == PlatformID.MacOSX)
+            {
+                OSName = OperatingSystems.MacOS;
+                OSRevision = Environment.OSVersion.Version.ToString();
+                OS = Environment.OSVersion.VersionString;
+            }
+            else if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                UnixDistroInformation UnixDistro = QueryUnixDistribution();
+                OSName = UnixDistro.OSVersion;
+                OSRevision = UnixDistro.DistributionRelease;
+                OS = UnixDistro.DistributionDescription;
+            }
+            else
+            {
+                OSName = OperatingSystems.Unsupported;
+                OSRevision = Environment.OSVersion.Version.ToString();
+                OS = Environment.OSVersion.VersionString;
+            }
 
-            // Determine OS property
-            if (OSVersion == OperatingSystems.Unsupported && OS.Platform == PlatformID.Unix) { PlatformInfo.OS = "[Unsupported] " + QueryUnixDistribution(); }
-            else if (OSVersion == OperatingSystems.Unsupported) { PlatformInfo.OS = "[Unsupported] " + Enum.GetName(typeof(PlatformID), OS.Platform); }
-            else { PlatformInfo.OS = Enum.GetName(typeof(OperatingSystems), OSVersion); }
-            PlatformInfo.OS += " " + OSVersionNumber;
-            if (OSVersion == OperatingSystems.Unsupported) { Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "PLATFORM NOT SUPPORTED: " + PlatformInfo.OS); }
+            if (OSName == OperatingSystems.Unsupported)
+            {
+                OS = "[Unsupported] " + OS;
+                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "OPERATING UNSUPPORTED OS. SUPPORT NOT GUARUNTEED. OS = " + OS);
+            }
+
         }
 
-        private static string QueryUnixDistribution()
+        private static UnixDistroInformation QueryUnixDistribution()
         {
             try
             {
-                IEnumerable<string> Stream = File.ReadLines("/etc/lsb-release");
+                string[] Lines = File.ReadAllLines("/etc/lsb-release");
+                UnixDistroInformation Result = new UnixDistroInformation();
 
                 // Determine the distribution on the file. If it is not in the OperatingSystems enum, it is unsupported
-                return Stream.First().Split('=')[1];
-            } catch { return UnsupportedDistroName; }
+                foreach (string Line in Lines)
+                {
+                    string[] LineInfo = Line.Split('=');
+                    switch (LineInfo[0])
+                    {
+                        case "DISTRIB_ID":
+                            Result.DistributionID = LineInfo[1];
+                            break;
+                        case "DISTRIB_RELEASE":
+                            Result.DistributionRelease = LineInfo[1];
+                            break;
+                        case "DISTRIB_CODENAME":
+                            Result.DistributionCodeName = LineInfo[1];
+                            break;
+                        case "DISTRIB_DESCRIPTION":
+                            Result.DistributionDescription = LineInfo[1];
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if (Result.DistributionID.ToUpper() == "DEBIAN") { Result.OSVersion = OperatingSystems.Debian; }
+                if (Result.DistributionID.ToUpper() == "UBUNTU") { Result.OSVersion = OperatingSystems.Ubuntu; }
+                else { Result.OSVersion = OperatingSystems.Unsupported; }
+                return Result;
+            }
+            catch
+            {
+                // Return empty information
+                return new UnixDistroInformation()
+                {
+                    DistributionID = "Unknown Unix",
+                    DistributionDescription = string.Empty,
+                    DistributionRelease = string.Empty,
+                    DistributionCodeName = string.Empty,
+                    OSVersion = OperatingSystems.Unsupported,
+                };
+            }
         }
 
         // Info from: http://ozzmaker.com/check-raspberry-software-hardware-version-command-line/
@@ -101,7 +143,7 @@ namespace Scarlet.Utilities
                 case "a01041":
                 case "a21041": Hardware = "Pi 2; Model B"; break;
 
-                case "900092": 
+                case "900092":
                 case "900093": Hardware = "Pi Zero"; break;
 
                 case "a02082":
@@ -110,6 +152,15 @@ namespace Scarlet.Utilities
                 case "9000c1": Hardware = "Pi Zero W"; break;
                 default: Hardware = "Unknown; Revision " + Revision; break;
             }
+        }
+
+        private struct UnixDistroInformation
+        {
+            public string DistributionID;
+            public string DistributionRelease;
+            public string DistributionCodeName;
+            public string DistributionDescription;
+            public OperatingSystems OSVersion;
         }
 
         public enum OperatingSystems
