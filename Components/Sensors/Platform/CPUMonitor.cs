@@ -17,7 +17,7 @@ namespace Scarlet.Components.Sensors.Platform
         public void UpdateAllCPUs()
         {
             FindCPUs();
-            foreach(CPU CPU in CPUs) { CPU.UpdateState(); }
+            foreach (CPU CPU in CPUs) { CPU.UpdateState(); }
         }
 
         private void FindCPUs() { throw new NotImplementedException(); }
