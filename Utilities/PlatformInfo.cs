@@ -18,9 +18,46 @@ namespace Scarlet.Utilities
         /// <summary> Info about the OS, such as <c>"Windows 10.0.17134.112"</c> or <c>"Debian 8.0"</c>. </summary>
         public static string OS { get; private set; }
 
+        /// <summary> Gets the version number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c> </summary>
+        public static string OSVersionNumber { get; private set; }
+
+        /// <summary> Gets the version of the OS. </summary>
+        public static OperatingSystems OSVersion { get; private set; }
+
         static PlatformInfo()
         {
             
+        }
+
+        private static void GetOSInformation()
+        {
+            OperatingSystem OS = Environment.OSVersion;
+
+            // Determine OS Version number
+            OSVersionNumber = OS.VersionString;
+
+            // Determine OS Version
+            if (OS.Platform == PlatformID.Win32NT) { OSVersion = OperatingSystems.Windows; }
+            else if (OS.Platform == PlatformID.MacOSX) { OSVersion = OperatingSystems.MacOS; }
+            else if (OS.Platform == PlatformID.Unix) { OSVersion = GetUnixOS(); }
+            else { OSVersion = OperatingSystems.Unsupported; }
+        }
+
+        /// <summary> Gets the Linux OS by polling a file on the platform. It is assumed that the platform is Unix-based before calling. </summary>
+        /// <returns> The OperatingSystems object for the running Unix-based OS. </returns>
+        private static OperatingSystems GetUnixOS()
+        {
+            // Try reading /etc/lsb-release file. If it does not exist, OS is unsupported.
+            try
+            {
+                IEnumerable<string> Stream = File.ReadLines("/etc/lsb-release");
+
+                // Determine the distribution on the file. If it is not in the OperatingSystems enum, it is unsupported
+                string Distribution = Stream.First().Split('=')[1];
+                if (Distribution == "Ubuntu") { return OperatingSystems.Ubuntu; }
+                if (Distribution == "Debian") { return OperatingSystems.Debian; }
+                return OperatingSystems.Unsupported;
+            } catch { return OperatingSystems.Unsupported; }
         }
 
         // Info from: http://ozzmaker.com/check-raspberry-software-hardware-version-command-line/
@@ -64,5 +101,13 @@ namespace Scarlet.Utilities
             }
         }
 
+        public enum OperatingSystems
+        {
+            Windows,
+            Debian,
+            Ubuntu,
+            MacOS,
+            Unsupported,
+        }
     }
 }
