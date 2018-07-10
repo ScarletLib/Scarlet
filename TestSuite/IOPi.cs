@@ -100,6 +100,21 @@ namespace Scarlet.TestSuite
                     }
                     while (true) { Thread.Sleep(50); } // Program needs to be running to receive.
                 }
+                case "outperf":
+                {
+                    if (args.Length < 4) { TestMain.ErrorExit("io pi outperf command requires pin to test."); }
+                    int PinNum = int.Parse(args[3]);
+                    Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Testing digital output speed on RPi pin " + PinNum);
+                    IDigitalOut Output = new DigitalOutPi(PinNum);
+                    bool Out = false;
+                    while (!Console.KeyAvailable)
+                    {
+                        Output.SetOutput(Out);
+                        Out = !Out;
+                    }
+                    Output.SetOutput(false);
+                    break;
+                }
             }
         }
 
