@@ -10,7 +10,7 @@ namespace Scarlet.Utilities
     public class PlatformInfo
     {
         /// <summary> The general class of device, such as <c>"RaspberryPi"</c> or <c>"PC"</c>. </summary>
-        public static string Platform { get; private set; }
+        public static PlatformType Platform { get; private set; }
 
         /// <summary> Info about the hardware, such as <c>"Pi 3 Model B"</c> or <c>"Laptop"</c>. </summary>
         public static string Hardware { get; private set; }
@@ -29,7 +29,40 @@ namespace Scarlet.Utilities
 
         static PlatformInfo()
         {
+            GetPlatformInformation();
             GetOSInformation();
+            switch (Platform)
+            {
+                case PlatformType.RaspberryPi:
+                    ReadPiVersion();
+                    break;
+            }
+        }
+
+        private static void GetPlatformInformation()
+        {
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Win32NT:
+                case PlatformID.MacOSX:
+                    Platform = PlatformType.PC;
+                    break;
+                case PlatformID.Unix:
+                    // Determine if this is a Beaglebone Black, Raspberry Pi, or PC
+                    try
+                    {
+                        string[] Lines = File.ReadAllLines("/proc/cpuinfo");
+                        string Platform = Lines.Where(x => x.StartsWith("Hardware")).First();
+                        Platform = Platform.Substring(Platform.IndexOf(':') + 1).ToLower().Trim();
+                        switch (Platform)
+                        {
+                            case "BCM2709": PlatformInfo.Platform = PlatformType.RaspberryPi; break;
+                            default: PlatformInfo.Platform = PlatformType.PC; break;
+                        }
+                    }
+                    catch { Platform = PlatformType.Other; }
+                    break;
+            }
         }
 
         private static void GetOSInformation()
@@ -63,7 +96,9 @@ namespace Scarlet.Utilities
             if (OSName == OperatingSystems.NotSupported)
             {
                 OSSupport = false;
-                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "OPERATING UNSUPPORTED OS. SUPPORT NOT GUARUNTEED. OS = " + OS);
+                string OSWarning = string.Empty;
+                if (OS.Length != 0) { OSWarning = " OS = " + OS; }
+                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "OPERATING UNSUPPORTED OS. SUPPORT NOT GUARUNTEED." + OSWarning);
             }
             else { OSSupport = true; }
         }
@@ -72,25 +107,36 @@ namespace Scarlet.Utilities
         {
             try
             {
-                string[] Lines = File.ReadAllLines("/etc/lsb-release");
+                string[] PossibleFiles = new string[] { "/etc/lsb-release", "/etc/os-release" };
+                string WorkingFile = PossibleFiles[0];
+                foreach (string CurrentFile in PossibleFiles) { if (File.Exists(CurrentFile)) { WorkingFile = CurrentFile; break; } }
+                string[] Lines = File.ReadAllLines(WorkingFile);
                 UnixDistroInformation Result = new UnixDistroInformation();
 
                 // Determine the distribution on the file. If it is not in the OperatingSystems enum, it is unsupported
                 foreach (string Line in Lines)
                 {
                     string[] LineInfo = Line.Split('=');
-                    switch (LineInfo[0])
+                    switch (LineInfo[0].ToUpper().Trim())
                     {
                         case "DISTRIB_ID":
+                        case "DISTRIBUTOR ID":
+                        case "ID_LIKE":
                             Result.DistributionID = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_RELEASE":
+                        case "RELEASE":
+                        case "VERSION":
                             Result.DistributionRelease = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_CODENAME":
+                        case "CODENAME":
+                        case "ID":
                             Result.DistributionCodeName = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_DESCRIPTION":
+                        case "DESCRIPTION":
+                        case "PRETTY_NAME":
                             Result.DistributionDescription = LineInfo[1].Trim('"', ' ');
                             break;
                         default:
@@ -98,7 +144,7 @@ namespace Scarlet.Utilities
                     }
                 }
                 if (Result.DistributionID.ToUpper() == "DEBIAN") { Result.OSVersion = OperatingSystems.Debian; }
-                if (Result.DistributionID.ToUpper() == "UBUNTU") { Result.OSVersion = OperatingSystems.Ubuntu; }
+                else if (Result.DistributionID.ToUpper() == "UBUNTU") { Result.OSVersion = OperatingSystems.Ubuntu; }
                 else { Result.OSVersion = OperatingSystems.NotSupported; } // Set OS to unsupported if not a supported linux distribution
                 return Result;
             }
@@ -121,7 +167,7 @@ namespace Scarlet.Utilities
         {
             string[] Lines = File.ReadAllLines("/proc/cpuinfo");
             string Revision = Lines.Where(x => x.StartsWith("Revision")).First();
-            Revision = Revision.Substring(Revision.IndexOf(':') + 1).ToLower();
+            Revision = Revision.Substring(Revision.IndexOf(':') + 1).ToLower().Trim();
             switch (Revision)
             {
                 case "0002": Hardware = "Pi 1; Model B; Revision 1"; break;
@@ -173,6 +219,14 @@ namespace Scarlet.Utilities
             Ubuntu,
             MacOS,
             NotSupported,
+        }
+
+        public enum PlatformType
+        {
+            RaspberryPi,
+            BeagleBoneBlack,
+            PC,
+            Other,
         }
     }
 }
