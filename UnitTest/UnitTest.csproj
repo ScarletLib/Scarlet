@@ -59,6 +59,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="UtilitiesTesting\DataLogTesting.cs" />
+    <Compile Include="UtilitiesTesting\PlatformInfoTesting.cs" />
     <Compile Include="UtilitiesTesting\StateStoreTest.cs" />
     <Compile Include="NetworkTesting\TestClientAndServer.cs" />
     <Compile Include="NetworkTesting\TestPacketBuffer.cs" />

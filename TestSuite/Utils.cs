@@ -30,6 +30,15 @@ namespace Scarlet.TestSuite
                         }
                         break;
                     }
+                case "platform":
+                    {
+                        Log.ForceOutput(Log.Severity.INFO, Log.Source.OTHER, "HARDWARE: " + PlatformInfo.Hardware);
+                        Log.ForceOutput(Log.Severity.INFO, Log.Source.OTHER, "OS: " + PlatformInfo.OS);
+                        Log.ForceOutput(Log.Severity.INFO, Log.Source.OTHER, "OS REVISION: " + PlatformInfo.OSRevision);
+                        Log.ForceOutput(Log.Severity.INFO, Log.Source.OTHER, "OS NAME: " + Enum.GetName(typeof(PlatformInfo.OperatingSystems), PlatformInfo.OSName));
+                        Log.ForceOutput(Log.Severity.INFO, Log.Source.OTHER, "PLATFORM: " + PlatformInfo.Platform);
+                        break;
+                    }
             }
         }
     }

@@ -62,7 +62,6 @@ namespace Scarlet.Utilities
                 OS = "[Unsupported] " + OS;
                 Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "OPERATING UNSUPPORTED OS. SUPPORT NOT GUARUNTEED. OS = " + OS);
             }
-
         }
 
         private static UnixDistroInformation QueryUnixDistribution()

@@ -73,6 +73,7 @@ namespace Scarlet.TestSuite
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   filter <average/lowpass> <cycles>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "utils ___");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataLog");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   Platform");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "More will be added!");
             Environment.Exit(0);
         }
