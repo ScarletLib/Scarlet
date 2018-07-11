@@ -177,7 +177,10 @@ namespace Scarlet.Components.Sensors
             this.Bus.WriteRegister(this.Address, (byte)Registers.GPIO_HV_MUX_ACTIVE_HIGH, new byte[] { (byte)(Read & ~0x10) });
             this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_INTERRUPT_CLEAR, new byte[] { 0x01 });
 
+            uint MeasurementTimingBudget_us = GetMeasurementTimingBudget();
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0xE8 });
 
+            // LINE 253
         }
 
         public DataUnit GetData()
@@ -266,6 +269,14 @@ namespace Scarlet.Components.Sensors
 
             Enables = GetSequenceStepEnables();
             Timeouts = GetSequenceStepTimeouts(Enables);
+
+            if (Enables.TCC) { Budget_us += (Timeouts.MSRC_DSS_TCC_us + TccOverhead); }
+            if (Enables.DSS) { Budget_us += (2 * (Timeouts.MSRC_DSS_TCC_us + DssOverhead)); }
+            else if (Enables.MSRC) { Budget_us += (Timeouts.MSRC_DSS_TCC_us + MsrcOverhead); }
+            if (Enables.PreRange) { Budget_us += (Timeouts.PreRange_us + PreRangeOverhead); }
+            if (Enables.FinalRange) { Budget_us += (Timeouts.FinalRange_us + FinalRangeOverhead); }
+
+            return Budget_us;
         }
 
         private SequenceStepEnables GetSequenceStepEnables()
@@ -285,9 +296,43 @@ namespace Scarlet.Components.Sensors
         {
             SequenceStepTimeouts Timeouts = new SequenceStepTimeouts();
 
-            //Timeouts.PreRangeVCSelPeriodPClks = 
+            Timeouts.PreRangeVCSelPeriodPClks = GetVCSelPulsePeriod(VCSelPeriodType.VCSelPeriodPreRange);
+
+            Timeouts.MSRC_DSS_TCC_MClks = (byte)(this.Bus.ReadRegister(this.Address, (byte)Registers.MSRC_CONFIG_TIMEOUT_MACROP, 1)[0] + 1);
+            Timeouts.MSRC_DSS_TCC_us = TimeoutMClksToMicroseconds(Timeouts.MSRC_DSS_TCC_MClks, (byte)Timeouts.PreRangeVCSelPeriodPClks);
+
+            Timeouts.PreRangeMClks = DecodeTimeout(this.Bus.ReadRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, 2));
+            Timeouts.PreRange_us = TimeoutMClksToMicroseconds(Timeouts.PreRangeMClks, (byte)Timeouts.PreRangeVCSelPeriodPClks);
+
+            Timeouts.FinalRangeVCSelPeriodPClks = GetVCSelPulsePeriod(VCSelPeriodType.VCSelPeriodFinalRange);
+
+            Timeouts.FinalRangeMClks = DecodeTimeout(this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, 2));
+
+            if (Enables.PreRange) { Timeouts.FinalRangeMClks -= Timeouts.PreRangeMClks; }
+
+            Timeouts.FinalRange_us = TimeoutMClksToMicroseconds(Timeouts.FinalRangeMClks, (byte)Timeouts.FinalRangeVCSelPeriodPClks);
 
             return Timeouts;
+        }
+
+        private byte GetVCSelPulsePeriod(VCSelPeriodType Type)
+        {
+            if (Type == VCSelPeriodType.VCSelPeriodPreRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
+            else if (Type == VCSelPeriodType.VCSelPeriodFinalRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
+            else { return 255; }
+        }
+
+        private uint TimeoutMClksToMicroseconds(ushort TimeoutPeriodMClks, byte VCSelPeriodPClks)
+        {
+            uint MacroPeriod_ns = CalcMacroPeriod(VCSelPeriodPClks);
+            return ((TimeoutPeriodMClks * MacroPeriod_ns) + (MacroPeriod_ns / 2)) / 1000;
+        }
+
+        private uint CalcMacroPeriod(byte VCSelPeriodPClks) => ((((uint)2304 * VCSelPeriodPClks * 1655) + 500) / 1000);
+
+        private ushort DecodeTimeout(byte[] RegVals)
+        {
+            return (ushort)((RegVals[0] << RegVals[1]) + 1);
         }
 
         private void StartTimeout() => this.TimeoutCheck.Restart();
@@ -380,6 +425,8 @@ namespace Scarlet.Components.Sensors
             ALGO_PHASECAL_LIM = 0x30,
             ALGO_PHASECAL_CONFIG_TIMEOUT = 0x30,
         };
+
+        private enum VCSelPeriodType { VCSelPeriodPreRange, VCSelPeriodFinalRange }
 
         private struct SequenceStepEnables
         {
