@@ -32,17 +32,16 @@ namespace Scarlet.Utilities
 
         static PlatformInfo()
         {
+            // Read relevant files used multiple times
             try { UnixCPUInfo = File.ReadAllLines("/proc/cpuinfo"); }
-            catch { } // Not a unix platform / broken unix kernel
+            catch { } // Can assert not a unix platform or broken unix kernel
+
             GetPlatformInformation();
             GetOSInformation();
-            switch (Platform)
-            {
-                case PlatformType.RaspberryPi:
-                    ReadPiVersion();
-                    break;
-            }
+            GetHardwareInformation();
         }
+
+        #region Platform Information
 
         private static void GetPlatformInformation()
         {
@@ -69,7 +68,6 @@ namespace Scarlet.Utilities
                 {
                     string PlatformName = PlatformEnumerable.First();
                     PlatformName = PlatformName.Substring(PlatformName.IndexOf(':') + 1).ToUpper().Trim();
-                    Log.ForceOutput(Log.Severity.DEBUG, Log.Source.OTHER, PlatformName);
                     switch (PlatformName)
                     {
                         case "BCM2709": return PlatformType.RaspberryPi;
@@ -79,6 +77,10 @@ namespace Scarlet.Utilities
             }
             catch { return PlatformType.Other; }
         }
+
+        #endregion
+
+        #region OS Information
 
         private static void GetOSInformation()
         {
@@ -177,6 +179,20 @@ namespace Scarlet.Utilities
             }
         }
 
+        #endregion
+
+        #region Hardware Information
+
+        private static void GetHardwareInformation()
+        {
+            switch (Platform)
+            {
+                case PlatformType.RaspberryPi:
+                    ReadPiVersion();
+                    break;
+            }
+        }
+
         // Info from: http://ozzmaker.com/check-raspberry-software-hardware-version-command-line/
         private static void ReadPiVersion()
         {
@@ -217,6 +233,10 @@ namespace Scarlet.Utilities
             }
         }
 
+        #endregion
+
+        #region Structs and Enums
+
         private struct UnixDistroInformation
         {
             public string DistributionID;
@@ -242,5 +262,7 @@ namespace Scarlet.Utilities
             PC,
             Other,
         }
+
+        #endregion
     }
 }
