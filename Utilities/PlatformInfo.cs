@@ -31,31 +31,30 @@ namespace Scarlet.Utilities
 
         private static void GetOSInformation()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            switch (Environment.OSVersion.Platform)
             {
-                // TODO: Solve problem of getting Win7 version when running in Powershell
-                OSName = OperatingSystems.Windows;
-                OSRevision = Environment.OSVersion.Version.ToString();
-                OS = Environment.OSVersion.VersionString;
-            }
-            else if (Environment.OSVersion.Platform == PlatformID.MacOSX)
-            {
-                OSName = OperatingSystems.MacOS;
-                OSRevision = Environment.OSVersion.Version.ToString();
-                OS = Environment.OSVersion.VersionString;
-            }
-            else if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                UnixDistroInformation UnixDistro = QueryUnixDistribution();
-                OSName = UnixDistro.OSVersion;
-                OSRevision = UnixDistro.DistributionRelease;
-                OS = UnixDistro.DistributionDescription;
-            }
-            else
-            {
-                OSName = OperatingSystems.Unsupported;
-                OSRevision = Environment.OSVersion.Version.ToString();
-                OS = Environment.OSVersion.VersionString;
+                case PlatformID.Win32NT:
+                    // TODO: Solve problem of getting Win7 version when running in Powershell
+                    OSName = OperatingSystems.Windows;
+                    OSRevision = Environment.OSVersion.Version.ToString();
+                    OS = Environment.OSVersion.VersionString;
+                    break;
+                case PlatformID.MacOSX:
+                    OSName = OperatingSystems.MacOS;
+                    OSRevision = Environment.OSVersion.Version.ToString();
+                    OS = Environment.OSVersion.VersionString;
+                    break;
+                case PlatformID.Unix:
+                    UnixDistroInformation UnixDistro = QueryUnixDistribution();
+                    OSName = UnixDistro.OSVersion;
+                    OSRevision = UnixDistro.DistributionRelease;
+                    OS = UnixDistro.DistributionDescription;
+                    break;
+                default:
+                    OSName = OperatingSystems.Unsupported;
+                    OSRevision = Environment.OSVersion.Version.ToString();
+                    OS = Environment.OSVersion.VersionString;
+                    break;
             }
 
             if (OSName == OperatingSystems.Unsupported)
