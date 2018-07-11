@@ -9,26 +9,31 @@ namespace Scarlet.Utilities
 {
     public class PlatformInfo
     {
-        /// <summary> The general class of device, such as <c>"RaspberryPi"</c> or <c>"PC"</c>. </summary>
+        /// <summary> Gets the general class of device, such as <c>"RaspberryPi"</c> or <c>"PC"</c>. </summary>
         public static PlatformType Platform { get; private set; }
 
-        /// <summary> Info about the hardware, such as <c>"Pi 3 Model B"</c> or <c>"Laptop"</c>. </summary>
+        /// <summary> Gets info about the hardware, such as <c>"Pi 3 Model B"</c> or <c>"Laptop"</c>. </summary>
         public static string Hardware { get; private set; }
 
-        /// <summary> Info about the OS, such as <c>"Windows 10.0.17134.112"</c> or <c>"Debian 8.0"</c>. </summary>
+        /// <summary> Gets info about the OS, such as <c>"Windows 10.0.17134.112"</c> or <c>"Debian 8.0"</c>. </summary>
         public static string OS { get; private set; }
 
-        /// <summary> The revision number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c> </summary>
+        /// <summary> Gets the revision number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c>. </summary>
         public static string OSRevision { get; private set; }
 
-        /// <summary> The name of the OS as an enum value. E.G. OperatingSystems.Windows </summary>
+        /// <summary> Gets the name of the OS as an enum value. E.G. OperatingSystems.Windows </summary>
         public static OperatingSystems OSName { get; private set; }
 
-        /// <summary> Whether or not the OS is supported by Scarlet </summary>
+        /// <summary> Gets a value indicating whether or not the OS is supported by Scarlet. </summary>
         public static bool OSSupport { get; private set; }
+
+        /// <summary> Gets the CPU information file dump from the unix kernel. Used in multiple places. </summary>
+        private static readonly string[] UnixCPUInfo;
 
         static PlatformInfo()
         {
+            try { UnixCPUInfo = File.ReadAllLines("/proc/cpuinfo"); }
+            catch { } // Not a unix platform / broken unix kernel
             GetPlatformInformation();
             GetOSInformation();
             switch (Platform)
@@ -48,21 +53,31 @@ namespace Scarlet.Utilities
                     Platform = PlatformType.PC;
                     break;
                 case PlatformID.Unix:
-                    // Determine if this is a Beaglebone Black, Raspberry Pi, or PC
-                    try
-                    {
-                        string[] Lines = File.ReadAllLines("/proc/cpuinfo");
-                        string Platform = Lines.Where(x => x.StartsWith("Hardware")).First();
-                        Platform = Platform.Substring(Platform.IndexOf(':') + 1).ToLower().Trim();
-                        switch (Platform)
-                        {
-                            case "BCM2709": PlatformInfo.Platform = PlatformType.RaspberryPi; break;
-                            default: PlatformInfo.Platform = PlatformType.PC; break;
-                        }
-                    }
-                    catch { Platform = PlatformType.Other; }
+                    Platform = DetermineUnixPlatform();
                     break;
             }
+        }
+
+        private static PlatformType DetermineUnixPlatform()
+        {
+            // Determine if this is a Beaglebone Black, Raspberry Pi, or PC
+            try
+            {
+                IEnumerable<string> PlatformEnumerable = UnixCPUInfo.Where(x => x.StartsWith("Hardware"));
+                if (!PlatformEnumerable.Any()) { return PlatformType.PC; }
+                else
+                {
+                    string PlatformName = PlatformEnumerable.First();
+                    PlatformName = PlatformName.Substring(PlatformName.IndexOf(':') + 1).ToUpper().Trim();
+                    Log.ForceOutput(Log.Severity.DEBUG, Log.Source.OTHER, PlatformName);
+                    switch (PlatformName)
+                    {
+                        case "BCM2709": return PlatformType.RaspberryPi;
+                        default: return PlatformType.PC;
+                    }
+                }
+            }
+            catch { return PlatformType.Other; }
         }
 
         private static void GetOSInformation()
@@ -165,8 +180,7 @@ namespace Scarlet.Utilities
         // Info from: http://ozzmaker.com/check-raspberry-software-hardware-version-command-line/
         private static void ReadPiVersion()
         {
-            string[] Lines = File.ReadAllLines("/proc/cpuinfo");
-            string Revision = Lines.Where(x => x.StartsWith("Revision")).First();
+            string Revision = UnixCPUInfo.Where(x => x.StartsWith("Revision")).First();
             Revision = Revision.Substring(Revision.IndexOf(':') + 1).ToLower().Trim();
             switch (Revision)
             {
