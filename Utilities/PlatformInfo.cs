@@ -21,8 +21,11 @@ namespace Scarlet.Utilities
         /// <summary> The revision number for the OS. For example <c>"10.0.17134.112"</c> or <c>"8.0"</c> </summary>
         public static string OSRevision { get; private set; }
 
-        /// <summary> The name of the OS. E.G. "Windows" </summary>
+        /// <summary> The name of the OS as an enum value. E.G. OperatingSystems.Windows </summary>
         public static OperatingSystems OSName { get; private set; }
+
+        /// <summary> Whether or not the OS is supported by Scarlet </summary>
+        public static bool OSSupport { get; private set; }
 
         static PlatformInfo()
         {
@@ -51,17 +54,18 @@ namespace Scarlet.Utilities
                     OS = UnixDistro.DistributionDescription;
                     break;
                 default:
-                    OSName = OperatingSystems.Unsupported;
+                    OSName = OperatingSystems.NotSupported;
                     OSRevision = Environment.OSVersion.Version.ToString();
                     OS = Environment.OSVersion.VersionString;
                     break;
             }
 
-            if (OSName == OperatingSystems.Unsupported)
+            if (OSName == OperatingSystems.NotSupported)
             {
-                OS = "[Unsupported] " + OS;
+                OSSupport = false;
                 Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "OPERATING UNSUPPORTED OS. SUPPORT NOT GUARUNTEED. OS = " + OS);
             }
+            else { OSSupport = true; }
         }
 
         private static UnixDistroInformation QueryUnixDistribution()
@@ -78,16 +82,16 @@ namespace Scarlet.Utilities
                     switch (LineInfo[0])
                     {
                         case "DISTRIB_ID":
-                            Result.DistributionID = LineInfo[1];
+                            Result.DistributionID = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_RELEASE":
-                            Result.DistributionRelease = LineInfo[1];
+                            Result.DistributionRelease = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_CODENAME":
-                            Result.DistributionCodeName = LineInfo[1];
+                            Result.DistributionCodeName = LineInfo[1].Trim('"', ' ');
                             break;
                         case "DISTRIB_DESCRIPTION":
-                            Result.DistributionDescription = LineInfo[1];
+                            Result.DistributionDescription = LineInfo[1].Trim('"', ' ');
                             break;
                         default:
                             break;
@@ -95,7 +99,7 @@ namespace Scarlet.Utilities
                 }
                 if (Result.DistributionID.ToUpper() == "DEBIAN") { Result.OSVersion = OperatingSystems.Debian; }
                 if (Result.DistributionID.ToUpper() == "UBUNTU") { Result.OSVersion = OperatingSystems.Ubuntu; }
-                else { Result.OSVersion = OperatingSystems.Unsupported; }
+                else { Result.OSVersion = OperatingSystems.NotSupported; } // Set OS to unsupported if not a supported linux distribution
                 return Result;
             }
             catch
@@ -107,7 +111,7 @@ namespace Scarlet.Utilities
                     DistributionDescription = string.Empty,
                     DistributionRelease = string.Empty,
                     DistributionCodeName = string.Empty,
-                    OSVersion = OperatingSystems.Unsupported,
+                    OSVersion = OperatingSystems.NotSupported,
                 };
             }
         }
@@ -168,7 +172,7 @@ namespace Scarlet.Utilities
             Debian,
             Ubuntu,
             MacOS,
-            Unsupported,
+            NotSupported,
         }
     }
 }
