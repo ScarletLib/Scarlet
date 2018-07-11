@@ -33,6 +33,7 @@ namespace Scarlet.Utilities
         {
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
+                // TODO: Solve problem of getting Win7 version when running in Powershell
                 OSName = OperatingSystems.Windows;
                 OSRevision = Environment.OSVersion.Version.ToString();
                 OS = Environment.OSVersion.VersionString;
