@@ -15,9 +15,10 @@ namespace Scarlet.Components.Sensors
         private readonly II2CBus Bus;
         private byte Address;
 
-        private int Timeout;
+        private uint Timeout { get; set; }
         private Stopwatch TimeoutCheck;
         private uint MeasurementTimingBudget;
+        private byte StopVar;
 
         public VL53L0X_MVP(II2CBus Bus, byte Address = 0x29, bool Use2V8Mode = false)
         {
@@ -36,7 +37,7 @@ namespace Scarlet.Components.Sensors
             this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x01 });
             this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
             this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x00 });
-            byte StopVariable = this.Bus.ReadRegister(this.Address, 0x91, 1)[0];
+            this.StopVar = this.Bus.ReadRegister(this.Address, 0x91, 1)[0];
             this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x01 });
             this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
             this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x00 });
@@ -203,6 +204,14 @@ namespace Scarlet.Components.Sensors
             // do things?
         }
 
+        private Half GetSignalRateLimit()
+        {
+            byte[] Data = this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, 2);
+            Half Output = Half.ToHalf(Data, 0);
+            Output /= (1 << 7);
+            return Output;
+        }
+
         private void SetSignalRateLimit(Half LimitMCPS)
         {
             if (LimitMCPS < 0 || LimitMCPS > 511.99) { throw new ArgumentOutOfRangeException("MCPS Limit must be within 0 to 512."); }
@@ -363,6 +372,8 @@ namespace Scarlet.Components.Sensors
             else { return 255; }
         }
 
+        // TODO: Implement private bool SetVCSELPulsePeriod(VCSELPeriodType Type, byte PeriodPClks)
+
         private uint TimeoutMClksToMicroseconds(ushort TimeoutPeriodMClks, byte VCSELPeriodPClks)
         {
             uint MacroPeriod_ns = CalcMacroPeriod(VCSELPeriodPClks);
@@ -403,7 +414,7 @@ namespace Scarlet.Components.Sensors
         {
             this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { (byte)(0x01 | VHVInitByte) });
             StartTimeout();
-            while((this.Bus.ReadRegister(this.Address, (byte)Registers.RESULT_INTERRUPT_STATUS, 1)[0] & 0x07) == 0)
+            while ((this.Bus.ReadRegister(this.Address, (byte)Registers.RESULT_INTERRUPT_STATUS, 1)[0] & 0x07) == 0)
             {
                 if (CheckTimeoutExpired()) { return false; }
             }
@@ -417,6 +428,72 @@ namespace Scarlet.Components.Sensors
         private void StopTimeout() => this.TimeoutCheck.Stop();
 
         private bool CheckTimeoutExpired() => (this.Timeout > 0) && (this.TimeoutCheck.ElapsedMilliseconds > this.Timeout);
+
+        private void StartContinuous(uint Period_ms)
+        {
+            this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x91, new byte[] { this.StopVar });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x00 });
+
+            if (Period_ms != 0)
+            {
+                byte[] OscCalValRaw = this.Bus.ReadRegister(this.Address, (byte)Registers.OSC_CALIBRATE_VAL, 2);
+                ushort OscCalVal = (ushort)((OscCalValRaw[1] << 8) | OscCalValRaw[0]);
+                if (OscCalVal != 0) { Period_ms *= OscCalVal; }
+                byte[] Out = new byte[] { (byte)((Period_ms << 24) & 0xFF), (byte)((Period_ms << 16) & 0xFF), (byte)((Period_ms << 8) & 0xFF), (byte)(Period_ms & 0xFF) };
+                this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_INTERMEASUREMENT_PERIOD, Out);
+                this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { 0x04 });
+            }
+            else { this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { 0x02 }); }
+        }
+
+        private void StopContinuous()
+        {
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x91, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+        }
+
+        private ushort ReadRangeContinuous_mm()
+        {
+            StartTimeout();
+            while ((this.Bus.ReadRegister(this.Address, (byte)Registers.RESULT_INTERRUPT_STATUS, 1)[0] & 0x07) == 0)
+            {
+                if (CheckTimeoutExpired()) { return 65535; } // TODO: Let someone know we timed out.
+            }
+            StopTimeout();
+            byte[] RangeRaw = this.Bus.ReadRegister(this.Address, (byte)(Registers.RESULT_RANGE_STATUS + 10), 2);
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_INTERRUPT_CLEAR, new byte[] { 0x01 });
+            return (ushort)((RangeRaw[0] << 8) | RangeRaw[1]);
+        }
+
+        private ushort ReadRangeSingle_mm()
+        {
+            this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x91, new byte[] { this.StopVar });
+            this.Bus.WriteRegister(this.Address, 0x00, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+            this.Bus.WriteRegister(this.Address, 0x80, new byte[] { 0x00 });
+            
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { 0x01 });
+
+            StartTimeout();
+            while ((this.Bus.ReadRegister(this.Address, (byte)Registers.SYSRANGE_START, 1)[0] & 0x01) == 0b1)
+            {
+                if (CheckTimeoutExpired()) { return 65535; } // TODO: Tell an adult.
+            }
+            StopTimeout();
+            return ReadRangeContinuous_mm();
+        }
 
         private enum Registers : byte
         {
@@ -501,7 +578,7 @@ namespace Scarlet.Components.Sensors
 
             ALGO_PHASECAL_LIM = 0x30,
             ALGO_PHASECAL_CONFIG_TIMEOUT = 0x30,
-        };
+        }
 
         private enum VCSELPeriodType { VCSELPeriodPreRange, VCSELPeriodFinalRange }
 
@@ -516,6 +593,6 @@ namespace Scarlet.Components.Sensors
 
             public ushort MSRC_DSS_TCC_MClks, PreRangeMClks, FinalRangeMClks;
             public uint MSRC_DSS_TCC_us, PreRange_us, FinalRange_us;
-        };
+        }
     }
 }
