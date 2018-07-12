@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Scarlet.IO;
 using Scarlet.Utilities;
 
@@ -21,6 +17,7 @@ namespace Scarlet.Components.Sensors
 
         private int Timeout;
         private Stopwatch TimeoutCheck;
+        private uint MeasurementTimingBudget;
 
         public VL53L0X_MVP(II2CBus Bus, byte Address = 0x29, bool Use2V8Mode = false)
         {
@@ -180,7 +177,15 @@ namespace Scarlet.Components.Sensors
             uint MeasurementTimingBudget_us = GetMeasurementTimingBudget();
             this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0xE8 });
 
-            // LINE 253
+            SetMeasurementTimingBudget(MeasurementTimingBudget_us);
+
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0x01 });
+            if (!PerformSingleRefCalibration(0x40)) { throw new Exception("VHV Calibration failed."); }
+
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0x02 });
+            if (!PerformSingleRefCalibration(0x00)) { throw new Exception("Phase Calibration failed."); }
+
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0xE8 });
         }
 
         public DataUnit GetData()
@@ -228,8 +233,7 @@ namespace Scarlet.Components.Sensors
 
             while (this.Bus.ReadRegister(this.Address, 0x83, 1)[0] == 0x00)
             {
-                if (CheckTimeout()) { throw new TimeoutException("VL53L0X took too long during SPAD info retrieval."); }
-                Thread.Sleep(10);
+                if (CheckTimeoutExpired()) { throw new TimeoutException("VL53L0X took too long during SPAD info retrieval."); }
             }
 
             StopTimeout();
@@ -276,7 +280,44 @@ namespace Scarlet.Components.Sensors
             if (Enables.PreRange) { Budget_us += (Timeouts.PreRange_us + PreRangeOverhead); }
             if (Enables.FinalRange) { Budget_us += (Timeouts.FinalRange_us + FinalRangeOverhead); }
 
+            this.MeasurementTimingBudget = Budget_us;
             return Budget_us;
+        }
+
+        private bool SetMeasurementTimingBudget(uint Budget_us)
+        {
+            SequenceStepEnables Enables;
+            SequenceStepTimeouts Timeouts;
+
+            const ushort StartOverhead = 1320;
+            const ushort EndOverhead = 960;
+            const ushort MsrcOverhead = 660;
+            const ushort TccOverhead = 590;
+            const ushort DssOverhead = 690;
+            const ushort PreRangeOverhead = 660;
+            const ushort FinalRangeOverhead = 550;
+            const uint MinTimingBudget = 20000;
+
+            if (Budget_us < MinTimingBudget) { return false; }
+            uint UsedBudget_us = StartOverhead + EndOverhead;
+            Enables = GetSequenceStepEnables();
+            Timeouts = GetSequenceStepTimeouts(Enables);
+
+            if (Enables.TCC) { UsedBudget_us += (Timeouts.MSRC_DSS_TCC_us + TccOverhead); }
+            if (Enables.DSS) { UsedBudget_us += (2 * (Timeouts.MSRC_DSS_TCC_us + DssOverhead)); }
+            else if (Enables.MSRC) { UsedBudget_us += (Timeouts.MSRC_DSS_TCC_us + MsrcOverhead); }
+            if (Enables.PreRange) { UsedBudget_us += (Timeouts.PreRange_us + PreRangeOverhead); }
+            if (Enables.FinalRange)
+            {
+                UsedBudget_us += FinalRangeOverhead;
+                if (UsedBudget_us > Budget_us) { return false; }
+                uint FinalRangeTimeout_us = Budget_us - UsedBudget_us;
+                ushort FinalRangeTimeoutMClks = TimeoutMicrosecondsToMClks(FinalRangeTimeout_us, (byte)Timeouts.FinalRangeVCSELPeriodPClks);
+                if (Enables.PreRange) { FinalRangeTimeoutMClks += Timeouts.PreRangeMClks; }
+                this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, EncodeTimeout(FinalRangeTimeoutMClks));
+                this.MeasurementTimingBudget = Budget_us;
+            }
+            return true;
         }
 
         private SequenceStepEnables GetSequenceStepEnables()
@@ -296,50 +337,86 @@ namespace Scarlet.Components.Sensors
         {
             SequenceStepTimeouts Timeouts = new SequenceStepTimeouts();
 
-            Timeouts.PreRangeVCSelPeriodPClks = GetVCSelPulsePeriod(VCSelPeriodType.VCSelPeriodPreRange);
+            Timeouts.PreRangeVCSELPeriodPClks = GetVCSELPulsePeriod(VCSELPeriodType.VCSELPeriodPreRange);
 
             Timeouts.MSRC_DSS_TCC_MClks = (byte)(this.Bus.ReadRegister(this.Address, (byte)Registers.MSRC_CONFIG_TIMEOUT_MACROP, 1)[0] + 1);
-            Timeouts.MSRC_DSS_TCC_us = TimeoutMClksToMicroseconds(Timeouts.MSRC_DSS_TCC_MClks, (byte)Timeouts.PreRangeVCSelPeriodPClks);
+            Timeouts.MSRC_DSS_TCC_us = TimeoutMClksToMicroseconds(Timeouts.MSRC_DSS_TCC_MClks, (byte)Timeouts.PreRangeVCSELPeriodPClks);
 
             Timeouts.PreRangeMClks = DecodeTimeout(this.Bus.ReadRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, 2));
-            Timeouts.PreRange_us = TimeoutMClksToMicroseconds(Timeouts.PreRangeMClks, (byte)Timeouts.PreRangeVCSelPeriodPClks);
+            Timeouts.PreRange_us = TimeoutMClksToMicroseconds(Timeouts.PreRangeMClks, (byte)Timeouts.PreRangeVCSELPeriodPClks);
 
-            Timeouts.FinalRangeVCSelPeriodPClks = GetVCSelPulsePeriod(VCSelPeriodType.VCSelPeriodFinalRange);
+            Timeouts.FinalRangeVCSELPeriodPClks = GetVCSELPulsePeriod(VCSELPeriodType.VCSELPeriodFinalRange);
 
             Timeouts.FinalRangeMClks = DecodeTimeout(this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, 2));
 
             if (Enables.PreRange) { Timeouts.FinalRangeMClks -= Timeouts.PreRangeMClks; }
 
-            Timeouts.FinalRange_us = TimeoutMClksToMicroseconds(Timeouts.FinalRangeMClks, (byte)Timeouts.FinalRangeVCSelPeriodPClks);
+            Timeouts.FinalRange_us = TimeoutMClksToMicroseconds(Timeouts.FinalRangeMClks, (byte)Timeouts.FinalRangeVCSELPeriodPClks);
 
             return Timeouts;
         }
 
-        private byte GetVCSelPulsePeriod(VCSelPeriodType Type)
+        private byte GetVCSELPulsePeriod(VCSELPeriodType Type)
         {
-            if (Type == VCSelPeriodType.VCSelPeriodPreRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
-            else if (Type == VCSelPeriodType.VCSelPeriodFinalRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
+            if (Type == VCSELPeriodType.VCSELPeriodPreRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
+            else if (Type == VCSELPeriodType.VCSELPeriodFinalRange) { return (byte)(((this.Bus.ReadRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VCSEL_PERIOD, 1)[0]) + 1) << 1); }
             else { return 255; }
         }
 
-        private uint TimeoutMClksToMicroseconds(ushort TimeoutPeriodMClks, byte VCSelPeriodPClks)
+        private uint TimeoutMClksToMicroseconds(ushort TimeoutPeriodMClks, byte VCSELPeriodPClks)
         {
-            uint MacroPeriod_ns = CalcMacroPeriod(VCSelPeriodPClks);
+            uint MacroPeriod_ns = CalcMacroPeriod(VCSELPeriodPClks);
             return ((TimeoutPeriodMClks * MacroPeriod_ns) + (MacroPeriod_ns / 2)) / 1000;
         }
 
-        private uint CalcMacroPeriod(byte VCSelPeriodPClks) => ((((uint)2304 * VCSelPeriodPClks * 1655) + 500) / 1000);
+        private ushort TimeoutMicrosecondsToMClks(uint TimeoutPeriod_us, byte VCSELPeriodPClks)
+        {
+            uint MacroPeriod_ns = CalcMacroPeriod(VCSELPeriodPClks);
+            return (ushort)(((TimeoutPeriod_us * 1000) + (MacroPeriod_ns / 2)) / MacroPeriod_ns);
+        }
+
+        private uint CalcMacroPeriod(byte VCSELPeriodPClks) => ((((uint)2304 * VCSELPeriodPClks * 1655) + 500) / 1000);
 
         private ushort DecodeTimeout(byte[] RegVals)
         {
             return (ushort)((RegVals[0] << RegVals[1]) + 1);
         }
 
+        private byte[] EncodeTimeout(ushort TimeoutMClks)
+        {
+            uint LS = 0;
+            ushort MS = 0;
+            if (TimeoutMClks > 0)
+            {
+                LS = (uint)(TimeoutMClks - 1);
+                while ((LS & 0xFFFFFF00) > 0)
+                {
+                    LS >>= 1;
+                    MS++;
+                }
+                return new byte[] { (byte)MS, (byte)LS };
+            }
+            else { return new byte[] { 0x00, 0x00 }; }
+        }
+
+        private bool PerformSingleRefCalibration(byte VHVInitByte)
+        {
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { (byte)(0x01 | VHVInitByte) });
+            StartTimeout();
+            while((this.Bus.ReadRegister(this.Address, (byte)Registers.RESULT_INTERRUPT_STATUS, 1)[0] & 0x07) == 0)
+            {
+                if (CheckTimeoutExpired()) { return false; }
+            }
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_INTERRUPT_CLEAR, new byte[] { 0x01 });
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSRANGE_START, new byte[] { 0x00 });
+            return true;
+        }
+
         private void StartTimeout() => this.TimeoutCheck.Restart();
 
         private void StopTimeout() => this.TimeoutCheck.Stop();
 
-        private bool CheckTimeout() => (this.Timeout > 0) && (this.TimeoutCheck.ElapsedMilliseconds > this.Timeout);
+        private bool CheckTimeoutExpired() => (this.Timeout > 0) && (this.TimeoutCheck.ElapsedMilliseconds > this.Timeout);
 
         private enum Registers : byte
         {
@@ -426,7 +503,7 @@ namespace Scarlet.Components.Sensors
             ALGO_PHASECAL_CONFIG_TIMEOUT = 0x30,
         };
 
-        private enum VCSelPeriodType { VCSelPeriodPreRange, VCSelPeriodFinalRange }
+        private enum VCSELPeriodType { VCSELPeriodPreRange, VCSELPeriodFinalRange }
 
         private struct SequenceStepEnables
         {
@@ -435,7 +512,7 @@ namespace Scarlet.Components.Sensors
 
         private struct SequenceStepTimeouts
         {
-            public ushort PreRangeVCSelPeriodPClks, FinalRangeVCSelPeriodPClks;
+            public ushort PreRangeVCSELPeriodPClks, FinalRangeVCSELPeriodPClks;
 
             public ushort MSRC_DSS_TCC_MClks, PreRangeMClks, FinalRangeMClks;
             public uint MSRC_DSS_TCC_us, PreRange_us, FinalRange_us;
