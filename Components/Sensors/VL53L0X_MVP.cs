@@ -17,7 +17,7 @@ namespace Scarlet.Components.Sensors
         private bool ContinuousMode;
 
         private uint Timeout { get; set; }
-        private Stopwatch TimeoutCheck;
+        private Stopwatch TimeoutCheck = new Stopwatch();
         private uint MeasurementTimingBudget;
         private byte StopVar;
 
