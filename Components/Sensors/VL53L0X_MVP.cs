@@ -372,7 +372,93 @@ namespace Scarlet.Components.Sensors
             else { return 255; }
         }
 
-        // TODO: Implement private bool SetVCSELPulsePeriod(VCSELPeriodType Type, byte PeriodPClks)
+        private bool SetVCSELPulsePeriod(VCSELPeriodType Type, byte PeriodPClks)
+        {
+            byte VCSELPeriodReg = EncodeVCSELPeriod(PeriodPClks);
+
+            SequenceStepEnables Enables = GetSequenceStepEnables();
+            SequenceStepTimeouts Timeouts = GetSequenceStepTimeouts(Enables);
+
+            if (Type == VCSELPeriodType.VCSELPeriodPreRange)
+            {
+                switch (PeriodPClks)
+                {
+                    case 12: this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x18 }); break;
+                    case 14: this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x30 }); break;
+                    case 16: this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x40 }); break;
+                    case 18: this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x50 }); break;
+                    default: return false;
+                }
+                this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VALID_PHASE_LOW, new byte[] { 0x08 });
+                this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_VCSEL_PERIOD, new byte[] { VCSELPeriodReg });
+
+                ushort NewPreRangeTimeoutMClks = TimeoutMicrosecondsToMClks(Timeouts.PreRange_us, PeriodPClks);
+                this.Bus.WriteRegister(this.Address, (byte)Registers.PRE_RANGE_CONFIG_TIMEOUT_MACROP_HI, EncodeTimeout(NewPreRangeTimeoutMClks));
+
+                ushort NewMSRCTimeoutMClks = TimeoutMicrosecondsToMClks(Timeouts.MSRC_DSS_TCC_us, PeriodPClks);
+                this.Bus.WriteRegister(this.Address, (byte)Registers.MSRC_CONFIG_TIMEOUT_MACROP, new byte[] { (byte)((NewMSRCTimeoutMClks > 256) ? 255 : (NewMSRCTimeoutMClks - 1)) });
+            }
+            else if (Type == VCSELPeriodType.VCSELPeriodFinalRange)
+            {
+                switch (PeriodPClks)
+                {
+                    case 8:
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x10 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_LOW, new byte[] { 0x08 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.GLOBAL_CONFIG_VCSEL_WIDTH, new byte[] { 0x02 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_CONFIG_TIMEOUT, new byte[] { 0x0C });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_LIM, new byte[] { 0x30 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+                        break;
+                    case 10:
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x28 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_LOW, new byte[] { 0x08 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.GLOBAL_CONFIG_VCSEL_WIDTH, new byte[] { 0x03 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_CONFIG_TIMEOUT, new byte[] { 0x09 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_LIM, new byte[] { 0x20 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+                        break;
+                    case 12:
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x38 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_LOW, new byte[] { 0x08 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.GLOBAL_CONFIG_VCSEL_WIDTH, new byte[] { 0x03 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_CONFIG_TIMEOUT, new byte[] { 0x08 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_LIM, new byte[] { 0x20 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+                        break;
+                    case 14:
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_HIGH, new byte[] { 0x48 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VALID_PHASE_LOW, new byte[] { 0x08 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.GLOBAL_CONFIG_VCSEL_WIDTH, new byte[] { 0x03 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_CONFIG_TIMEOUT, new byte[] { 0x07 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x01 });
+                        this.Bus.WriteRegister(this.Address, (byte)Registers.ALGO_PHASECAL_LIM, new byte[] { 0x20 });
+                        this.Bus.WriteRegister(this.Address, 0xFF, new byte[] { 0x00 });
+                        break;
+                    default:
+                        return false;
+                }
+                this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_VCSEL_PERIOD, new byte[] { VCSELPeriodReg });
+
+                ushort NewFinalRangeTimeoutMClks = TimeoutMicrosecondsToMClks(Timeouts.FinalRange_us, PeriodPClks);
+                if (Enables.PreRange) { NewFinalRangeTimeoutMClks += Timeouts.PreRangeMClks; }
+                this.Bus.WriteRegister(this.Address, (byte)Registers.FINAL_RANGE_CONFIG_TIMEOUT_MACROP_HI, EncodeTimeout(NewFinalRangeTimeoutMClks));
+            }
+            else { return false; }
+
+            SetMeasurementTimingBudget(this.MeasurementTimingBudget);
+            byte SequenceConfig = this.Bus.ReadRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, 1)[0];
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0x02 });
+            PerformSingleRefCalibration(0x00);
+            this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { SequenceConfig });
+
+            return true;
+        }
+
+        private byte EncodeVCSELPeriod(byte PeriodPClks) => (byte)((PeriodPClks >> 1) - 1);
 
         private uint TimeoutMClksToMicroseconds(ushort TimeoutPeriodMClks, byte VCSELPeriodPClks)
         {
