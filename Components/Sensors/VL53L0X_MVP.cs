@@ -14,16 +14,21 @@ namespace Scarlet.Components.Sensors
 
         private readonly II2CBus Bus;
         private byte Address;
+        private bool ContinuousMode;
 
         private uint Timeout { get; set; }
         private Stopwatch TimeoutCheck;
         private uint MeasurementTimingBudget;
         private byte StopVar;
 
-        public VL53L0X_MVP(II2CBus Bus, byte Address = 0x29, bool Use2V8Mode = false)
+        private ushort LastReading;
+        private bool HadTimeout = false;
+
+        public VL53L0X_MVP(II2CBus Bus, byte Address = 0x29, bool UseContinuousMode = false, bool Use2V8Mode = false)
         {
             this.Bus = Bus;
             this.Address = Address;
+            this.ContinuousMode = UseContinuousMode;
 
             this.Timeout = 0;
 
@@ -187,13 +192,17 @@ namespace Scarlet.Components.Sensors
             if (!PerformSingleRefCalibration(0x00)) { throw new Exception("Phase Calibration failed."); }
 
             this.Bus.WriteRegister(this.Address, (byte)Registers.SYSTEM_SEQUENCE_CONFIG, new byte[] { 0xE8 });
+
+            this.Timeout = 500;
+            if (this.ContinuousMode) { StartContinuous(0); }
         }
 
         public DataUnit GetData()
         {
             return new DataUnit("VL53L0X")
             {
-
+                { "Distance", this.LastReading },
+                { "Timeout", this.HadTimeout }
             }.SetSystem(this.System);
         }
 
@@ -201,7 +210,21 @@ namespace Scarlet.Components.Sensors
 
         public void UpdateState()
         {
-            // do things?
+            this.HadTimeout = false;
+            if (this.ContinuousMode) { this.LastReading = ReadRangeContinuous_mm(); }
+            else { this.LastReading = ReadRangeSingle_mm(); }
+            if (this.LastReading == 65535) { this.HadTimeout = true; }
+        }
+
+        public ushort GetDistance() { return this.LastReading; }
+        
+        public bool LastHadTimeout() { return this.HadTimeout; }
+
+        public void ChangeMode(bool Continuous, uint Intermeasurement = 0)
+        {
+            this.ContinuousMode = Continuous;
+            if (Continuous) { StartContinuous(Intermeasurement); }
+            else { StopContinuous(); }
         }
 
         private Half GetSignalRateLimit()
