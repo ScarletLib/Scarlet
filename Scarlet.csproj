@@ -46,6 +46,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Half">
+      <HintPath>_Libraries\System.Half.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -90,6 +93,7 @@
     <Compile Include="Components\Sensors\MTK3339.cs" />
     <Compile Include="Components\Sensors\Potentiometer.cs" />
     <Compile Include="Components\Sensors\VH400.cs" />
+    <Compile Include="Components\Sensors\VL53L0X_MVP.cs" />
     <Compile Include="Controllers\PID.cs" />
     <Compile Include="Filters\Average.cs" />
     <Compile Include="Filters\Filter.cs" />
