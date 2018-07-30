@@ -1,6 +1,6 @@
-﻿using Scarlet.IO;
+﻿using System;
+using Scarlet.IO;
 using Scarlet.Utilities;
-using System;
 
 namespace Scarlet.Components.Motors
 {
