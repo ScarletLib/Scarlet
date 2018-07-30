@@ -4,7 +4,7 @@ using System;
 
 namespace Scarlet.Components.Motors
 {
-    public class Servo : IServo
+    public class Servo : IServo // TODO: Implement filtering for servo position.
     {
         public int Position { get; private set; }
         public bool TraceLogging { get; set; }
@@ -33,17 +33,11 @@ namespace Scarlet.Components.Motors
         public void SetPosition(int NewPosition)
         {
             this.Position = NewPosition;
-            // TODO: Do filtering
             NewPosition = Math.Min(this.AngleRange, Math.Max(0, NewPosition)); // Caps to 0 -> AngleRange
             float OnTime_ms = this.MinTime + ((this.MaxTime - this.MinTime) * (1 - ((this.AngleRange - NewPosition) * 1F / this.AngleRange)));
             float Output = OnTime_ms / (1000F / this.PWMFreq);
             this.PWMOut.SetOutput(Output);
             if (this.TraceLogging) { Log.Trace(this, "Servo moved to " + NewPosition + " degrees, which is " + (Output * 100).ToString("F2") + "% on time (" + OnTime_ms + "ms)"); }
-        }
-
-        private void SetPositionDirectly(int NewPosition)
-        {
-            if (Enabled) { } // TODO: Implement set-position
         }
     }
 }
