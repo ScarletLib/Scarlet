@@ -119,9 +119,19 @@ namespace Scarlet.Utilities
             Console.ResetColor();
         }
 
-        public static void Trace(object Sender, string Message)
+        public static void Trace(object Sender, string Message, bool Output = true)
         {
+            if (!Output) { return; }
             Message = string.Format("[{0}] [TRC] [{1}#{2}] {3}", DateTime.Now.ToLongTimeString(), Sender.GetType().Name, IDGen.GetId(Sender, out bool IgnoreMe), Message);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            WriteLine(Message);
+            Console.ResetColor();
+        }
+
+        public static void Trace(Type StaticSender, string Message, bool Output = true)
+        {
+            if (!Output) { return; }
+            Message = string.Format("[{0}] [TRC] [{1}#S] {2}", DateTime.Now.ToLongTimeString(), StaticSender.Name, Message);
             Console.ForegroundColor = ConsoleColor.Gray;
             WriteLine(Message);
             Console.ResetColor();
