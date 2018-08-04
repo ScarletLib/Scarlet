@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Scarlet.IO.Utilities
 {
-    public class FakeInterrupt : IDigitalIn, IInterruptSource
+    public class SoftwareInterrupt : IDigitalIn, IInterruptSource
     {
         private readonly IDigitalIn Input;
         private readonly int PollTime;
@@ -16,7 +16,7 @@ namespace Scarlet.IO.Utilities
         /// <remarks> Because this is done in software on a non-realtime OS, there is no guarantee that input events will be captured if they are too short. </remarks>
         /// <param name="Input"> The digital input to listen for interrupts on. </param>
         /// <param name="PollingTime"> The time in between checks for state changes, in milliseconds. </param>
-        public FakeInterrupt(IDigitalIn Input, int PollingTime = 5)
+        public SoftwareInterrupt(IDigitalIn Input, int PollingTime = 5)
         {
             if (PollingTime < 1) { throw new ArgumentException("PollingTime must be 1 ms or greater."); }
             this.PollTime = PollingTime;
