@@ -131,6 +131,7 @@
     <Compile Include="IO\RaspberryPi\RaspberryPi.cs" />
     <Compile Include="IO\RaspberryPi\SPIBusPi.cs" />
     <Compile Include="IO\RaspberryPi\UARTBusPi.cs" />
+    <Compile Include="IO\Utilities\FakeInterrupt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\DataLog.cs" />
     <Compile Include="Utilities\Log.cs" />
