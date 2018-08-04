@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Threading;
+using Scarlet.Utilities;
 
 namespace Scarlet.IO.Utilities
 {
     public class SoftwareInterrupt : IDigitalIn, IInterruptSource
     {
+        public bool TraceLogging { get; set; }
+
         private readonly IDigitalIn Input;
         private readonly int PollTime;
         private bool Continue;
@@ -22,12 +25,15 @@ namespace Scarlet.IO.Utilities
             this.PollTime = PollingTime;
             this.Input = Input;
             this.Continue = true;
+            this.PreviousState = Input.GetInput();
             Thread StateCheck = new Thread(CheckForEvents);
+            StateCheck.Start();
         }
 
         public void RegisterInterruptHandler(EventHandler<InputInterrupt> Handler, InterruptType Type)
         {
             if (Handler == null) { throw new ArgumentNullException("Handler must not be null."); }
+            if (this.TraceLogging) { Log.Trace(this, "Adding interrupt handler for type " + Type); }
             switch (Type)
             {
                 case InterruptType.ANY_EDGE: this.InterruptAny += Handler; break;
@@ -53,16 +59,16 @@ namespace Scarlet.IO.Utilities
                 bool NewState = this.Input.GetInput();
                 if (NewState != this.PreviousState) // Event happened.
                 {
+                    if (this.TraceLogging) { Log.Trace(this, "Software interrupt detected state change, now " + NewState); }
                     if (this.PreviousState && !NewState) // Falling
                     {
                         this.InterruptFalling?.Invoke(this, new InputInterrupt(NewState));
-                        this.InterruptAny?.Invoke(this, new InputInterrupt(NewState));
                     }
                     else if (!this.PreviousState && NewState) // Rising
                     {
                         this.InterruptRising?.Invoke(this, new InputInterrupt(NewState));
-                        this.InterruptAny?.Invoke(this, new InputInterrupt(NewState));
                     }
+                    this.InterruptAny?.Invoke(this, new InputInterrupt(NewState));
                 }
                 this.PreviousState = NewState;
                 Thread.Sleep(this.PollTime);
