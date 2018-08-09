@@ -235,6 +235,8 @@ namespace Scarlet.Components.Sensors
             return Output;
         }
 
+        public void SetSignalRateLimit(float LimitMCPS) => SetSignalRateLimit((Half)LimitMCPS);
+
         private void SetSignalRateLimit(Half LimitMCPS)
         {
             if (LimitMCPS < 0 || LimitMCPS > 511.99) { throw new ArgumentOutOfRangeException("MCPS Limit must be within 0 to 512."); }
@@ -316,8 +318,9 @@ namespace Scarlet.Components.Sensors
             return Budget_us;
         }
 
-        private bool SetMeasurementTimingBudget(uint Budget_us)
+        public bool SetMeasurementTimingBudget(uint Budget_us)
         {
+            this.MeasurementTimingBudget = Budget_us;
             SequenceStepEnables Enables;
             SequenceStepTimeouts Timeouts;
 
