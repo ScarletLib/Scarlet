@@ -19,9 +19,9 @@ namespace Scarlet.Components.Sensors
 
         /// <summary>
         /// Lists the possible reported faults.
-        /// SHORT_VCC: The thermoucouple is shorted to the Vcc line.
-        /// SHORT_GND: The thermoucouple is shorted to the GND line.
-        /// NO_THERMOCOUPLE: The thermoucouple is not properly connected or is defective.
+        /// SHORT_VCC: The thermocouple is shorted to the Vcc line.
+        /// SHORT_GND: The thermocouple is shorted to the GND line.
+        /// NO_THERMOCOUPLE: The thermocouple is not properly connected or is defective.
         /// </summary>
         [Flags]
         public enum Fault { NONE = 0, NO_THERMOCOUPLE = 1, SHORT_GND = 2, SHORT_VCC = 4 }
@@ -45,6 +45,7 @@ namespace Scarlet.Components.Sensors
         {
             byte[] InputData = this.Bus.Write(this.ChipSelect, new byte[] { 0x00, 0x00, 0x00, 0x00 }, 4);
             if (InputData != null && InputData.Length == 4) { this.LastReading = UtilData.ToUInt(InputData); }
+            if (this.TraceLogging) { Log.Trace(this, "Received raw data: " + this.LastReading.ToString("X8")); }
         }
 
         /// <summary> Gets the internal (on-board) temperature at the last UpdateState() call. </summary>
@@ -52,7 +53,7 @@ namespace Scarlet.Components.Sensors
         public float GetInternalTemp() { return ConvertInternalFromRaw(this.LastReading); }
 
         /// <summary> Gets the external (thermocouple) temperature at the last UpdateState() call. </summary>
-        /// <returns> The temperature, in degrees Celcius. In increments of 1/4 (0.25) degrees. </returns>
+        /// <returns> The temperature, in degrees Celsius. In increments of 1/4 (0.25) degrees. </returns>
         public float GetExternalTemp() { return ConvertExternalFromRaw(this.LastReading); }
 
         /// <summary> Gets the present faults at the last UpdateState() call. </summary>
@@ -77,7 +78,7 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Interprets the external (thermocouple) temperature data out of the raw data. </summary>
         /// <param name="RawData"> The raw bytes, as transferred via SPI. </param>
-        /// <returns> The temperature, in degrees Celcius. In increments of 1/4 (0.25) degrees. </returns>
+        /// <returns> The temperature, in degrees Celsius. In increments of 1/4 (0.25) degrees. </returns>
         public static float ConvertExternalFromRaw(uint RawData)
         {
             ushort InputBits = (ushort)((RawData >> 18) & 0b11_1111_1111_1111);
