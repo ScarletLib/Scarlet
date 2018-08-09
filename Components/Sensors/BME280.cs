@@ -203,7 +203,7 @@ namespace Scarlet.Components.Sensors
             Var2 = Var2 + ((Var1 * this.CompParams.P5) << 17);
             Var2 = Var2 + (((long)this.CompParams.P4) << 35);
             Var1 = ((Var1 * Var1 * this.CompParams.P3) >> 8) + ((Var1 * this.CompParams.P2) << 12);
-            Var1 = (((((long)1) << 47) + Var1)) * ((this.CompParams.P1) >> 33);
+            Var1 = (((((long)1) << 47) + Var1)) * (this.CompParams.P1) >> 33;
             if (Var1 == 0) { return 0; }
             P = 1048576 - RawPress;
             P = (((P << 31) - Var2) * 3125) / Var1;
