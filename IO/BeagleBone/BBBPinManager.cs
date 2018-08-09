@@ -178,25 +178,25 @@ namespace Scarlet.IO.BeagleBone
             byte ClockMode = Pin.GetModeID(Clock, BBBPinMode.SPI);
             byte MISOMode = 255;
             byte MOSIMode = 255;
-            if (ClockMode == 255) { throw new InvalidOperationException("This pin cannot be used for SPI clock."); }
-            if (!Pin.CheckPin(Clock, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin cannot be used without disabling some peripherals first."); }
-            if (Pin.GetOffset(Clock) == 0x000) { throw new InvalidOperationException("SPI pin is not valid for device tree registration."); }
+            if (ClockMode == 255) { throw new InvalidOperationException("Pin " + Clock + " cannot be used for SPI clock."); }
+            if (!Pin.CheckPin(Clock, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin " + Clock + " cannot be used without disabling some peripherals first."); }
+            if (Pin.GetOffset(Clock) == 0x000) { throw new InvalidOperationException("SPI pin " + Clock + " is not valid for device tree registration."); }
 
             if (MISO == BBBPin.NONE && MOSI == BBBPin.NONE) { throw new InvalidOperationException("You must set either MOSI or MISO, or both."); }
 
             if (MISO != BBBPin.NONE)
             {
                 MISOMode = Pin.GetModeID(MISO, BBBPinMode.SPI);
-                if (MISOMode == 255) { throw new InvalidOperationException("This pin cannot be used for SPI MISO."); }
-                if (!Pin.CheckPin(MISO, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin cannot be used without disabling some peripherals first."); }
-                if (Pin.GetOffset(MISO) == 0x000) { throw new InvalidOperationException("SPI pin is not valid for device tree registration."); }
+                if (MISOMode == 255) { throw new InvalidOperationException("Pin " + MISO + " cannot be used for SPI MISO."); }
+                if (!Pin.CheckPin(MISO, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin " + MISO + " cannot be used without disabling some peripherals first."); }
+                if (Pin.GetOffset(MISO) == 0x000) { throw new InvalidOperationException("SPI pin " + MISO + " is not valid for device tree registration."); }
             }
             if (MOSI != BBBPin.NONE)
             {
                 MOSIMode = Pin.GetModeID(MOSI, BBBPinMode.SPI);
-                if (MOSIMode == 255) { throw new InvalidOperationException("This pin cannot be used for SPI MOSI."); }
-                if (!Pin.CheckPin(MOSI, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin cannot be used without disabling some peripherals first."); }
-                if (Pin.GetOffset(MOSI) == 0x000) { throw new InvalidOperationException("SPI pin is not valid for device tree registration."); }
+                if (MOSIMode == 255) { throw new InvalidOperationException("Pin " + MOSI + " cannot be used for SPI MOSI."); }
+                if (!Pin.CheckPin(MOSI, BeagleBone.Peripherals)) { throw new InvalidOperationException("SPI pin " + MOSI + " cannot be used without disabling some peripherals first."); }
+                if (Pin.GetOffset(MOSI) == 0x000) { throw new InvalidOperationException("SPI pin " + MOSI + " is not valid for device tree registration."); }
             }
 
             if (GPIOMappings != null && MISO != BBBPin.NONE && GPIOMappings.ContainsKey(MISO)) { throw new InvalidOperationException("This pin is already registered as GPIO, cannot also use for SPI MISO."); }
