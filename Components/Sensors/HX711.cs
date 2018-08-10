@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Scarlet.Filters;
+﻿using System.Threading;
 using Scarlet.IO;
 using Scarlet.Utilities;
 
@@ -61,10 +55,19 @@ namespace Scarlet.Components.Sensors
             };
         }
 
+        /// <summary> Gets the most recent reading, and adjusts it (offset and scaling). </summary>
+        /// <returns> A reading in the unit system you defined with <see cref="Offset"/> and <see cref="ScaleFactor"/>. </returns>
         public double GetAdjustedReading() => AdjustReading(this.LastReading, this.Offset, this.ScaleFactor);
 
+        /// <summary> Gets the raw reading. </summary>
+        /// <returns> THe data as the sensor returned it. Not scaled or offset. </returns>
         public long GetRawReading() => this.LastReading;
 
+        /// <summary> Used to convert a raw reading into a adjusted one in the desired unit system. </summary>
+        /// <param name="RawReading"> The raw reading, as it came from the sensor. </param>
+        /// <param name="Offset"> The amount to offset the reading (done first). Used to set the correct zero point. Obtained from using <see cref="Tare"/>. </param>
+        /// <param name="ScaleFactor"> The amount to scale the reading (done second). Used to convert the reading to a familiar unit system, like g or kg. Obtained by getting an adjusted reading with a test mass after taring. </param>
+        /// <returns> The most recent reading in the desired unit system. </returns>
         public static double AdjustReading(long RawReading, double Offset, double ScaleFactor)
         {
             return (RawReading - Offset) * ScaleFactor;
