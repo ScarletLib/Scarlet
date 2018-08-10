@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Scarlet.Filters;
 using Scarlet.IO;
 using Scarlet.Utilities;
 
@@ -18,12 +19,18 @@ namespace Scarlet.Components.Sensors
         public string System { get; set; }
         public bool TraceLogging { get; set; }
 
+        /// <summary> The amount to offset readings by, should be determined by calling <see cref="Tare"/>, then used thereafter. </summary>
         public double Offset { get; set; }
+
+        /// <summary> The scale factor to apply to the readings. Used to convert raw values into values in some units. Usually determined once by using a test mass after taring. </summary>
         public double ScaleFactor { get; set; }
 
         private readonly IDigitalOut Clock;
         private readonly IDigitalIn Data;
         private Gain GainSetting = Gain.GAIN_128x;
+
+        private bool LastReadFailed = false;
+        private long LastReading;
 
         public HX711(IDigitalOut Clock, IDigitalIn Data)
         {
@@ -35,24 +42,32 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Gets a new reading from the device. </summary>
-        public void UpdateState()
-        {
-
-        }
+        public void UpdateState() { this.LastReading = Read(); }
 
         /// <summary> Checks if the ADC is detected and responding. </summary>
         /// <returns> Whether the device returned any valid data. </returns>
         public bool Test()
         {
-            return true; // TODO: Implement testing.
+            Read();
+            return !this.LastReadFailed;
         }
 
         public DataUnit GetData()
         {
             return new DataUnit(this.System)
             {
-                // TODO: Add data to DataUnit.
+                { "RawReading", GetRawReading() },
+                { "AdjustedReading", GetAdjustedReading() }
             };
+        }
+
+        public double GetAdjustedReading() => AdjustReading(this.LastReading, this.Offset, this.ScaleFactor);
+
+        public long GetRawReading() => this.LastReading;
+
+        public static double AdjustReading(long RawReading, double Offset, double ScaleFactor)
+        {
+            return (RawReading - Offset) * ScaleFactor;
         }
 
         /// <summary> Sets the ADC's gain factor. Higher gain increases resolution if the output of the load cell is low in amplitude, but will cause input saturation on higher-output load cells. </summary>
@@ -61,13 +76,6 @@ namespace Scarlet.Components.Sensors
         {
             this.GainSetting = Gain;
             Read();
-        }
-
-        public enum Gain
-        {
-            GAIN_128x = 1,
-            GAIN_64x = 3,
-            GAIN_32x = 2
         }
 
         /// <summary> Puts the device to sleep to reduce power consumption. Use <see cref="Wake"/> before resuming operation. </summary>
@@ -89,7 +97,9 @@ namespace Scarlet.Components.Sensors
         /// <param name="SampleCount"> The number of samples to take and average to determine the zero value. </param>
         public void Tare(uint SampleCount = 10)
         {
-
+            long Sum = 0;
+            for (int i = 0; i < SampleCount; i++) { Sum += Read(); }
+            this.Offset = (Sum * 1.0 / SampleCount);
         }
 
         /// <summary> Gets a new reading, and sets the gain for the next reading. </summary>
@@ -102,13 +112,15 @@ namespace Scarlet.Components.Sensors
             {
                 Thread.Sleep(1);
                 FailCounter++;
-                if (FailCounter > 150)
+                if (FailCounter > 120)
                 {
-                    Log.Output(Log.Severity.WARNING, Log.Source.SENSORS, "HX711 failed to have data ready for at least 150ms. Check the serial connections.");
+                    Log.Output(Log.Severity.WARNING, Log.Source.SENSORS, "HX711 failed to have data ready for at least 120ms. Check the serial connections.");
+                    this.LastReadFailed = true;
                     return long.MaxValue;
                 }
             }
             this.Clock.SetOutput(false);
+
             ulong RawData = 0;
             for (int i = 0; i < 24; i++)
             {
@@ -123,11 +135,16 @@ namespace Scarlet.Components.Sensors
             }
 
             if (((RawData >> 23) & 0b1) == 0b1) { RawData |= 0xFF000000; } // Fill in top byte if the value is negative.
-
-            if(this.TraceLogging) { Log.Trace(this, "Got raw value: " + RawData.ToString("X16")); }
-
-            return unchecked ((long)RawData);
+            if (this.TraceLogging) { Log.Trace(this, "Got raw value: " + RawData.ToString("X16")); }
+            this.LastReadFailed = false;
+            return unchecked((long)RawData);
         }
 
+        public enum Gain
+        {
+            GAIN_128x = 1,
+            GAIN_64x = 3,
+            GAIN_32x = 2
+        }
     }
 }
