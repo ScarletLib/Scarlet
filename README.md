@@ -1,5 +1,3 @@
-# Scarlet
-
 <img alt="Scarlet Logo" src="_Logo/ScarletLogo-Text.png" width="192">
 
 ## Documentation is available in the [GitHub Wiki](https://github.com/huskyroboticsteam/Scarlet/wiki).
