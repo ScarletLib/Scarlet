@@ -57,19 +57,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Communications\PacketBuffer.cs" />
-    <Compile Include="Communications\PacketScanner.cs" />
-    <Compile Include="Communications\PacketWriter.cs" />
-    <Compile Include="Communications\SafePacketScanner.cs" />
-    <Compile Include="Communications\SafePacketWriter.cs" />
-    <Compile Include="Communications\WatchdogManager.cs" />
-    <Compile Include="Communications\PacketHandler.cs" />
-    <Compile Include="Communications\Client.cs" />
     <Compile Include="Communications\Constants.cs" />
     <Compile Include="Communications\Message.cs" />
     <Compile Include="Communications\Packet.cs" />
     <Compile Include="Communications\Parse.cs" />
-    <Compile Include="Communications\Server.cs" />
     <Compile Include="Components\ICamera.cs" />
     <Compile Include="Components\IMotor.cs" />
     <Compile Include="Components\Inputs\TLV2544.cs" />
