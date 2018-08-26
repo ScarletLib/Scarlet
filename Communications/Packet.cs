@@ -9,15 +9,19 @@ namespace Scarlet.Communications
     /// <summary> Handles packet architecture. </summary>
     public class Packet : ICloneable
     {
-        public Message Data { get; private set; }        // Data to send
         public string Endpoint;  // Endpoint to send or endpoint received on 
         public bool IsUDP; // Either protocol message received on or protocol for sending
+        public byte ID { get { return Data.ID; } }
+        public byte[] Timestamp { get { return Data.Timestamp; } }
+        public byte[] Payload { get { return Data.Payload; } }
+
+        private Message Data; // Data to send
 
         /// <summary> Meant for received packets. </summary>
         /// <param name="Data"> The packet data </param>
         /// <param name="IsUDP"> Defines whether or not packet is a UDP message. </param>
         /// <param name="Endpoint"> The endpoint where this packet was received from </param>
-        public Packet(Message Data, bool IsUDP, string Endpoint = null)
+        internal Packet(Message Data, bool IsUDP, string Endpoint = null)
         {
             this.IsUDP = IsUDP;
             this.Data = Data;
