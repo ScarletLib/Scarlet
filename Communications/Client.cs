@@ -17,9 +17,9 @@ namespace Scarlet.Communications
     {
         public static bool TraceLogging { get; set; }
         public static bool WatchdogLogging { get; set; }
+        public static bool StorePackets { get; set; }
         public static bool Initialized { get; private set; }
         public static bool IsConnected { get; private set; }
-        public static bool StorePackets { get; set; }
 
         public static string ClientName { get; private set; }
 
@@ -38,6 +38,8 @@ namespace Scarlet.Communications
 
         public static List<Packet> ReceivedPackets { get; private set; }
         public static List<Packet> SendPackets { get; private set; }
+
+        public static LatencyMeasurementMode LatencyMeasurement;
 
         private static Queue<Packet> PacketProcessQueue;
         private static Queue<Packet> PacketSendQueue;
@@ -60,12 +62,13 @@ namespace Scarlet.Communications
         /// <param name="ReceiveBufferSize"></param>
         /// <param name="OperationPeriod"></param>
         /// <exception cref="Exception"> If ServerIP is unable to be parsed as an IPAddress object. </exception>
-        public static void Start(string ClientName, string ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        public static void Start(string ClientName, string ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64,
+            int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             IPAddress ServerIPAsType = IPAddress.None;
             bool Valid = IPAddress.TryParse(ServerIP, out ServerIPAsType);
             if (!Valid) { throw new Exception("Failed to parse ServerIP as an IPAddress."); }
-            Start(ClientName, IPAddress.Parse(ServerIP), PortTCP, PortUDP, ReceiveBufferSize, OperationPeriod);
+            Start(ClientName, IPAddress.Parse(ServerIP), PortTCP, PortUDP, ReceiveBufferSize, OperationPeriod, LatencyMode);
         }
 
         /// <summary>
@@ -77,7 +80,8 @@ namespace Scarlet.Communications
         /// <param name="ClientName"></param>
         /// <param name="ReceiveBufferSize"></param>
         /// <param name="OperationPeriod"></param>
-        public static void Start(string ClientName, IPAddress ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64, int OperationPeriod = 20)
+        public static void Start(string ClientName, IPAddress ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64,
+            int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             if (!Initialized)
             {
@@ -154,13 +158,20 @@ namespace Scarlet.Communications
 
         private static void SendHandshake()
         {
+            // Form handshake packet
+            Packet Handshake = new Packet(Constants.HANDSHAKE_FROM_CLIENT, false);
+            Handshake.AppendData(new byte[] { (byte)LatencyMeasurement, (byte)Utilities.Constants.SCARLET_VERSION });
+            Handshake.AppendData(UtilData.ToBytes(ClientName));
 
+            // Send handshake packet via TCP immediately
+            try { ServerTCP.Client.Send(Handshake.GetForSend()); }
+            catch (SocketException) { Trace("Unable send handshake to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + ". Retrying."); }
         }
 
         internal static void ReceiveHandshake(Packet Handshake)
         {
+            // TODO: Actually handle this
             IsConnected = true;
-            // TODO: Handle handshake telemetry
             ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = "Server", StatusConnected = true });
         }
 
@@ -168,6 +179,8 @@ namespace Scarlet.Communications
         {
             ServerTCP?.Close();
             ServerUDP?.Close();
+            if (IsConnected) { ConnectionStatusChanged?.Invoke("Client", new ConnectionStatusChanged() { StatusEndpoint = "Server", StatusConnected = false }); }
+            IsConnected = false;
         }
 
         private static void StartConnectOnConnFailure(object Sender, ConnectionStatusChanged Event)
@@ -182,6 +195,7 @@ namespace Scarlet.Communications
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="SendPacket"></param>
         public static void Send(Packet SendPacket)
         {
 
@@ -190,7 +204,17 @@ namespace Scarlet.Communications
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="SendPacket"></param>
         public static void SendNow(Packet SendPacket)
+        {
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="SendPacket"></param>
+        internal static void SendRegardless(Packet SendPacket)
         {
 
         }
@@ -224,7 +248,7 @@ namespace Scarlet.Communications
 
         private static void WatchdogLoop()
         {
-            while(!StopThreads)
+            while (!StopThreads)
             {
 
                 Thread.Sleep(Constants.WATCHDOG_WAIT);

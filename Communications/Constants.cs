@@ -19,14 +19,14 @@
         #endregion
     }
 
-    internal enum ClientServerConnectionState : byte
+    public enum ClientServerConnectionState : byte
     {
         OKAY = 0x00,
         INVALID_NAME = 0x01,
         INCOMPATIBLE_VERSIONS = 0x02,
     }
 
-    internal enum LatencyMeasurementMod : byte
+    public enum LatencyMeasurementMode : byte
     {
         NONE = 0x00,
         BASIC = 0x01,

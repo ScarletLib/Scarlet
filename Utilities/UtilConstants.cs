@@ -15,18 +15,21 @@ namespace Scarlet.Utilities
 
         // OPERATIONAL CONSTANTS
         public const int DEFAULT_MIN_THREAD_SLEEP = 15; // milliseconds
+
+        public const ScarletVersion SCARLET_VERSION = ScarletVersion.Master_Build;
     }
 
-    public enum ScarletVersions : byte
+    public enum ScarletVersion : byte
     {
-        Version_0_2_0 = 0x00,
-        Version_0_2_2 = 0x01,
-        Version_0_2_3 = 0x02,
-        Version_0_3_0 = 0x03,
-        Version_0_3_1 = 0x04,
-        Version_0_4_0 = 0x05,
-        Version_0_5_0 = 0x06,
-        Version_0_5_1 = 0x07,
+        Master_Build = 0x00,
+        v0_2_0 = 0x01,
+        v0_2_2 = 0x02,
+        v0_2_3 = 0x03,
+        v0_3_0 = 0x04,
+        v0_3_1 = 0x05,
+        v0_4_0 = 0x06,
+        v0_5_0 = 0x07,
+        v0_5_1 = 0x08,
     }
 
 }
