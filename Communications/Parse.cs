@@ -7,7 +7,6 @@ namespace Scarlet.Communications
     /// <summary> Handles packet parsing, using handlers of incoming message IDs. </summary>
     public static class Parse
     {
-
         // Delegate method type for parsing specific packet IDs
         public delegate void ParseMethod(Packet Packet);
         // Stored parsing Handlers for all possible message IDs
@@ -28,11 +27,11 @@ namespace Scarlet.Communications
         /// <summary> Appropriately parses incoming message. </summary>
         /// <param name="NewMessage"> Message to parse. </param>
         /// <returns> Whether or not parsing was successful. </returns>
-        public static bool ParseMessage(Packet Packet)
+        internal static bool ParseMessage(Packet Packet)
         {
             try
             {
-                if(Packet.Data.ID != Constants.WATCHDOG_PING || Server.OutputWatchdogDebug) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Parsing packet: " + Packet.Data.ToString()); }
+                // if(Packet.Data.ID != Constants.WATCHDOG_PING || Server.OutputWatchdogDebug) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Parsing packet: " + Packet.Data.ToString()); }
                 if (!ParsingHandlers.ContainsKey(Packet.Data.ID))
                 {
                     Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "No handler is registered for parsing packet ID " + Packet.Data.ID + "!");
@@ -49,5 +48,34 @@ namespace Scarlet.Communications
             }
         }
 
+    }
+
+    internal static class InternalParsing
+    {
+        static InternalParsing()
+        {
+            Parse.SetParseHandler(Constants.WATCHDOG_FROM_CLIENT, ParseWatchdogFromClient);
+            Parse.SetParseHandler(Constants.WATCHDOG_FROM_SERVER, ParseWatchdogFromServer);
+            Parse.SetParseHandler(Constants.HANDSHAKE_FROM_CLIENT, ParseClientHandshake);
+            Parse.SetParseHandler(Constants.HANDSHAKE_FROM_SERVER, ParseServerHandshake);
+            Parse.SetParseHandler(Constants.TIME_SYNCHRONIZATION, ParseTimeSynchronization);
+            Parse.SetParseHandler(Constants.BUFFER_LENGTH_CHANGE, ParseBufferLengthAdjustment);
+        }
+
+        #region Parse Handler Delegates
+
+        public static void ParseWatchdogFromServer(Packet Watchdog) { }
+
+        public static void ParseWatchdogFromClient(Packet Watchdog) { }
+
+        public static void ParseClientHandshake(Packet ClientHandshake) { }
+
+        public static void ParseServerHandshake(Packet ServerHandshake) { }
+
+        public static void ParseTimeSynchronization(Packet TimeSync) { }
+
+        public static void ParseBufferLengthAdjustment(Packet BufferAdjustment) { }
+
+        #endregion
     }
 }
