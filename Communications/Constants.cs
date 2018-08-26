@@ -16,7 +16,6 @@
         public const byte HANDSHAKE_FROM_CLIENT = 0xF4;
         public const byte HANDSHAKE_FROM_SERVER = 0xF5;
         #endregion
-
     }
 
 }
