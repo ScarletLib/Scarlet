@@ -26,4 +26,11 @@
         INCOMPATIBLE_VERSIONS = 0x02,
     }
 
+    internal enum LatencyMeasurementMod : byte
+    {
+        NONE = 0x00,
+        BASIC = 0x01,
+        FULL = 0x02,
+    }
+
 }
