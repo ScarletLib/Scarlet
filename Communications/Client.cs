@@ -48,13 +48,18 @@ namespace Scarlet.Communications
         private static Queue<Packet> PacketProcessQueue;
         private static Queue<Packet> PacketSendQueue;
 
+        private static Thread ConnectionThread;
+        private static Thread ReceiveUDPThread;
+        private static Thread ReceiveTCPThread;
+        private static Thread SendThread;
+        private static Thread PacketProcessThread;
+
         private static TcpClient ServerTCP;
         private static UdpClient ServerUDP;
 
         private static volatile bool StopThreads;
+        private static volatile bool SendReceiveThreadsRunning;
         private static volatile bool WatchdogFoundOnInterval;
-
-        private static bool ConnectionThreadRunning;
 
         /// <summary>
         /// 
@@ -66,13 +71,12 @@ namespace Scarlet.Communications
         /// <param name="ReceiveBufferSize"></param>
         /// <param name="OperationPeriod"></param>
         /// <exception cref="Exception"> If ServerIP is unable to be parsed as an IPAddress object. </exception>
-        public static void Start(string ClientName, string ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64,
-            int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
+        public static void Start(string ClientName, string ServerIP, int PortTCP, int PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             IPAddress ServerIPAsType = IPAddress.None;
             bool Valid = IPAddress.TryParse(ServerIP, out ServerIPAsType);
             if (!Valid) { throw new Exception("Failed to parse ServerIP as an IPAddress."); }
-            Start(ClientName, IPAddress.Parse(ServerIP), PortTCP, PortUDP, ReceiveBufferSize, OperationPeriod, LatencyMode);
+            Start(ClientName, IPAddress.Parse(ServerIP), PortTCP, PortUDP, OperationPeriod, LatencyMode);
         }
 
         /// <summary>
@@ -84,8 +88,7 @@ namespace Scarlet.Communications
         /// <param name="ClientName"></param>
         /// <param name="ReceiveBufferSize"></param>
         /// <param name="OperationPeriod"></param>
-        public static void Start(string ClientName, IPAddress ServerIP, int PortTCP, int PortUDP, int ReceiveBufferSize = 64,
-            int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
+        public static void Start(string ClientName, IPAddress ServerIP, int PortTCP, int PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             if (!Initialized)
             {
@@ -93,11 +96,12 @@ namespace Scarlet.Communications
 
                 // Initialize constructor variables into Client
                 Client.ClientName = ClientName;
-                Client.ReceiveBufferSize = ReceiveBufferSize;
                 Client.OperationPeriod = OperationPeriod;
                 Client.PortTCP = PortTCP;
                 Client.PortUDP = PortUDP;
                 Client.ServerIP = ServerIP;
+
+                ReceiveBufferSize = Constants.DEFAULT_RECEIVE_BUFFER_SIZE;
 
                 // Add traces and prints to events
                 ConnectionStatusChanged += PrintConnectionStatus;
@@ -113,8 +117,15 @@ namespace Scarlet.Communications
                 PacketProcessQueue = new Queue<Packet>();
                 PacketSendQueue = new Queue<Packet>();
 
+                StopThreads = false;
+                SendReceiveThreadsRunning = false;
+
                 // Try to open the connection
-                if (!ConnectionThreadRunning) { ConnectThreadFactory().Start(); }
+                if (!ThreadIsRunning(ConnectionThread))
+                {
+                    ConnectionThread = ConnectThreadFactory();
+                    ConnectionThread.Start();
+                }
             }
             else { Trace("Client.Start() called when Client is already initialized."); }
         }
@@ -123,14 +134,12 @@ namespace Scarlet.Communications
 
         private static void Connect()
         {
-            ConnectionThreadRunning = true;
             Trace("Attempting Server Connection.");
             while (!StopThreads && !IsConnected)
             {
                 if (TryOpenConnection()) { SendHandshake(); }
                 Thread.Sleep(Constants.CONNECTION_RETRY_DELAY);
             }
-            ConnectionThreadRunning = false;
         }
 
         private static bool TryOpenConnection()
@@ -158,6 +167,8 @@ namespace Scarlet.Communications
                 Trace("Unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
                 Success = false;
             }
+            Success = StartSendReceiveThreads();
+            if (!Success) { Trace("Unable to startup Send / Receive threads. Retrying."); }
             return Success;
         }
 
@@ -180,7 +191,7 @@ namespace Scarlet.Communications
             ClientServerConnectionState = (ClientServerConnectionState)Payload[1];
             ServerName = UtilData.ToString(Payload.Skip(2).ToArray());
             string ErrorMsg;
-            switch(ClientServerConnectionState)
+            switch (ClientServerConnectionState)
             {
                 case ClientServerConnectionState.OKAY:
                     ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = ServerName, StatusConnected = true });
@@ -199,20 +210,24 @@ namespace Scarlet.Communications
                     Stop();
                     break;
             }
-            
+
         }
 
         private static void CloseConnection()
         {
             ServerTCP?.Close();
             ServerUDP?.Close();
-            if (IsConnected) { ConnectionStatusChanged?.Invoke("Client", new ConnectionStatusChanged() { StatusEndpoint = "Server", StatusConnected = false }); }
+            if (IsConnected) { ConnectionStatusChanged?.Invoke("Client", new ConnectionStatusChanged() { StatusEndpoint = ServerName ?? "Server", StatusConnected = false }); }
             IsConnected = false;
         }
 
         private static void StartConnectOnConnFailure(object Sender, ConnectionStatusChanged Event)
         {
-            if (!Event.StatusConnected && !ConnectionThreadRunning) { ConnectThreadFactory().Start(); }
+            if (!Event.StatusConnected && !ThreadIsRunning(ConnectionThread))
+            {
+                ConnectionThread = ConnectThreadFactory();
+                ConnectionThread.Start();
+            }
         }
 
         private static void SetIsConnected(object Sender, ConnectionStatusChanged Event) { IsConnected = Event.StatusConnected; }
@@ -220,6 +235,14 @@ namespace Scarlet.Communications
         #endregion
 
         #region Send
+
+        private static void SendQueue()
+        {
+            while (!StopThreads)
+            {
+                Thread.Sleep(OperationPeriod);
+            }
+        }
 
         /// <summary>
         /// 
@@ -252,22 +275,85 @@ namespace Scarlet.Communications
 
         #region Receive
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private static void Receive()
+        private static void ReceiveOnSocket(object ReceiveSocket)
         {
+            Socket Socket = (Socket)ReceiveSocket;
+            while (!StopThreads)
+            {
+                bool ReadFailureAlertSent = false;
+                if (Socket.Available >= Constants.PACKET_HEADER_SIZE)
+                {
+                    byte[] ReceiveBuffer = new byte[ReceiveBufferSize];
+                    try
+                    {
+                        int Size;
 
+                        // Peek at incoming packets
+                        lock (Socket) { Size = Socket.Receive(ReceiveBuffer, ReceiveBuffer.Length, SocketFlags.Peek); }
+
+                        // Find maximum number of packets in this set
+                        int MaxPackets = Size / Constants.PACKET_HEADER_SIZE;
+                        byte[] Message = ReceiveBuffer.Take(Size).ToArray();
+                        int Offset = 0;
+                        int BytesRead = 0;
+                        for (int i = 0; i < MaxPackets; i++)
+                        {
+                            // Find length of this packet
+                            int Index = i * Constants.PACKET_HEADER_SIZE + Offset;
+                            int PayloadLength = ((Message[Index + 5] << 8) | Message[Index + 6]) & 0x00FF;
+                            Offset += PayloadLength;
+                            int FullLength = Constants.PACKET_HEADER_SIZE + PayloadLength;
+                            BytesRead += FullLength;
+                            // Take the packet, form it, and put it in the process queue
+                            byte[] ThisPacket = Message.Skip(Index).Take(FullLength).ToArray();
+                            lock (PacketProcessQueue) { PacketProcessQueue.Enqueue(Packet.FromBytes(ThisPacket, Socket.ProtocolType)); }
+                        }
+
+                        // Flush the complete packets
+                        ReceiveBuffer = new byte[BytesRead];
+                        lock (Socket) { Socket.Receive(ReceiveBuffer, BytesRead, SocketFlags.None); }
+                    }
+                    catch (SocketException)
+                    {
+                        if (!ReadFailureAlertSent)
+                        {
+                            Trace("Failing to read from " + Enum.GetName(typeof(SocketType), Socket.SocketType).ToUpper() + " socket. Check Connection.");
+                            ReadFailureAlertSent = true;
+                        }
+                    }
+                }
+                Thread.Sleep(OperationPeriod);
+            }
+        }
+
+        private static void ProcessPackets()
+        {
+            while (!StopThreads)
+            {
+                Packet CurrentPacket = PacketProcessQueue?.Dequeue();
+                if (CurrentPacket != null)
+                {
+                    CurrentPacket.Endpoint = CurrentPacket.Endpoint ?? "Server";
+
+                    Parse.ParseMessage(CurrentPacket);
+                }
+                Thread.Sleep(OperationPeriod);
+            }
         }
 
         #endregion
 
+        #region Control
+
         public static void Stop()
         {
             StopThreads = true;
+
             CloseConnection();
             Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Client.");
         }
+
+        #endregion
 
         #region Watchdogs
 
@@ -288,13 +374,34 @@ namespace Scarlet.Communications
 
         #endregion
 
-        #region Thread Factories
+        #region Thread Starts & Thread Factories
 
         private static Thread ConnectThreadFactory() { return new Thread(new ThreadStart(Connect)); }
-        private static Thread SendThreadFactory() { return null; }
-        private static Thread ReceiveUDPThreadFactory() { return null; }
-        private static Thread ReceiveTCPThreadFactory() { return null; }
-        private static Thread ProcessIncomingThreadFactory() { return null; }
+        private static Thread SendThreadFactory() { return new Thread(new ThreadStart(SendQueue)); }
+        private static Thread ReceiveThreadFactory() { return new Thread(new ParameterizedThreadStart(ReceiveOnSocket)); }
+        private static Thread ProcessIncomingThreadFactory() { return new Thread(new ThreadStart(ProcessPackets)); }
+        private static Thread WatchdogThreadFactory() { return new Thread(new ThreadStart(WatchdogLoop)); }
+
+        private static bool StartSendReceiveThreads()
+        {
+            if (!SendReceiveThreadsRunning)
+            {
+                SendThread = SendThreadFactory();
+                ReceiveUDPThread = ReceiveThreadFactory();
+                ReceiveTCPThread = ReceiveThreadFactory();
+                PacketProcessThread = ProcessIncomingThreadFactory();
+                SendThread.Start();
+                ReceiveUDPThread.Start();
+                ReceiveTCPThread.Start();
+                PacketProcessThread.Start();
+                bool Success = SendThread.ThreadState == ThreadState.Running;
+                Success &= ReceiveUDPThread.ThreadState == ThreadState.Running;
+                Success &= ReceiveTCPThread.ThreadState == ThreadState.Running;
+                Success &= PacketProcessThread.ThreadState == ThreadState.Running;
+                SendReceiveThreadsRunning = Success;
+            }
+            return SendReceiveThreadsRunning;
+        }
 
         #endregion
 
@@ -323,10 +430,12 @@ namespace Scarlet.Communications
 
         #endregion
 
-        #region Info
+        #region Info & Utility
 
         public static int GetProcessQueueLength() { return PacketProcessQueue?.Count ?? 0; }
         public static int GetSendQueueLength() { return PacketSendQueue?.Count ?? 0; }
+
+        private static bool ThreadIsRunning(Thread CheckThread) { return !(CheckThread == null || CheckThread?.ThreadState == ThreadState.Stopped); }
 
         #endregion
 
