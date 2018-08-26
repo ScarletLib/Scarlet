@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Scarlet.Communications
@@ -14,7 +16,10 @@ namespace Scarlet.Communications
     public static class Client
     {
         public static bool TraceLogging { get; set; }
+        public static bool WatchdogLogging { get; set; }
         public static bool Initialized { get; private set; }
+        public static bool IsConnected { get; private set; }
+        public static bool StorePackets { get; set; }
 
         public static string ClientName { get; private set; }
 
@@ -22,6 +27,7 @@ namespace Scarlet.Communications
         public static int OperationPeriod { get; private set; }
         public static int PortUDP { get; private set; }
         public static int PortTCP { get; private set; }
+        public static int ConnectionQuality { get; private set; }
 
         public static IPAddress ServerIP { get; private set; }
 
@@ -30,7 +36,19 @@ namespace Scarlet.Communications
         public static event EventHandler<TimeSynchronizationOccurred> TimeSynchronizationOccurred;
         public static event EventHandler<ConnectionQualityChanged> ConnectionQualityChanged;
 
+        public static List<Packet> ReceivedPackets { get; private set; }
+        public static List<Packet> SendPackets { get; private set; }
+
+        private static Queue<Packet> PacketProcessQueue;
+        private static Queue<Packet> PacketSendQueue;
+
+        private static TcpClient ServerTCP;
+        private static UdpClient ServerUDP;
+
         private static volatile bool StopThreads;
+        private static volatile bool WatchdogFoundOnInterval;
+
+        private static bool ConnectionThreadRunning;
 
         /// <summary>
         /// 
@@ -63,7 +81,7 @@ namespace Scarlet.Communications
         {
             if (!Initialized)
             {
-                Trace("Initializing Client.");
+                Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Initializing Client.");
 
                 // Initialize constructor variables into Client
                 Client.ClientName = ClientName;
@@ -78,17 +96,83 @@ namespace Scarlet.Communications
                 BufferLengthChanged += TraceBufferChange;
                 TimeSynchronizationOccurred += TraceTimeSynchronization;
                 ConnectionQualityChanged += TraceConnectionQualityChanged;
+
+                // Add connection change trigger
+                ConnectionStatusChanged += StartConnectOnConnFailure;
+
+                // Initialize Data structures
+                PacketProcessQueue = new Queue<Packet>();
+                PacketSendQueue = new Queue<Packet>();
+
+                // Try to open the connection
+                if (!ConnectionThreadRunning) { ConnectThreadFactory().Start(); }
             }
+            else { Trace("Client.Start() called when Client is already initialized."); }
         }
 
         #region Connect
-        
-        /// <summary>
-        /// 
-        /// </summary>
+
         private static void Connect()
         {
+            ConnectionThreadRunning = true;
+            Trace("Attempting Server Connection.");
+            while (!StopThreads && !IsConnected)
+            {
+                if (TryOpenConnection()) { SendHandshake(); }
+                Thread.Sleep(Constants.CONNECTION_RETRY_DELAY);
+            }
+            ConnectionThreadRunning = false;
+        }
 
+        private static bool TryOpenConnection()
+        {
+            // Open TCP Connection
+            ServerTCP = new TcpClient();
+            IAsyncResult TCPConnResult = ServerTCP.BeginConnect(ServerIP, PortTCP, null, null);
+            bool Success = TCPConnResult.AsyncWaitHandle.WaitOne(Constants.CONNECTION_RETRY_DELAY);
+            if (!Success)
+            {
+                CloseConnection();
+                Trace("Unable to connect to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + " within " + Constants.CONNECTION_RETRY_DELAY.ToString() + " ms. Retrying.");
+            }
+            else
+            {
+                ServerTCP.NoDelay = true;
+                ServerTCP.ReceiveBufferSize = ReceiveBufferSize;
+            }
+
+            // Open UDP Connection
+            ServerUDP = new UdpClient();
+            try { ServerUDP.Connect(new IPEndPoint(ServerIP, PortUDP)); }
+            catch (SocketException)
+            {
+                Trace("Unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
+                Success = false;
+            }
+            return Success;
+        }
+
+        private static void SendHandshake()
+        {
+
+        }
+
+        internal static void ReceiveHandshake(Packet Handshake)
+        {
+            IsConnected = true;
+            // TODO: Handle handshake telemetry
+            ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = "Server", StatusConnected = true });
+        }
+
+        private static void CloseConnection()
+        {
+            ServerTCP?.Close();
+            ServerUDP?.Close();
+        }
+
+        private static void StartConnectOnConnFailure(object Sender, ConnectionStatusChanged Event)
+        {
+            if (!Event.StatusConnected && !ConnectionThreadRunning) { ConnectThreadFactory().Start(); }
         }
 
         #endregion
@@ -130,6 +214,35 @@ namespace Scarlet.Communications
             StopThreads = true;
         }
 
+        #region Watchdogs
+
+        internal static void HandleWatchdog(Packet Watchdog)
+        {
+            WatchdogFoundOnInterval = true;
+            // Set telemetry based on watchdog packet
+        }
+
+        private static void WatchdogLoop()
+        {
+            while(!StopThreads)
+            {
+
+                Thread.Sleep(Constants.WATCHDOG_WAIT);
+            }
+        }
+
+        #endregion
+
+        #region Thread Factories
+
+        private static Thread ConnectThreadFactory() { return new Thread(new ThreadStart(Connect)); }
+        private static Thread SendThreadFactory() { return null; }
+        private static Thread ReceiveUDPThreadFactory() { return null; }
+        private static Thread ReceiveTCPThreadFactory() { return null; }
+        private static Thread ProcessIncomingThreadFactory() { return null; }
+
+        #endregion
+
         #region Trace and Logging
 
         private static void Trace(string Message) { Log.Trace(typeof(Client), Message, TraceLogging); }
@@ -152,6 +265,13 @@ namespace Scarlet.Communications
             if (Event.StatusConnected) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Server Connected."); }
             else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Server Disconnected."); }
         }
+
+        #endregion
+
+        #region Info
+
+        public static int GetProcessQueueLength() { return PacketProcessQueue?.Count ?? 0; }
+        public static int GetSendQueueLength() { return PacketSendQueue?.Count ?? 0; }
 
         #endregion
 

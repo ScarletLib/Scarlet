@@ -1,11 +1,12 @@
 ﻿namespace Scarlet.Communications
 {
 
-    static class Constants
+    internal static class Constants
     {
         #region Communication Defaults
         public const int WATCHDOG_WAIT = 5000;  // ms
         public const int WATCHDOG_INTERVAL = 1000; // ms
+        public const int CONNECTION_RETRY_DELAY = 5000; // ms
         #endregion
 
         #region Reserved Packet IDs
@@ -16,6 +17,13 @@
         public const byte HANDSHAKE_FROM_CLIENT = 0xF4;
         public const byte HANDSHAKE_FROM_SERVER = 0xF5;
         #endregion
+    }
+
+    internal enum ClientServerConnectionState : byte
+    {
+        OKAY = 0x00,
+        INVALID_NAME = 0x01,
+        INCOMPATIBLE_VERSIONS = 0x02,
     }
 
 }

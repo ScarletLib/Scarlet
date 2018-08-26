@@ -64,13 +64,13 @@ namespace Scarlet.Communications
 
         #region Parse Handler Delegates
 
-        public static void ParseWatchdogFromServer(Packet Watchdog) { }
+        public static void ParseWatchdogFromServer(Packet Watchdog) { Client.HandleWatchdog(Watchdog); }
 
         public static void ParseWatchdogFromClient(Packet Watchdog) { }
 
         public static void ParseClientHandshake(Packet ClientHandshake) { }
 
-        public static void ParseServerHandshake(Packet ServerHandshake) { }
+        public static void ParseServerHandshake(Packet ServerHandshake) { Client.ReceiveHandshake(ServerHandshake); }
 
         public static void ParseTimeSynchronization(Packet TimeSync) { }
 
