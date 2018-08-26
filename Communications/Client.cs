@@ -39,7 +39,11 @@ namespace Scarlet.Communications
         public static List<Packet> ReceivedPackets { get; private set; }
         public static List<Packet> SendPackets { get; private set; }
 
-        public static LatencyMeasurementMode LatencyMeasurement;
+        public static LatencyMeasurementMode LatencyMeasurement { get; set; }
+        public static ScarletVersion RemoteVersion { get; private set; }
+        public static ClientServerConnectionState ClientServerConnectionState { get; private set; }
+
+        public static string ServerName { get; private set; }
 
         private static Queue<Packet> PacketProcessQueue;
         private static Queue<Packet> PacketSendQueue;
@@ -103,6 +107,7 @@ namespace Scarlet.Communications
 
                 // Add connection change trigger
                 ConnectionStatusChanged += StartConnectOnConnFailure;
+                ConnectionStatusChanged += SetIsConnected;
 
                 // Initialize Data structures
                 PacketProcessQueue = new Queue<Packet>();
@@ -170,9 +175,31 @@ namespace Scarlet.Communications
 
         internal static void ReceiveHandshake(Packet Handshake)
         {
-            // TODO: Actually handle this
-            IsConnected = true;
-            ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = "Server", StatusConnected = true });
+            byte[] Payload = Handshake.Payload;
+            RemoteVersion = (ScarletVersion)Payload[0];
+            ClientServerConnectionState = (ClientServerConnectionState)Payload[1];
+            ServerName = UtilData.ToString(Payload.Skip(2).ToArray());
+            string ErrorMsg;
+            switch(ClientServerConnectionState)
+            {
+                case ClientServerConnectionState.OKAY:
+                    ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = ServerName, StatusConnected = true });
+                    break;
+                case ClientServerConnectionState.INCOMPATIBLE_VERSIONS:
+                    string ServerVersion = Enum.GetName(typeof(ScarletVersion), RemoteVersion);
+                    string ClientVersion = Enum.GetName(typeof(ScarletVersion), Utilities.Constants.SCARLET_VERSION);
+                    ErrorMsg = "Incompatible versions detected. Stopping Client. Please resolve between Client on " + ClientVersion + " and Server on " + ServerVersion + ".";
+                    Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, ErrorMsg);
+                    Stop();
+                    break;
+                case ClientServerConnectionState.INVALID_NAME:
+                    ErrorMsg = "Invalid name, " + ClientName + ", on Server [ServerName: " + ServerName + "]" + ". ";
+                    ErrorMsg += "Name either already in use/reserved or has invalid characters. Stopping Client. Please try again with a different Client name.";
+                    Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, ErrorMsg);
+                    Stop();
+                    break;
+            }
+            
         }
 
         private static void CloseConnection()
@@ -187,6 +214,8 @@ namespace Scarlet.Communications
         {
             if (!Event.StatusConnected && !ConnectionThreadRunning) { ConnectThreadFactory().Start(); }
         }
+
+        private static void SetIsConnected(object Sender, ConnectionStatusChanged Event) { IsConnected = Event.StatusConnected; }
 
         #endregion
 
@@ -236,6 +265,8 @@ namespace Scarlet.Communications
         public static void Stop()
         {
             StopThreads = true;
+            CloseConnection();
+            Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Client.");
         }
 
         #region Watchdogs
