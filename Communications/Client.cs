@@ -134,7 +134,7 @@ namespace Scarlet.Communications
 
         private static void Connect()
         {
-            Trace("Attempting Server Connection.");
+            Trace("Client attempting Server Connection.");
             while (!StopThreads && !IsConnected)
             {
                 if (TryOpenConnection()) { SendHandshake(); }
@@ -151,7 +151,7 @@ namespace Scarlet.Communications
             if (!Success)
             {
                 CloseConnection();
-                Trace("Unable to connect to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + " within " + Constants.CONNECTION_RETRY_DELAY.ToString() + " ms. Retrying.");
+                Trace("Client unable to connect to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + " within " + Constants.CONNECTION_RETRY_DELAY.ToString() + " ms. Retrying.");
             }
             else
             {
@@ -164,11 +164,11 @@ namespace Scarlet.Communications
             try { ServerUDP.Connect(new IPEndPoint(ServerIP, PortUDP)); }
             catch (SocketException)
             {
-                Trace("Unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
+                Trace("Client unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
                 Success = false;
             }
             Success = StartSendReceiveThreads();
-            if (!Success) { Trace("Unable to startup Send / Receive threads. Retrying."); }
+            if (!Success) { Trace("Client unable to startup Send / Receive threads. Retrying."); }
             return Success;
         }
 
@@ -181,7 +181,7 @@ namespace Scarlet.Communications
 
             // Send handshake packet via TCP immediately
             try { ServerTCP.Client.Send(Handshake.GetForSend()); }
-            catch (SocketException) { Trace("Unable send handshake to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + ". Retrying."); }
+            catch (SocketException) { Trace("Client unable send handshake to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + ". Retrying."); }
         }
 
         internal static void ReceiveHandshake(Packet Handshake)
@@ -240,6 +240,9 @@ namespace Scarlet.Communications
         {
             while (!StopThreads)
             {
+                Packet SendPacket;
+                lock (PacketSendQueue) { SendPacket = PacketSendQueue.Dequeue(); }
+                SendNow(SendPacket);
                 Thread.Sleep(OperationPeriod);
             }
         }
@@ -250,25 +253,76 @@ namespace Scarlet.Communications
         /// <param name="SendPacket"></param>
         public static void Send(Packet SendPacket)
         {
-
+            if (!Initialized) { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "CANNOT SEND WITHOUT INITIALIZING CLIENT."); }
+            lock (PacketSendQueue) { PacketSendQueue.Enqueue(SendPacket); }
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="SendPacket"></param>
-        public static void SendNow(Packet SendPacket)
+        public static bool SendNow(Packet SendPacket)
         {
-
+            if (!Initialized)
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "CANNOT SEND WITHOUT INITIALIZING CLIENT.");
+                return false;
+            }
+            if (IsConnected) { return SendRegardless(SendPacket); }
+            Trace("Client attempted packet send in disconnected state.");
+            return false;
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="SendPacket"></param>
-        internal static void SendRegardless(Packet SendPacket)
+        internal static bool SendRegardless(Packet SendPacket)
         {
-
+            if (!Initialized) { Trace("Scarlet internally attempted sending without Client initialization."); }
+            SendPacket.UpdateTimestamp();
+            byte[] Data = SendPacket.GetForSend();
+            if (SendPacket.IsUDP)
+            {
+                try
+                {
+                    ServerUDP.Send(Data, Data.Length);
+                }
+                catch (SocketException)
+                {
+                    Trace("Client failed to send packet via UDP because it could not access the UDP socket. Try again.");
+                    return false;
+                }
+                catch (ObjectDisposedException)
+                {
+                    Trace("Client failed to send packet via UDP because the UDP client was prematurely closed. Try again or restart Client.");
+                    return false;
+                }
+                catch (InvalidOperationException)
+                {
+                    Trace("Client failed to send packet via UDP because the UDP client already established a default remote host. Try again or restart Client.");
+                    return false;
+                }
+                return true;
+            }
+            else
+            {
+                try
+                {
+                    ServerTCP.Client.Send(Data);
+                }
+                catch (SocketException)
+                {
+                    Trace("Client failed to send packet via TCP because it could not access the TCP socket. Try again.");
+                    return false;
+                }
+                catch (ObjectDisposedException)
+                {
+                    Trace("Client failed to send packet via TCP because the TCP socket was prematurely closed. Try again or restart Client.");
+                    return false;
+                }
+            }
+            return true;
         }
 
         #endregion
