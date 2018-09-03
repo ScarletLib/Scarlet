@@ -9,6 +9,9 @@ namespace Scarlet.Communications
     /// <summary> Handles packet architecture. </summary>
     public class Packet : ICloneable
     {
+        /// <summary> Defines how many bytes are in the header (non-data portion at the beginning) of all <see cref="Packet"/>s. </summary>
+        public const int HEADER_LENGTH = sizeof(long) + sizeof(byte) + sizeof(ushort) + sizeof(ushort) + sizeof(byte); // Timestamp + ID + Length + Timeout + Importance
+
         public string Endpoint;  // Endpoint to send or endpoint received on 
         public bool IsUDP; // Either protocol message received on or protocol for sending
         public byte ID { get { return Data.ID; } }

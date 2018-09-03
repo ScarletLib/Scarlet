@@ -27,6 +27,7 @@
         OKAY = 0x00,
         INVALID_NAME = 0x01,
         INCOMPATIBLE_VERSIONS = 0x02,
+        CONNECTION_FAILED = 0x03
     }
 
     public enum LatencyMeasurementMode : byte

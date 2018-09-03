@@ -1,0 +1,440 @@
+﻿using Scarlet.Utilities;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Scarlet.Communications
+{
+    public static class Server
+    {
+        private static Dictionary<string, Queue<Packet>> SendQueues; // Client Name -> Packet Queue
+        private static Queue<Packet> ReceiveQueue;
+
+        private static UdpClient UDPListener;
+        private static TcpListener TCPListener;
+
+        private static Dictionary<string, ScarletClient> Clients;
+
+        private static Thread SendThread, ReceiveThreadTCP, ReceiveThreadUDP, ProcessThread;
+
+        private static bool Initialized = false;
+        private static volatile bool Stopping = false;
+        private static int ReceiveBufferSize;
+        private static int OperationPeriod = 10;
+
+        public static bool OutputWatchdogDebug { get; set; }
+        public static bool TraceLogging { get; set; }
+
+        public static bool StorePackets = false;
+        public static List<Packet> PacketsReceived, PacketsSent;
+
+        public static event EventHandler<EventArgs> ClientConnectionChange;
+
+        /*
+         * The overall flow is this:
+         * - Server is started
+         *  - TCP wait thread is started
+         *   - Waits for incoming TCP clients
+         *    - Starts HandleTCPClient thread for every incoming client
+         *    - Repeat
+         *  - UDP wait thread is started
+         *  - Packet processing (incoming packet parsing) thread is started
+         *  - Packet sending thread is started
+         */
+
+
+        public static void Start(int PortTCP, int PortUDP)
+        {
+            ReceiveBufferSize = 64;
+            Stopping = false;
+
+            if (!Initialized)
+            {
+                Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Initializing Server.");
+                Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Listening on ports " + PortTCP + " (TCP), and " + PortUDP + " (UDP).");
+
+                Clients = new Dictionary<string, ScarletClient>();
+                SendQueues = new Dictionary<string, Queue<Packet>>();
+                ReceiveQueue = new Queue<Packet>();
+                PacketsSent = new List<Packet>();
+                PacketsReceived = new List<Packet>();
+
+                // TODO: Packet Handler?
+                new Thread(new ParameterizedThreadStart(StartThreads)).Start(new Tuple<int, int>(PortTCP, PortUDP));
+
+                // TODO: Watchdogs?
+
+                Initialized = true;
+            }
+            else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Attempted to start Server when it was already started. Ignoring."); }
+        }
+
+        /// <summary> Starts all Server threads, then waits for them to terminate. </summary>
+        /// <param name="Ports"> Tuple<int, int> of ports, corresponding to (TCP, UDP). </param>
+        private static void StartThreads(object Ports)
+        {
+            ReceiveThreadTCP = new Thread(new ParameterizedThreadStart(WaitForClientsTCP));
+            ReceiveThreadTCP.Start(((Tuple<int, int>)Ports).Item1);
+
+            ReceiveThreadUDP = new Thread(new ParameterizedThreadStart(WaitForClientsUDP));
+            ReceiveThreadUDP.Start(((Tuple<int, int>)Ports).Item2);
+
+            ProcessThread = new Thread(new ThreadStart(ProcessPackets));
+            ProcessThread.Start();
+
+            SendThread = new Thread(new ThreadStart(SendPackets));
+            SendThread.Start();
+
+            ReceiveThreadTCP.Join();
+            Log.Trace(typeof(Server), "TCP receiver thread stopped.", TraceLogging);
+
+            ReceiveThreadUDP.Join();
+            Log.Trace(typeof(Server), "UDP receiver thread stopped.", TraceLogging);
+
+            ProcessThread.Join();
+            Log.Trace(typeof(Server), "Packet processing thread stopped.", TraceLogging);
+
+            SendThread.Join();
+            Log.Trace(typeof(Server), "Packet sending thread stopped.", TraceLogging);
+
+            Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "Server stopped.");
+            Initialized = false;
+        }
+
+        /// <summary> Sends signal to all components of Server to stop, then waits for everything to shut down. </summary>
+        public static void Stop()
+        {
+            if (!Initialized) { return; } // We never even started
+            Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Server.");
+            Stopping = true;
+            // TODO: Stop watchdogs?
+
+            // This is a meh solution to the WaitForClientsTCP thread not ending until the next client connects.
+            TcpClient Dummy = new TcpClient();
+            Dummy.Connect(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)TCPListener.LocalEndpoint).Port));
+            Dummy.Close();
+
+            while (Initialized) { Thread.Sleep(50); } // Wait for all threads to stop.
+        }
+
+        /// <summary> Waits for incoming TCP clients, then creates a HandleTCPClient thread to interface with each client. </summary>
+        /// <param name="ReceivePort"> The port to listen for TCP clients on. Must be int. </param>
+        private static void WaitForClientsTCP(object ReceivePort)
+        {
+            if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
+            TCPListener = new TcpListener(new IPEndPoint(IPAddress.Any, (int)ReceivePort));
+            TCPListener.Start();
+            while (!Stopping)
+            {
+                TcpClient Client = TCPListener.AcceptTcpClient();
+                if (!Stopping) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Client is connecting."); }
+                // Start sub-threads for every client.
+                Thread ClientThread = new Thread(new ParameterizedThreadStart(HandleTCPClient));
+                ClientThread.Start(Client);
+            }
+            TCPListener.Stop();
+        }
+
+        /// <summary>
+        /// Waits for, and receives data from a connected TCP client.
+        /// This must be started on a thread, as it will block until <see cref="Stopping"/> is true, or the client disconnects.
+        /// </summary>
+        /// <param name="ClientObj"> The client to receive data from. Must be <see cref="TcpClient"/>. </param>
+        private static void HandleTCPClient(object ClientObj)
+        {
+            TcpClient Client = (TcpClient)ClientObj;
+
+            void SendHandshakeResponse(byte ErrorCode)
+            {
+                try
+                {
+                    byte[] PacketData = new byte[Packet.HEADER_LENGTH + sizeof(byte) + sizeof(byte)];
+                    Array.Copy(UtilData.ToBytes(DateTime.Now.Ticks), 0, PacketData, 0, sizeof(long)); // 0-7 (8B)
+                    PacketData[8] = Constants.HANDSHAKE_FROM_SERVER; // 8 (1B)
+                    Array.Copy(UtilData.ToBytes((ushort)PacketData.Length), 0, PacketData, 9, sizeof(ushort)); // 9-10 (2B)
+                    // Leave ushort CommandTimeout as 0, 11-12 (2B)
+                    // Leave byte PacketImportance as 0, 13 (1B)
+                    PacketData[14] = (byte)Utilities.Constants.SCARLET_VERSION; // 14 (1B)
+                    PacketData[15] = ErrorCode; // 15 (1B)
+                    Client.GetStream().Write(PacketData, 0, PacketData.Length);
+                }
+                catch (Exception Exc)
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "An error occurred when sending the handshake response to the connecting TCP client.");
+                }
+            }
+
+            NetworkStream ReceiveStream = Client.GetStream();
+            if (!ReceiveStream.CanRead)
+            {
+                Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Client TCP NetworkStream connection does not permit reading.");
+                return;
+            }
+
+            // Receive client information.
+            ScarletClient ConnectedClient;
+            byte[] DataBuffer = new byte[Math.Max(ReceiveBufferSize, 64)]; // Guarantee at least 64B
+
+            try
+            {
+                int ReceivedByteLength = ReceiveStream.Read(DataBuffer, 0, DataBuffer.Length);
+                Log.Trace(typeof(Server), "During TCP client connection phase, received " + ReceivedByteLength + " bytes.", TraceLogging);
+                if (ReceivedByteLength == 0)
+                {
+                    ReceiveStream?.Close();
+                    // The if statement is here so that we don't output this when the dummy connection is sent to terminate this thread.
+                    if (!Stopping) { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client disconnected before sending name. Terminating connection."); }
+                    return;
+                }
+                else // We got some data from the client.
+                {
+                    const int HANDSHAKE_DATA_MIN_LENGTH = sizeof(byte) + sizeof(byte); // The amount of data we expect to see in the packet after the header, not including the variable length name.
+                    if (ReceivedByteLength < Packet.HEADER_LENGTH)
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake packet header. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        return;
+                    }
+                    else if (DataBuffer[8] != Constants.HANDSHAKE_FROM_CLIENT)
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with packet other than handshake. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        return;
+                    }
+                    else if (ReceivedByteLength == Packet.HEADER_LENGTH)
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect without sending information about itself. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        return;
+                    }
+                    else if (ReceivedByteLength < (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake data. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        return;
+                    }
+                    else if (ReceivedByteLength == (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with no name. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.INVALID_NAME);
+                        return;
+                    }
+
+                    // Check if we have the full packet. If not, we need to get the rest of the data.
+                    ushort ExpectedLength = UtilData.ToUShort(UtilMain.SubArray(DataBuffer, 9, sizeof(ushort)));
+                    if (ExpectedLength > ReceivedByteLength)
+                    {
+                        Log.Trace(typeof(Server), "Handshake packet larger than received data, attempting further read.", TraceLogging);
+                        byte[] DataBufferExtended = new byte[ExpectedLength];
+                        Array.Copy(DataBuffer, DataBufferExtended, ReceivedByteLength);
+                        int ReceivedByteLengthExtended = ReceiveStream.Read(DataBufferExtended, ReceivedByteLength, (ExpectedLength - ReceivedByteLength));
+                        Log.Trace(typeof(Server), "Read an additional " + ReceivedByteLengthExtended + " bytes.", TraceLogging);
+                        if (ExpectedLength > (ReceivedByteLength + ReceivedByteLengthExtended))
+                        {
+                            Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to get full handshake packet from incoming TCP client. Terminating connection.");
+                            SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                            return;
+                        }
+                        else
+                        {
+                            DataBuffer = DataBufferExtended;
+                            ReceivedByteLength += ReceivedByteLengthExtended;
+                        }
+                    }
+
+                    // We are now ready to start interpreting the handshake packet.
+                    LatencyMeasurementMode LatencyMode;
+                    byte ScarletVersion;
+                    string ClientName;
+
+                    try
+                    {
+                        LatencyMode = (LatencyMeasurementMode)DataBuffer[Packet.HEADER_LENGTH + 0];
+                        ScarletVersion = DataBuffer[Packet.HEADER_LENGTH + 1];
+                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 2), DataBuffer.Length - (Packet.HEADER_LENGTH + 2)));
+                    }
+                    catch
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to interpret incoming TCP client information. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        return;
+                    }
+
+                    // To be enabled at a later time if future updates cause breaking network changes.
+                    /*if (ScarletVersion < 1) // If the client is running a version incompatible with this server, disconnect it.
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Incoming TCP client is running Scarlet version " + ScarletVersion + ", which is incompatible. Update the client. Terminating connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.INCOMPATIBLE_VERSIONS);
+                        return;
+                    }*/
+
+                    if (ClientName != null && ClientName.Length > 0)
+                    {
+                        Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "TCP Client connected with name \"" + ClientName + "\".");
+                        lock (Clients)
+                        {
+                            if (Clients.ContainsKey(ClientName))
+                            {
+                                Log.Trace(typeof(Server), "Client \"" + ClientName + "\" already exists. Updating status.", TraceLogging);
+                                Clients[ClientName].TCP = Client;
+                                Clients[ClientName].Connected = true;
+                                Clients[ClientName].LatencyMode = LatencyMode;
+                                Clients[ClientName].ScarletVersion = ScarletVersion;
+                                ConnectedClient = Clients[ClientName];
+                            }
+                            else
+                            {
+                                Log.Trace(typeof(Server), "Client \"" + ClientName + "\" is new. Adding info.", TraceLogging);
+                                ScarletClient NewClient = new ScarletClient()
+                                {
+                                    Name = ClientName,
+                                    TCP = Client,
+                                    LatencyMode = LatencyMode,
+                                    ScarletVersion = ScarletVersion,
+                                    Connected = true
+                                };
+                                Clients.Add(ClientName, NewClient);
+                                ConnectedClient = NewClient;
+                            }
+                        }
+
+                        if (!SendQueues.ContainsKey(ClientName)) { SendQueues.Add(ClientName, new Queue<Packet>()); }
+                    }
+                    else
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Invalid TCP client name received. Dropping connection.");
+                        SendHandshakeResponse((byte)ClientServerConnectionState.INVALID_NAME);
+                        return;
+                    }
+                }
+            }
+            catch (Exception Exc)
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Something went wrong while attempting to handle incoming client. Dropping connection.");
+                Log.Exception(Log.Source.NETWORK, Exc);
+                SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                ReceiveStream?.Close();
+                return;
+            }
+
+            // The client is now connected.
+            ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = true });
+            // TODO: Add to watchdog dispatch
+
+            // Receive data from client.
+            DataBuffer = new byte[ReceiveBufferSize];
+            byte[] LeftoverData = null;
+
+            while (!Stopping && Clients[ConnectedClient.Name].Connected)
+            {
+                try
+                {
+                    int ReceivedByteLength;
+                    if (LeftoverData != null)
+                    {
+                        ReceivedByteLength = LeftoverData.Length;
+                        if (DataBuffer.Length < LeftoverData.Length) { DataBuffer = new byte[LeftoverData.Length]; }
+                        Array.Copy(LeftoverData, DataBuffer, LeftoverData.Length);
+                        LeftoverData = null;
+                        Log.Trace(typeof(Server), "Using leftover data of length " + ReceivedByteLength + ".", TraceLogging);
+                    }
+                    else
+                    {
+                        ReceivedByteLength = ReceiveStream.Read(DataBuffer, 0, DataBuffer.Length);
+                        Log.Trace(typeof(Server), "Received data from TCP client of length " + ReceivedByteLength + ".", TraceLogging);
+                    }
+
+                    if (ReceivedByteLength == 0)
+                    {
+                        Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "Client \"" + ConnectedClient.Name + "\" has disconnected.");
+                        lock (Clients[ConnectedClient.Name]) { Clients[ConnectedClient.Name].Connected = false; }
+                        break;
+                    }
+                    if (ReceivedByteLength >= Packet.HEADER_LENGTH)
+                    {
+                        ushort ExpectedLength = UtilData.ToUShort(UtilMain.SubArray(DataBuffer, 9, sizeof(ushort)));
+                        if (ExpectedLength > ReceivedByteLength) // If we haven't gotten enough data to satisfy the packet length
+                        {
+                            Log.Trace(typeof(Server), "Packet larger than received data, attempting further read.", TraceLogging);
+                            byte[] DataBufferExtended = new byte[ExpectedLength];
+                            Array.Copy(DataBuffer, DataBufferExtended, ReceivedByteLength);
+                            int ReceivedByteLengthExtended = ReceiveStream.Read(DataBufferExtended, ReceivedByteLength, (ExpectedLength - ReceivedByteLength));
+                            Log.Trace(typeof(Server), "Read an additional " + ReceivedByteLengthExtended + " bytes.", TraceLogging);
+                            if (ExpectedLength > (ReceivedByteLength + ReceivedByteLengthExtended))
+                            {
+                                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to get entire packet on extended attempt. Check that the packet's length field matches the actual amount of data. The packet was discarded.");
+                                continue;
+                            }
+                            else
+                            {
+                                DataBuffer = DataBufferExtended;
+                                ReceivedByteLength += ReceivedByteLengthExtended;
+                            }
+                        }
+                        else if (ReceivedByteLength > ExpectedLength) // We got more data than expected, the remainder will be interpreted as another packet.
+                        {
+                            Log.Trace(typeof(Server), "Packet smaller than received data, saving data for next round.", TraceLogging);
+                            LeftoverData = new byte[ReceivedByteLength - ExpectedLength];
+                            Array.Copy(DataBuffer, ExpectedLength, LeftoverData, 0, (ReceivedByteLength - ExpectedLength));
+                            // TODO: If multiple packets are received combined, and the last packet does not have a complete header, then it will be discarded. Is this possible, and if so, worth addressing?
+                            if (LeftoverData.Length < Packet.HEADER_LENGTH) { Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Packet splitting length created incomplete header. The next packet(s) will fail to be interpreted. Please report this issue to the developers!"); }
+                        }
+                        byte[] PacketData = new byte[ExpectedLength];
+                        Array.Copy(DataBuffer, PacketData, ExpectedLength);
+                        Packet ReceivedPack = new Packet(new Message(PacketData), false, ConnectedClient.Name);
+                        ReceiveQueue.Enqueue(ReceivedPack);
+                        if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
+                    }
+                    else { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Data received from client was too short. Discarding."); }
+                }
+                catch (IOException IOExc)
+                {
+                    if (IOExc.InnerException is SocketException)
+                    {
+                        int Error = ((SocketException)IOExc.InnerException).ErrorCode;
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to read data from connected client with SocketExcpetion code " + Error);
+                        Log.Exception(Log.Source.NETWORK, IOExc);
+                        if (Error == 10054) { Clients[ConnectedClient.Name].Connected = false; } // The connection was reset (the client probably terminated).
+                    }
+                    else
+                    {
+                        Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to read data from connected client because of IO exception.");
+                        Log.Exception(Log.Source.NETWORK, IOExc);
+                    }
+                }
+                catch (Exception OtherExc)
+                {
+                    Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to read data from connected client.");
+                    Log.Exception(Log.Source.NETWORK, OtherExc);
+                }
+                if (!ReceiveStream.DataAvailable && LeftoverData == null) { Thread.Sleep(OperationPeriod); } // If we have nothing to do, wait until there is data available.
+            }
+            lock (Clients) { Clients.Remove(ConnectedClient.Name); }
+            Client.Client.Disconnect(true);
+            ReceiveStream.Close();
+            Client.Close();
+            ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = false });
+        }
+
+        public class ClientConnectionChangeEvent : EventArgs { public string ClientName; public bool IsNowConnected; }
+        private static void ClientConnChange(ClientConnectionChangeEvent Event) { ClientConnectionChange?.Invoke("Server", Event); }
+
+        private class ScarletClient
+        {
+            public TcpClient TCP;
+            public IPEndPoint EndpointTCP { get => (IPEndPoint)this.TCP?.Client.RemoteEndPoint; }
+            public IPEndPoint EndpointUDP;
+            public string Name;
+            public bool Connected;
+            public LatencyMeasurementMode LatencyMode;
+            public byte ScarletVersion;
+        }
+
+    }
+}
