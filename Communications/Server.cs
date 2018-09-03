@@ -425,6 +425,41 @@ namespace Scarlet.Communications
         public class ClientConnectionChangeEvent : EventArgs { public string ClientName; public bool IsNowConnected; }
         private static void ClientConnChange(ClientConnectionChangeEvent Event) { ClientConnectionChange?.Invoke("Server", Event); }
 
+        #region Processing Incoming Packets
+        /// <summary>
+        /// Pushes received packets through to Parse for processing.
+        /// This must be started on a thread, as it will block until <see cref="Stopping"/> is true.
+        /// Assumes that packets will not be removed from <see cref="ReceiveQueue"/> anywhere but inside this method.
+        /// </summary>
+        private static void ProcessPackets()
+        {
+            while (!Stopping)
+            {
+                Packet CurrentPacket = ReceiveQueue.Dequeue();
+
+                if (CurrentPacket != null)
+                {
+                    CurrentPacket = (Packet)CurrentPacket.Clone();
+                    ProcessOnePacket(CurrentPacket);
+                }
+                if (ReceiveQueue.Count == 0) { Thread.Sleep(OperationPeriod); }
+            }
+        }
+
+        /// <summary> Attempts to process a packet. Outputs to log and discards if processing fails. </summary>
+        /// <returns> Whether processing was successful. </returns>
+        private static bool ProcessOnePacket(Packet Packet)
+        {
+            try { return Parse.ParseMessage(Packet); }
+            catch (Exception Exc)
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to process packet. Discarding.");
+                Log.Exception(Log.Source.NETWORK, Exc);
+                return false;
+            }
+        }
+        #endregion
+
         private class ScarletClient
         {
             public TcpClient TCP;
