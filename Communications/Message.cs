@@ -5,27 +5,29 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Communications
 {
-    /// <summary> This class is intended to contain packet data. </summary>
     public class Message : ICloneable
     {
-        public byte[] Timestamp;  // Stores message timestamp (Unix time format)
-        public byte ID;           // Stores message ID
-        public byte[] Payload;    // Stored message data (discluding timestamp and ID)
+        public byte[] Timestamp; // Length 8
+        public byte ID;
+        public byte[] Payload; // The actual data
 
         /// <summary>
         /// Constructs a message given raw data, likes when received via network.
         /// Data encoded as such:
-        /// Timestamp: RawData[0] through RawData[3]
-        /// ID: RawData[4]
-        /// Payload: Remainder (RawData[5] though end)
+        /// Timestamp: RawData[0] through RawData[7]
+        /// ID: RawData[8]
+        /// Length: RawData[9] through RawData[10] (Checked, not stored)
+        /// Payload: Remainder (RawData[11] though end)
         /// </summary>
         /// <param name="RawData"> Incoming data array </param>
         public Message(byte[] RawData)
         {
-            if (RawData.Length < 5) { throw new ArgumentException("Raw data not sufficient for packet. Must be at least 5 bytes long."); }
-            this.Timestamp = UtilMain.SubArray(RawData, 0, 4);
-            this.ID = RawData[4];
-            if (RawData.Length > 5) { this.Payload = UtilMain.SubArray(RawData, 5, RawData.Length - 5); }
+            if (RawData.Length < Packet.HEADER_LENGTH) { throw new ArgumentException("Raw data not sufficient for packet. Must be at least " + Packet.HEADER_LENGTH + " bytes long."); }
+            this.Timestamp = UtilMain.SubArray(RawData, 0, sizeof(long));
+            this.ID = RawData[8];
+            ushort ExpectedLength = UtilData.ToUShort(RawData, 9);
+            if (ExpectedLength != RawData.Length) { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Packet data length does not match its descriptor. Expected " + ExpectedLength + " bytes, got " + RawData.Length + "."); }
+            if (RawData.Length > Packet.HEADER_LENGTH) { this.Payload = UtilMain.SubArray(RawData, Packet.HEADER_LENGTH, (RawData.Length - Packet.HEADER_LENGTH)); }
             else { this.Payload = new byte[0]; }
         }
 
@@ -36,7 +38,7 @@ namespace Scarlet.Communications
         public Message(byte ID, byte[] Payload = null, byte[] Timestamp = null)
         {
             this.Payload = Payload ?? new byte[0];
-            if (Timestamp == null || Timestamp.Length != 4) { this.Timestamp = Packet.GetCurrentTime(); }
+            if (Timestamp == null || Timestamp.Length != sizeof(long)) { this.Timestamp = Packet.GetCurrentTime(); }
             else { this.Timestamp = Timestamp; }
             this.ID = ID;
         }
@@ -47,16 +49,17 @@ namespace Scarlet.Communications
         /// <param name="Timestamp"> The timestamp of the packet. If null or invalid, the current time gets set. </param>
         public Message(byte ID, string Payload = null, byte[] Timestamp = null) : this(ID, UtilData.ToBytes(Payload), Timestamp) { }
 
-        /// <summary> Sets the timestamp. Must be 4 or more bytes (only first 4 used). </summary>
+        /// <summary> Sets the timestamp. Must be 8 bytes. </summary>
         /// <param name="Time"> The new timestamp. </param>
         public void SetTime(byte[] Time)
         {
-            if (Time.Length < 4) { throw new ArgumentException("Timestamp must be 4 bytes."); }
-            this.Timestamp = UtilMain.SubArray(Time, 0, 4);
+            if (Time.Length != sizeof(long)) { throw new ArgumentException("Timestamp must be 8 bytes."); }
+            this.Timestamp = new byte[8];
+            Array.Copy(Time, this.Timestamp, 8);
         }
 
         /// <summary> Appends data to the end of <see cref="Payload"/>. If <see cref="Payload"/> is currently null, create it. </summary>
-        /// <param name="NewData"> New Data to append. </param>
+        /// <param name="NewData"> New data to append. </param>
         public void AppendData(byte[] NewData)
         {
             if (this.Payload == null) { this.Payload = NewData; }
@@ -69,41 +72,23 @@ namespace Scarlet.Communications
             }
         }
 
-        /// <summary> Get a part of current data. </summary>
-        /// <param name="Offset"> Index to start copying. </param>
-        /// <param name="Size"> Size of data to copy. </param>
-        /// <returns> Data with index in range [Offset, Offset + Size). </returns>
-        public byte[] GetDataSlice(int Offset, int Size)
-        {
-            byte[] Data = new byte[Size];
-            Buffer.BlockCopy(this.Payload, Offset, Data, 0, Size);
-            return Data;
-        }
-
-
-        /// <summary> Get a part of current data from an offset to the end. </summary>
-        /// <param name="Offset"> Index to start copying. </param>
-        /// <returns> Data from `Offset` to the end. </returns>
-        public byte[] GetDataSlice(int Offset)
-        {
-            return GetDataSlice(Offset, this.Payload.Length - Offset);
-        }
-
         /// <summary>
-        /// Returns the raw data
-        /// in structure:
-        /// Timestamp data[0] to data[3]
-        /// ID at data[4]
-        /// Data encoded after data[4], i.e. data[5:]
+        /// Returns the raw data in structure:
+        /// Timestamp data[0] to data[7]
+        /// ID at data[8]
+        /// Length at data[9] to data[10]
+        /// Data encoded data[11] and onwards
         /// </summary>
-        /// <returns> Returns all data in message </returns>
+        /// <returns> Returns all data, ready for sending over the network. </returns>
         public byte[] GetRawData()
         {
-            List<byte> Output = new List<byte>();
-            Output.AddRange(this.Timestamp);
-            Output.Add(this.ID);
-            Output.AddRange(this.Payload);
-            return Output.ToArray();
+            if (this.Payload == null) { this.Payload = new byte[0]; }
+            byte[] Output = new byte[Packet.HEADER_LENGTH + this.Payload.Length];
+            Buffer.BlockCopy(this.Timestamp, 0, Output, 0, this.Timestamp.Length);
+            Output[8] = this.ID;
+            Buffer.BlockCopy(UtilData.ToBytes((ushort)(Packet.HEADER_LENGTH + this.Payload.Length)), 0, Output, 8, sizeof(ushort));
+            Buffer.BlockCopy(this.Payload, 0, Output, Packet.HEADER_LENGTH - 1, this.Payload.Length);
+            return Output;
         }
 
         /// <summary> Formats the Messages's contents to be human-readable. </summary>
@@ -122,7 +107,7 @@ namespace Scarlet.Communications
 
         public object Clone()
         {
-            Message ClonedMsg = (Message)this.MemberwiseClone();
+            Message ClonedMsg = (Message)MemberwiseClone();
             ClonedMsg.Timestamp = this.Timestamp != null ? (byte[])this.Timestamp.Clone() : null;
             ClonedMsg.Payload = this.Payload != null ? (byte[])this.Payload.Clone() : null;
             return ClonedMsg;
