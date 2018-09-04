@@ -123,6 +123,7 @@ namespace Scarlet.Communications
             while (Initialized) { Thread.Sleep(50); } // Wait for all threads to stop.
         }
 
+        #region TCP Handling
         /// <summary> Waits for incoming TCP clients, then creates a HandleTCPClient thread to interface with each client. </summary>
         /// <param name="ReceivePort"> The port to listen for TCP clients on. Must be int. </param>
         private static void WaitForClientsTCP(object ReceivePort)
@@ -421,6 +422,11 @@ namespace Scarlet.Communications
             Client.Close();
             ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = false });
         }
+        #endregion
+
+        #region UDP Handling
+
+        #endregion
 
         public class ClientConnectionChangeEvent : EventArgs { public string ClientName; public bool IsNowConnected; }
         private static void ClientConnChange(ClientConnectionChangeEvent Event) { ClientConnectionChange?.Invoke("Server", Event); }
@@ -460,6 +466,159 @@ namespace Scarlet.Communications
         }
         #endregion
 
+        public class PacketSendResult
+        {
+            public Packet Packet;
+            public Status Result;
+
+            public PacketSendResult(Packet Packet, Status Result)
+            {
+                this.Packet = Packet;
+                this.Result = Result;
+            }
+
+            public enum Status
+            {
+                /// <summary> Returned when the packet was too far back in the queue, and sending was never attempted. </summary>
+                TIMED_OUT,
+
+                /// <summary> Returned when something went wrong while sending the packet. </summary>
+                SENDING_FAILED,
+
+                /// <summary>
+                /// TCP: Returned when the destination client did not connect in time to receive the packet.
+                /// UDP: Returned if the client was not connected at the time of send attempt.
+                /// </summary>
+                CLIENT_NOT_CONNECTED,
+
+                /// <summary>
+                /// TCP: Returned when the connection quality did not achieve a sufficient level in time to send the packet.
+                /// UDP: Returned if the connection quality was insufficient at the time of send attempt.
+                /// </summary>
+                CONNECTION_QUALITY_INSUFFICIENT,
+
+                /// <summary> Returned when the client received the packet (TCP), or it was sent at the client (UDP). </summary>
+                SUCCESS
+            }
+        }
+
+        #region Sending Packets
+        /// <summary> TCP: Adds a packet to the queue of packets to be sent. / UDP: Sends the packet in the background. </summary>
+        /// <remarks> Returns quickly regardless of result. Use <paramref name="SendResult"/> if you want to know what happens to the packet. </remarks>
+        /// <param name="Packet"> The packet to be sent. </param>
+        /// <param name="SendResult"> Add a delegate here if you want to know what happens to your <see cref="Packet"/>. </param>
+        public static void Send(Packet Packet, Action<PacketSendResult> SendResult = null)
+        {
+            if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
+
+            if (Packet.IsUDP)
+            {
+                // Lets the runtime handle UDP sending in the threadpool, which means this method returns quickly, but we don't need to start a thread (very expensive) for every packet.
+                // This will get run in the background, and if the user requested it, they will get notified when something happens.
+                Task UDPSend = Task.Factory.StartNew(SendUDPTask, new Tuple<Packet, Action<PacketSendResult>>(Packet, SendResult));
+            }
+            else
+            {
+                // TODO: Do Checks
+                SendQueues[Packet.Endpoint].Enqueue(Packet);
+            }
+        }
+
+        /// <summary> Used to send UDP packets in a <see cref="Task"/>. </summary>
+        /// <remarks> T must be of type <see cref="Tuple"/>, containing <see cref="Packet"/> and <see cref="Action(PacketSendResult)"/>. </remarks>
+        private static Action<object> SendUDPTask = (object DataObj) =>
+        {
+            Tuple<Packet, Action<PacketSendResult>> Data = (Tuple<Packet, Action<PacketSendResult>>)DataObj;
+            PacketSendResult Result = SendNow(Data.Item1);
+            Data.Item2?.Invoke(Result);
+        };
+
+        /// <summary> Immediately sends a packet. Blocks until sending is complete/fails, regardless of protocol. </summary>
+        public static PacketSendResult SendNow(Packet ToSend)
+        {
+            if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
+            if (string.IsNullOrEmpty(ToSend.Endpoint)) { throw new InvalidOperationException("Cannot send packet to empty Endpoint."); }
+            if (ToSend.ID != Constants.WATCHDOG_FROM_SERVER || OutputWatchdogDebug) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Sending packet: " + ToSend); }
+
+            if (!Clients.ContainsKey(ToSend.Endpoint))
+            {
+                Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Tried to send packet to \"" + ToSend.Endpoint + "\", who has not connected.");
+                return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED);
+            }
+            if (!Clients[ToSend.Endpoint].Connected)
+            {
+                Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Tried to send packet to \"" + ToSend.Endpoint + "\", who is no longer connected.");
+                return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED);
+            }
+            try
+            {
+                if (Clients[ToSend.Endpoint].ConnectionQuality < ToSend.MinimumConnectionQuality)
+                {
+                    Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Tried to send packet to \"" + ToSend.Endpoint + "\", which does not meet the required minimum connection quality (Packet requires " + ToSend.MinimumConnectionQuality + ", client is " + Clients[ToSend.Endpoint].ConnectionQuality + ").");
+                    return new PacketSendResult(ToSend, PacketSendResult.Status.CONNECTION_QUALITY_INSUFFICIENT);
+                }
+                if (ToSend.IsUDP)
+                {
+                    if (!Clients.ContainsKey(ToSend.Endpoint)) { return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED); }
+                    lock (Clients[ToSend.Endpoint])
+                    {
+                        if (!Clients[ToSend.Endpoint].Connected) { return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED); }
+                        byte[] Data = ToSend.GetForSend();
+                        UDPListener.Send(Data, Data.Length, Clients[ToSend.Endpoint].EndpointUDP);
+                    }
+                    if (StorePackets) { PacketsSent.Add(ToSend); }
+                }
+                else
+                {
+                    if (!Clients.ContainsKey(ToSend.Endpoint)) { return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED); }
+                    lock (Clients[ToSend.Endpoint])
+                    {
+                        if (!Clients[ToSend.Endpoint].Connected) { return new PacketSendResult(ToSend, PacketSendResult.Status.CLIENT_NOT_CONNECTED); }
+                        byte[] Data = ToSend.GetForSend();
+                        Clients[ToSend.Endpoint].TCP.GetStream().Write(Data, 0, Data.Length);
+                    }
+                    if (StorePackets) { PacketsSent.Add(ToSend); }
+                }
+            }
+            catch (Exception Exc)
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to send packet.");
+                Log.Exception(Log.Source.NETWORK, Exc);
+                return new PacketSendResult(ToSend, PacketSendResult.Status.SENDING_FAILED);
+            }
+            return new PacketSendResult(ToSend, PacketSendResult.Status.SUCCESS);
+        }
+
+        /// <summary>
+        /// Sends packets from the queue.
+        /// This must be started on a thread, as it will block until <see cref="Stopping"/> is true.
+        /// Assumes that packets will not be removed from <see cref="SendQueues"/> anywhere but inside this method.
+        /// </summary>
+        private static void SendPackets()
+        {
+            while (!Stopping)
+            {
+                foreach (Queue<Packet> SendQueue in SendQueues.Values)
+                {
+                    Packet ToSend = SendQueue.Dequeue();
+                    while (ToSend != null)
+                    {
+                        try
+                        {
+                            SendNow(ToSend);
+                        }
+                        catch (Exception Exc)
+                        {
+                            Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to send packet.");
+                            Log.Exception(Log.Source.NETWORK, Exc);
+                        }
+                    }
+                }
+                Thread.Sleep(OperationPeriod);
+            }
+        }
+        #endregion
+
         private class ScarletClient
         {
             public TcpClient TCP;
@@ -469,6 +628,7 @@ namespace Scarlet.Communications
             public bool Connected;
             public LatencyMeasurementMode LatencyMode;
             public byte ScarletVersion;
+            public byte ConnectionQuality;
         }
 
     }
