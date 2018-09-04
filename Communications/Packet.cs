@@ -1,6 +1,6 @@
 ﻿using System;
-using Scarlet.Utilities;
 using System.Net.Sockets;
+using Scarlet.Utilities;
 
 namespace Scarlet.Communications
 {
@@ -10,18 +10,18 @@ namespace Scarlet.Communications
         public const int HEADER_LENGTH = sizeof(long) + sizeof(byte) + sizeof(ushort); // Timestamp + ID + Length
 
         /// <summary> The name of the recipient for sent packets, or the name of the sender for received packets. </summary>
-        public string Endpoint;
+        public string Endpoint { get; set; }
 
         /// <summary> Whether this packet [will be sent / was received] via UDP. </summary>
-        public bool IsUDP;
+        public bool IsUDP { get; set; }
 
         /// <summary> The minimum connection quality to wait for before sending this packet. Only relevant if <see cref="Client"/> was configured with <see cref="LatencyMeasurementMode.FULL"/>. </summary>
         /// <remarks> Not set for received packets. </remarks>
-        public byte MinimumConnectionQuality;
+        public byte MinimumConnectionQuality { get; set; }
 
         /// <summary> How long the <see cref="Packet"/> can wait, in 10s of ms (i.e. 20 = 200ms), in a queue before sending is no longer desirable. 0 for no timeout. </summary>
         /// <remarks> Not set for received packets. </remarks>
-        public ushort Timeout;
+        public ushort Timeout { get; set; }
 
         // Relayed through the underlying Message object.
         public byte ID { get => this.Data.ID; }
@@ -49,7 +49,7 @@ namespace Scarlet.Communications
         public Packet(byte ID, bool IsUDP, string Endpoint = null) : this(new Message(ID, new byte[0]), IsUDP, Endpoint) { }
         
         /// <summary> Appends data to the packet. </summary>
-        /// <param name="Data"> Data to append to the packet. </param>
+        /// <param name="NewData"> Data to append to the packet. </param>
         public void AppendData(byte[] NewData) { this.Data.AppendData(NewData); }
 
         /// <summary> Prepares the packet for sending, then returns the raw data. </summary>
@@ -95,4 +95,3 @@ namespace Scarlet.Communications
         }
     }
 }
-

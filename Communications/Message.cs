@@ -7,9 +7,9 @@ namespace Scarlet.Communications
 {
     public class Message : ICloneable
     {
-        public byte[] Timestamp; // Length 8
-        public byte ID;
-        public byte[] Payload; // The actual data
+        public byte[] Timestamp { get; set; } // Length 8
+        public byte ID { get; set; }
+        public byte[] Payload { get; set; } // The actual data
 
         /// <summary>
         /// Constructs a message given raw data, likes when received via network.
@@ -91,7 +91,7 @@ namespace Scarlet.Communications
             return Output;
         }
 
-        /// <summary> Formats the Messages's contents to be human-readable. </summary>
+        /// <summary> Formats the <see cref="Message"/> contents to be human-readable. </summary>
         public override string ToString()
         {
             StringBuilder Str = new StringBuilder();
@@ -112,7 +112,5 @@ namespace Scarlet.Communications
             ClonedMsg.Payload = this.Payload != null ? (byte[])this.Payload.Clone() : null;
             return ClonedMsg;
         }
-
     }
-
 }
