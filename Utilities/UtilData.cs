@@ -7,16 +7,16 @@ namespace Scarlet.Utilities
 {
     public static class UtilData
     {
-        public static byte[] ToBytes(bool Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(char Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(double Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(float Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(int Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(long Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(short Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(uint Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(ulong Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
-        public static byte[] ToBytes(ushort Input) { return EnsureBigEndian(BitConverter.GetBytes(Input)); }
+        public static byte[] ToBytes(bool Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(bool)); }
+        public static byte[] ToBytes(char Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(char)); }
+        public static byte[] ToBytes(double Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(double)); }
+        public static byte[] ToBytes(float Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(float)); }
+        public static byte[] ToBytes(int Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(int)); }
+        public static byte[] ToBytes(long Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(long)); }
+        public static byte[] ToBytes(short Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(short)); }
+        public static byte[] ToBytes(uint Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(uint)); }
+        public static byte[] ToBytes(ulong Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(ulong)); }
+        public static byte[] ToBytes(ushort Input) { return EnsureBigEndian(BitConverter.GetBytes(Input), 0, sizeof(ushort)); }
         public static byte[] ToBytes(string Input)
         {
             if (Input == null || Input.Length == 0) { return new byte[0]; }
@@ -63,64 +63,64 @@ namespace Scarlet.Utilities
             return Result;
         }
 
-        public static bool ToBool(byte[] Input)
+        public static bool ToBool(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 1) { throw new FormatException("Given byte[] does not convert to bool."); }
-            return BitConverter.ToBoolean(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(bool) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToBoolean(EnsureBigEndian(Input, Start, sizeof(bool)), Start);
         }
 
-        public static char ToChar(byte[] Input)
+        public static char ToChar(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 2) { throw new FormatException("Given byte[] does not convert to char."); }
-            return BitConverter.ToChar(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(char) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToChar(EnsureBigEndian(Input, Start, sizeof(char)), Start);
         }
 
-        public static double ToDouble(byte[] Input)
+        public static double ToDouble(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 8) { throw new FormatException("Given byte[] does not convert to double."); }
-            return BitConverter.ToDouble(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(double) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToDouble(EnsureBigEndian(Input, Start, sizeof(double)), Start);
         }
 
-        public static float ToFloat(byte[] Input)
+        public static float ToFloat(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 4) { throw new FormatException("Given byte[] does not convert to float."); }
-            return BitConverter.ToSingle(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(float) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToSingle(EnsureBigEndian(Input, Start, sizeof(float)), Start);
         }
 
-        public static int ToInt(byte[] Input)
+        public static int ToInt(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 4) { throw new FormatException("Given byte[] does not convert to int."); }
-            return BitConverter.ToInt32(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(int) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToInt32(EnsureBigEndian(Input, Start, sizeof(int)), Start);
         }
 
-        public static long ToLong(byte[] Input)
+        public static long ToLong(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 8) { throw new FormatException("Given byte[] does not convert to long."); }
-            return BitConverter.ToInt64(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(long) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToInt64(EnsureBigEndian(Input, Start, sizeof(long)), Start);
         }
 
-        public static short ToShort(byte[] Input)
+        public static short ToShort(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 2) { throw new FormatException("Given byte[] does not convert to short."); }
-            return BitConverter.ToInt16(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(short) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToInt16(EnsureBigEndian(Input, Start, sizeof(short)), Start);
         }
 
-        public static uint ToUInt(byte[] Input)
+        public static uint ToUInt(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 4) { throw new FormatException("Given byte[] does not convert to uint."); }
-            return BitConverter.ToUInt32(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(uint) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToUInt32(EnsureBigEndian(Input, Start, sizeof(uint)), Start);
         }
 
-        public static ulong ToULong(byte[] Input)
+        public static ulong ToULong(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 8) { throw new FormatException("Given byte[] does not convert to ulong."); }
-            return BitConverter.ToUInt64(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(ulong) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToUInt64(EnsureBigEndian(Input, Start, sizeof(ulong)), Start);
         }
 
-        public static ushort ToUShort(byte[] Input)
+        public static ushort ToUShort(byte[] Input, int Start = 0)
         {
-            if (Input.Length != 2) { throw new FormatException("Given byte[] does not convert to ushort."); }
-            return BitConverter.ToUInt16(EnsureBigEndian(Input), 0);
+            if (Input.Length != sizeof(ushort) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            return BitConverter.ToUInt16(EnsureBigEndian(Input, Start, sizeof(ushort)), Start);
         }
 
         /// <summary> Returns a string from the byte representation of the string in unicode </summary>
@@ -232,9 +232,9 @@ namespace Scarlet.Utilities
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
         };
 
-        internal static byte[] EnsureBigEndian(byte[] Input)
+        internal static byte[] EnsureBigEndian(byte[] Input, int Start, int Length)
         {
-            if (BitConverter.IsLittleEndian) { Array.Reverse(Input); }
+            if (BitConverter.IsLittleEndian) { Array.Reverse(Input, Start, Length); }
             return Input;
         }
     }
