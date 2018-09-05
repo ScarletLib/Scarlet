@@ -190,8 +190,8 @@ namespace Scarlet.Communications
             byte[] Payload = Handshake.Payload;
             RemoteVersion = (ScarletVersion)Payload[0];
             ClientServerConnectionState = (ClientServerConnectionState)Payload[1];
-            ServerName = UtilData.ToString(Payload.Skip(2).ToArray());
             string ErrorMsg;
+            Trace("Connecting to server resulted in state " + ClientServerConnectionState + ". Servier is on version " + RemoteVersion + ".");
             switch (ClientServerConnectionState)
             {
                 case ClientServerConnectionState.OKAY:
@@ -348,6 +348,7 @@ namespace Scarlet.Communications
 
                         // Peek at incoming packets
                         lock (Socket) { Size = Socket.Receive(ReceiveBuffer, ReceiveBuffer.Length, SocketFlags.Peek); }
+                        Trace("Incoming packet, will read " + Size + " bytes.");
 
                         // Find maximum number of packets in this set
                         int MaxPackets = Size / Constants.PACKET_HEADER_SIZE;
@@ -364,6 +365,7 @@ namespace Scarlet.Communications
                             BytesRead += FullLength;
                             // Take the packet, form it, and put it in the process queue
                             byte[] ThisPacket = Message.Skip(Index).Take(FullLength).ToArray();
+                            Trace("Received packet consisting of data: " + UtilMain.BytesToNiceString(ThisPacket, true));
                             lock (PacketProcessQueue) { PacketProcessQueue.Enqueue(Packet.FromBytes(ThisPacket, Socket.ProtocolType)); }
                         }
 

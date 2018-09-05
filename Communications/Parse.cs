@@ -17,6 +17,7 @@ namespace Scarlet.Communications
         /// <param name="ParseMethod"> Method used when incoming packet of <c>MessageID</c> is received. </param>
         public static void SetParseHandler(byte MessageID, ParseMethod ParseMethod)
         {
+            if (Client.TraceLogging || Server.TraceLogging) { Log.Trace(typeof(Parse), "Adding parse handler for ID 0x" + MessageID.ToString("X2")); }
             if (ParsingHandlers.ContainsKey(MessageID))
             {
                 Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Parse Method for Packet ID 0x" + MessageID.ToString("X4") + " overridden.");
