@@ -452,8 +452,8 @@ namespace Scarlet.Communications
                 ReceiveTCPThread = ReceiveThreadFactory();
                 PacketProcessThread = ProcessIncomingThreadFactory();
                 SendThread.Start();
-                ReceiveUDPThread.Start();
-                ReceiveTCPThread.Start();
+                ReceiveUDPThread.Start(ServerUDP.Client);
+                ReceiveTCPThread.Start(ServerTCP.Client);
                 PacketProcessThread.Start();
                 bool Success = SendThread.ThreadState == ThreadState.Running;
                 Success &= ReceiveUDPThread.ThreadState == ThreadState.Running;
