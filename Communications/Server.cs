@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -47,7 +48,7 @@ namespace Scarlet.Communications
          *  - Packet sending thread is started
          */
 
-        public static void Start(int PortTCP, int PortUDP)
+        public static void Start(ushort PortTCP, ushort PortUDP)
         {
             Stopping = false;
 
@@ -194,7 +195,7 @@ namespace Scarlet.Communications
                 }
                 else // We got some data from the client.
                 {
-                    const int HANDSHAKE_DATA_MIN_LENGTH = sizeof(byte) + sizeof(byte); // The amount of data we expect to see in the packet after the header, not including the variable length name.
+                    const int HANDSHAKE_DATA_MIN_LENGTH = sizeof(byte) + sizeof(byte) + sizeof(ushort); // The amount of data we expect to see in the packet after the header, not including the variable length name.
                     if (ReceivedByteLength < Packet.HEADER_LENGTH)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake packet header. Terminating connection.");
@@ -251,13 +252,15 @@ namespace Scarlet.Communications
                     // We are now ready to start interpreting the handshake packet.
                     LatencyMeasurementMode LatencyMode;
                     byte ScarletVersion;
+                    ushort UDPPort;
                     string ClientName;
 
                     try
                     {
                         LatencyMode = (LatencyMeasurementMode)DataBuffer[Packet.HEADER_LENGTH + 0];
                         ScarletVersion = DataBuffer[Packet.HEADER_LENGTH + 1];
-                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 2), DataBuffer.Length - (Packet.HEADER_LENGTH + 2)));
+                        UDPPort = UtilData.ToUShort(DataBuffer, (Packet.HEADER_LENGTH + 2));
+                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 4), DataBuffer.Length - (Packet.HEADER_LENGTH + 4)));
                     }
                     catch
                     {
@@ -286,6 +289,8 @@ namespace Scarlet.Communications
                                 Clients[ClientName].Connected = true;
                                 Clients[ClientName].LatencyMode = LatencyMode;
                                 Clients[ClientName].ScarletVersion = ScarletVersion;
+                                Clients[ClientName].EndpointUDP = (IPEndPoint)Client.Client.RemoteEndPoint;
+                                Clients[ClientName].EndpointUDP.Port = UDPPort;
                                 ConnectedClient = Clients[ClientName];
                             }
                             else
@@ -297,8 +302,10 @@ namespace Scarlet.Communications
                                     TCP = Client,
                                     LatencyMode = LatencyMode,
                                     ScarletVersion = ScarletVersion,
+                                    EndpointUDP = (IPEndPoint)Client.Client.RemoteEndPoint,
                                     Connected = true
                                 };
+                                NewClient.EndpointUDP.Port = UDPPort;
                                 Clients.Add(ClientName, NewClient);
                                 ConnectedClient = NewClient;
                             }
@@ -426,8 +433,67 @@ namespace Scarlet.Communications
         #endregion
 
         #region UDP Handling
+        /// <summary> Initially starts the UDP receiver. </summary>
+        /// <param name="ReceivePort"> Port to listen for UDP packets on. Must be <see cref="int"/>. </param>
+        private static void WaitForClientsUDP(object ReceivePort)
+        {
+            UDPListener = new UdpClient(new IPEndPoint(IPAddress.Any, (int)ReceivePort));
+            UDPListener.BeginReceive(HandleUDPData, UDPListener);
+        }
 
+        /// <summary> Processes incoming UDP packet, then starts the listener again. </summary>
+        private static void HandleUDPData(IAsyncResult Result)
+        {
+            UdpClient Listener = null;
+            IPEndPoint ReceivedEndpoint;
+            byte[] Data;
+            string ClientName;
+
+            try
+            {
+                Listener = (UdpClient)Result.AsyncState;
+                ReceivedEndpoint = new IPEndPoint(IPAddress.Any, 0);
+                Data = Listener.EndReceive(Result, ref ReceivedEndpoint);
+                ClientName = FindClient(ReceivedEndpoint, true);
+            }
+            catch (Exception Exc)
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Something went wrong while trying to receive UDP data.");
+                Log.Exception(Log.Source.NETWORK, Exc);
+                if (Listener != null) { Listener.BeginReceive(HandleUDPData, Listener); }
+                return;
+            }
+
+            if (Data.Length == 0) // TODO: Can this happen?
+            {
+                Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "UDP Client \"" + ClientName + "\" has disconnected.");
+                if (ClientName != null)
+                {
+                    lock (Clients[ClientName]) { Clients[ClientName].Connected = false; }
+                }
+            }
+            else
+            {
+                Packet ReceivedPack = new Packet(new Message(Data), true, (ClientName ?? "UNKNOWN"));
+                ReceiveQueue.Enqueue(ReceivedPack);
+                if (StorePackets) { PacketsReceived.Add(ReceivedPack); }
+            }
+            Listener.BeginReceive(HandleUDPData, Listener);
+        }
         #endregion
+
+        /// <summary> Tries to find the client name that matches the given IPEndPoint. </summary>
+        public static string FindClient(IPEndPoint Endpoint, bool IsUDP)
+        {
+            try
+            {
+                string Result;
+                if (IsUDP) { Result = Clients.Where(Pair => Pair.Value.EndpointUDP.Equals(Endpoint)).Single().Key; }
+                else { Result = Clients.Where(Pair => Pair.Value.EndpointTCP.Equals(Endpoint)).Single().Key; }
+                return Clients[Result].Connected ? Result : null;
+            }
+            catch { return null; }
+        }
 
         public class ClientConnectionChangeEvent : EventArgs
         {

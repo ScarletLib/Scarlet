@@ -177,6 +177,7 @@ namespace Scarlet.Communications
             // Form handshake packet
             Packet Handshake = new Packet(Constants.HANDSHAKE_FROM_CLIENT, false);
             Handshake.AppendData(new byte[] { (byte)LatencyMeasurement, (byte)Utilities.Constants.SCARLET_VERSION });
+            Handshake.AppendData(UtilData.ToBytes((ushort)PortUDP));
             Handshake.AppendData(UtilData.ToBytes(ClientName));
 
             // Send handshake packet via TCP immediately
