@@ -1,18 +1,25 @@
-﻿using Scarlet.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Scarlet.Utilities;
 
 namespace Scarlet.Communications
 {
     public static class Server
     {
+        public static bool OutputWatchdogDebug { get; set; }
+        public static bool TraceLogging { get; set; }
+
+        public static bool StorePackets { get; set; }
+        public static List<Packet> PacketsReceived { get; private set; }
+        public static List<Packet> PacketsSent { get; private set; }
+
+        public static event EventHandler<EventArgs> ClientConnectionChange;
+
         private static Dictionary<string, Queue<Packet>> SendQueues; // Client Name -> Packet Queue
         private static Queue<Packet> ReceiveQueue;
 
@@ -25,16 +32,8 @@ namespace Scarlet.Communications
 
         private static bool Initialized = false;
         private static volatile bool Stopping = false;
-        private static int ReceiveBufferSize;
+        private static int ReceiveBufferSize = 64;
         private static int OperationPeriod = 10;
-
-        public static bool OutputWatchdogDebug { get; set; }
-        public static bool TraceLogging { get; set; }
-
-        public static bool StorePackets = false;
-        public static List<Packet> PacketsReceived, PacketsSent;
-
-        public static event EventHandler<EventArgs> ClientConnectionChange;
 
         /*
          * The overall flow is this:
@@ -48,10 +47,8 @@ namespace Scarlet.Communications
          *  - Packet sending thread is started
          */
 
-
         public static void Start(int PortTCP, int PortUDP)
         {
-            ReceiveBufferSize = 64;
             Stopping = false;
 
             if (!Initialized)
@@ -76,7 +73,7 @@ namespace Scarlet.Communications
         }
 
         /// <summary> Starts all Server threads, then waits for them to terminate. </summary>
-        /// <param name="Ports"> Tuple<int, int> of ports, corresponding to (TCP, UDP). </param>
+        /// <param name="Ports"> <see cref="Tuple{T1, T2}(int, int)"/> of ports, corresponding to (TCP, UDP). </param>
         private static void StartThreads(object Ports)
         {
             ReceiveThreadTCP = new Thread(new ParameterizedThreadStart(WaitForClientsTCP));
@@ -113,6 +110,7 @@ namespace Scarlet.Communications
             if (!Initialized) { return; } // We never even started
             Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Server.");
             Stopping = true;
+
             // TODO: Stop watchdogs?
 
             // This is a meh solution to the WaitForClientsTCP thread not ending until the next client connects.
@@ -135,6 +133,7 @@ namespace Scarlet.Communications
             {
                 TcpClient Client = TCPListener.AcceptTcpClient();
                 if (!Stopping) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Client is connecting."); }
+
                 // Start sub-threads for every client.
                 Thread ClientThread = new Thread(new ParameterizedThreadStart(HandleTCPClient));
                 ClientThread.Start(Client);
@@ -159,15 +158,14 @@ namespace Scarlet.Communications
                     Array.Copy(UtilData.ToBytes(DateTime.Now.Ticks), 0, PacketData, 0, sizeof(long)); // 0-7 (8B)
                     PacketData[8] = Constants.HANDSHAKE_FROM_SERVER; // 8 (1B)
                     Array.Copy(UtilData.ToBytes((ushort)PacketData.Length), 0, PacketData, 9, sizeof(ushort)); // 9-10 (2B)
-                    // Leave ushort CommandTimeout as 0, 11-12 (2B)
-                    // Leave byte PacketImportance as 0, 13 (1B)
-                    PacketData[14] = (byte)Utilities.Constants.SCARLET_VERSION; // 14 (1B)
-                    PacketData[15] = ErrorCode; // 15 (1B)
+                    PacketData[11] = (byte)Utilities.Constants.SCARLET_VERSION; // 11 (1B)
+                    PacketData[12] = ErrorCode; // 12 (1B)
                     Client.GetStream().Write(PacketData, 0, PacketData.Length);
                 }
                 catch (Exception Exc)
                 {
                     Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "An error occurred when sending the handshake response to the connecting TCP client.");
+                    Log.Exception(Log.Source.NETWORK, Exc);
                 }
             }
 
@@ -189,6 +187,7 @@ namespace Scarlet.Communications
                 if (ReceivedByteLength == 0)
                 {
                     ReceiveStream?.Close();
+
                     // The if statement is here so that we don't output this when the dummy connection is sent to terminate this thread.
                     if (!Stopping) { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client disconnected before sending name. Terminating connection."); }
                     return;
@@ -326,6 +325,7 @@ namespace Scarlet.Communications
 
             // The client is now connected.
             ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = true });
+
             // TODO: Add to watchdog dispatch
 
             // Receive data from client.
@@ -383,6 +383,7 @@ namespace Scarlet.Communications
                             Log.Trace(typeof(Server), "Packet smaller than received data, saving data for next round.", TraceLogging);
                             LeftoverData = new byte[ReceivedByteLength - ExpectedLength];
                             Array.Copy(DataBuffer, ExpectedLength, LeftoverData, 0, (ReceivedByteLength - ExpectedLength));
+
                             // TODO: If multiple packets are received combined, and the last packet does not have a complete header, then it will be discarded. Is this possible, and if so, worth addressing?
                             if (LeftoverData.Length < Packet.HEADER_LENGTH) { Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Packet splitting length created incomplete header. The next packet(s) will fail to be interpreted. Please report this issue to the developers!"); }
                         }
@@ -428,7 +429,12 @@ namespace Scarlet.Communications
 
         #endregion
 
-        public class ClientConnectionChangeEvent : EventArgs { public string ClientName; public bool IsNowConnected; }
+        public class ClientConnectionChangeEvent : EventArgs
+        {
+            public string ClientName { get; set; }
+            public bool IsNowConnected { get; set; }
+        }
+
         private static void ClientConnChange(ClientConnectionChangeEvent Event) { ClientConnectionChange?.Invoke("Server", Event); }
 
         #region Processing Incoming Packets
@@ -453,6 +459,7 @@ namespace Scarlet.Communications
         }
 
         /// <summary> Attempts to process a packet. Outputs to log and discards if processing fails. </summary>
+        /// <param name="Packet"> The <see cref="Packet"/> to attempt to parse and handle. </param>
         /// <returns> Whether processing was successful. </returns>
         private static bool ProcessOnePacket(Packet Packet)
         {
@@ -468,8 +475,8 @@ namespace Scarlet.Communications
 
         public class PacketSendResult
         {
-            public Packet Packet;
-            public Status Result;
+            public Packet Packet { get; set; }
+            public Status Result { get; set; }
 
             public PacketSendResult(Packet Packet, Status Result)
             {
@@ -534,6 +541,7 @@ namespace Scarlet.Communications
         };
 
         /// <summary> Immediately sends a packet. Blocks until sending is complete/fails, regardless of protocol. </summary>
+        /// <param name="ToSend"> The <see cref="Packet"/> to send now. </param>
         public static PacketSendResult SendNow(Packet ToSend)
         {
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
@@ -621,15 +629,14 @@ namespace Scarlet.Communications
 
         private class ScarletClient
         {
-            public TcpClient TCP;
+            public TcpClient TCP { get; set; }
             public IPEndPoint EndpointTCP { get => (IPEndPoint)this.TCP?.Client.RemoteEndPoint; }
-            public IPEndPoint EndpointUDP;
-            public string Name;
-            public bool Connected;
-            public LatencyMeasurementMode LatencyMode;
-            public byte ScarletVersion;
-            public byte ConnectionQuality;
+            public IPEndPoint EndpointUDP { get; set; }
+            public string Name { get; set; }
+            public bool Connected { get; set; }
+            public LatencyMeasurementMode LatencyMode { get; set; }
+            public byte ScarletVersion { get; set; }
+            public byte ConnectionQuality { get; set; }
         }
-
     }
 }
