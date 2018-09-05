@@ -32,12 +32,12 @@ namespace Scarlet.Communications
             try
             {
                 // if(Packet.Data.ID != Constants.WATCHDOG_PING || Server.OutputWatchdogDebug) { Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Parsing packet: " + Packet.Data.ToString()); }
-                if (!ParsingHandlers.ContainsKey(Packet.Data.ID))
+                if (!ParsingHandlers.ContainsKey(Packet.ID))
                 {
-                    Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "No handler is registered for parsing packet ID " + Packet.Data.ID + "!");
+                    Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "No handler is registered for parsing packet ID " + Packet.ID + "!");
                     return false;
                 }
-                ParsingHandlers[Packet.Data.ID].DynamicInvoke(Packet);
+                ParsingHandlers[Packet.ID].DynamicInvoke(Packet);
                 return true;
             }
             catch (Exception Except)
