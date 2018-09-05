@@ -421,20 +421,37 @@ namespace Scarlet.Communications
         internal static void HandleWatchdog(Packet Watchdog)
         {
             WatchdogFoundOnInterval = true;
+
             // Set telemetry based on watchdog packet
-            ConnectionQuality = 10;
-            // TODO: Send watchdog
+
+            // Send new Watchdog
+            Packet WatchdogPacket = new Packet(Constants.WATCHDOG_FROM_CLIENT, true);
+            short? LatencyInfo = null;
+            switch (LatencyMeasurement)
+            {
+                // TODO: Implement non-meaningless values here
+                case LatencyMeasurementMode.FULL:
+                    LatencyInfo = 0;
+                    break;
+                case LatencyMeasurementMode.BASIC:
+                    LatencyInfo = 0;
+                    break;                    
+            }
+            if (LatencyInfo != null) { WatchdogPacket.AppendData(UtilData.ToBytes((short)LatencyInfo)); }
+            WatchdogPacket.AppendData(UtilData.ToBytes(ClientName));
+            SendNow(WatchdogPacket);
         }
 
         private static void WatchdogLoop()
         {
             while (!StopThreads)
             {
-                if (!WatchdogFoundOnInterval)
+                // If Watchdog and IsConnected don't match, there is a change in state
+                if (WatchdogFoundOnInterval ^ IsConnected)
                 {
                     ConnectionStatusChanged NewStatus = new ConnectionStatusChanged()
                     {
-                        StatusConnected = false,
+                        StatusConnected = WatchdogFoundOnInterval,
                         StatusEndpoint = "Server",
                     };
                     ConnectionStatusChanged?.Invoke("Client", NewStatus);
