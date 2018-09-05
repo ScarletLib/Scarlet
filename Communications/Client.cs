@@ -195,7 +195,7 @@ namespace Scarlet.Communications
             switch (ClientServerConnectionState)
             {
                 case ClientServerConnectionState.OKAY:
-                    ConnectionStatusChanged?.Invoke(Handshake, new ConnectionStatusChanged() { StatusEndpoint = ServerName, StatusConnected = true });
+                    ConnectionStatusChanged?.Invoke("Client", new ConnectionStatusChanged() { StatusEndpoint = ServerName, StatusConnected = true });
                     break;
                 case ClientServerConnectionState.INCOMPATIBLE_VERSIONS:
                     string ServerVersion = Enum.GetName(typeof(ScarletVersion), RemoteVersion);
@@ -422,13 +422,24 @@ namespace Scarlet.Communications
         {
             WatchdogFoundOnInterval = true;
             // Set telemetry based on watchdog packet
+            ConnectionQuality = 10;
+            // TODO: Send watchdog
         }
 
         private static void WatchdogLoop()
         {
             while (!StopThreads)
             {
-
+                if (!WatchdogFoundOnInterval)
+                {
+                    ConnectionStatusChanged NewStatus = new ConnectionStatusChanged()
+                    {
+                        StatusConnected = false,
+                        StatusEndpoint = "Server",
+                    };
+                    ConnectionStatusChanged?.Invoke("Client", NewStatus);
+                }
+                WatchdogFoundOnInterval = false;
                 Thread.Sleep(Constants.WATCHDOG_WAIT);
             }
         }
