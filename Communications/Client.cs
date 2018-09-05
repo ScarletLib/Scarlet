@@ -455,10 +455,10 @@ namespace Scarlet.Communications
                 ReceiveUDPThread.Start(ServerUDP.Client);
                 ReceiveTCPThread.Start(ServerTCP.Client);
                 PacketProcessThread.Start();
-                bool Success = SendThread.ThreadState == ThreadState.Running;
-                Success &= ReceiveUDPThread.ThreadState == ThreadState.Running;
-                Success &= ReceiveTCPThread.ThreadState == ThreadState.Running;
-                Success &= PacketProcessThread.ThreadState == ThreadState.Running;
+                bool Success = SendThread.IsAlive;
+                Success &= ReceiveUDPThread.IsAlive;
+                Success &= ReceiveTCPThread.IsAlive;
+                Success &= PacketProcessThread.IsAlive;
                 SendReceiveThreadsRunning = Success;
             }
             return SendReceiveThreadsRunning;

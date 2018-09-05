@@ -151,7 +151,7 @@ namespace Scarlet.Communications
         {
             TcpClient Client = (TcpClient)ClientObj;
 
-            void SendHandshakeResponse(byte ErrorCode)
+            void SendHandshakeResponse(ClientServerConnectionState ErrorCode)
             {
                 try
                 {
@@ -160,7 +160,8 @@ namespace Scarlet.Communications
                     PacketData[8] = Constants.HANDSHAKE_FROM_SERVER; // 8 (1B)
                     Array.Copy(UtilData.ToBytes((ushort)PacketData.Length), 0, PacketData, 9, sizeof(ushort)); // 9-10 (2B)
                     PacketData[11] = (byte)Utilities.Constants.SCARLET_VERSION; // 11 (1B)
-                    PacketData[12] = ErrorCode; // 12 (1B)
+                    PacketData[12] = (byte)ErrorCode; // 12 (1B)
+                    Log.Trace(typeof(Server), "Sending handshake response: " + UtilMain.BytesToNiceString(PacketData, true), TraceLogging);
                     Client.GetStream().Write(PacketData, 0, PacketData.Length);
                 }
                 catch (Exception Exc)
@@ -185,6 +186,7 @@ namespace Scarlet.Communications
             {
                 int ReceivedByteLength = ReceiveStream.Read(DataBuffer, 0, DataBuffer.Length);
                 Log.Trace(typeof(Server), "During TCP client connection phase, received " + ReceivedByteLength + " bytes.", TraceLogging);
+                Log.Trace(typeof(Server), "Handshake Data: " + UtilMain.BytesToNiceString(UtilMain.SubArray(DataBuffer, 0, ReceivedByteLength), true));
                 if (ReceivedByteLength == 0)
                 {
                     ReceiveStream?.Close();
@@ -199,31 +201,31 @@ namespace Scarlet.Communications
                     if (ReceivedByteLength < Packet.HEADER_LENGTH)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake packet header. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
                     else if (DataBuffer[8] != Constants.HANDSHAKE_FROM_CLIENT)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with packet other than handshake. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
                     else if (ReceivedByteLength == Packet.HEADER_LENGTH)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect without sending information about itself. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
                     else if (ReceivedByteLength < (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake data. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
                     else if (ReceivedByteLength == (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with no name. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.INVALID_NAME);
+                        SendHandshakeResponse(ClientServerConnectionState.INVALID_NAME);
                         return;
                     }
 
@@ -239,7 +241,7 @@ namespace Scarlet.Communications
                         if (ExpectedLength > (ReceivedByteLength + ReceivedByteLengthExtended))
                         {
                             Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to get full handshake packet from incoming TCP client. Terminating connection.");
-                            SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                            SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                             return;
                         }
                         else
@@ -260,12 +262,13 @@ namespace Scarlet.Communications
                         LatencyMode = (LatencyMeasurementMode)DataBuffer[Packet.HEADER_LENGTH + 0];
                         ScarletVersion = DataBuffer[Packet.HEADER_LENGTH + 1];
                         UDPPort = UtilData.ToUShort(DataBuffer, (Packet.HEADER_LENGTH + 2));
-                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 4), DataBuffer.Length - (Packet.HEADER_LENGTH + 4)));
+                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 4), (ExpectedLength - (Packet.HEADER_LENGTH + 4))));
                     }
-                    catch
+                    catch (Exception Exc)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to interpret incoming TCP client information. Terminating connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                        Log.Exception(Log.Source.NETWORK, Exc);
+                        SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
 
@@ -316,7 +319,7 @@ namespace Scarlet.Communications
                     else
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Invalid TCP client name received. Dropping connection.");
-                        SendHandshakeResponse((byte)ClientServerConnectionState.INVALID_NAME);
+                        SendHandshakeResponse(ClientServerConnectionState.INVALID_NAME);
                         return;
                     }
                 }
@@ -325,10 +328,12 @@ namespace Scarlet.Communications
             {
                 Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Something went wrong while attempting to handle incoming client. Dropping connection.");
                 Log.Exception(Log.Source.NETWORK, Exc);
-                SendHandshakeResponse((byte)ClientServerConnectionState.CONNECTION_FAILED);
+                SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                 ReceiveStream?.Close();
                 return;
             }
+
+            SendHandshakeResponse(ClientServerConnectionState.OKAY);
 
             // The client is now connected.
             ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = true });
@@ -409,7 +414,7 @@ namespace Scarlet.Communications
                         int Error = ((SocketException)IOExc.InnerException).ErrorCode;
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to read data from connected client with SocketExcpetion code " + Error);
                         Log.Exception(Log.Source.NETWORK, IOExc);
-                        if (Error == 10054) { Clients[ConnectedClient.Name].Connected = false; } // The connection was reset (the client probably terminated).
+                        if (Error == 10054 && Clients != null && ConnectedClient != null && Clients.ContainsKey(ConnectedClient.Name) && Clients[ConnectedClient.Name] != null) { Clients[ConnectedClient.Name].Connected = false; } // The connection was reset (the client probably terminated).
                     }
                     else
                     {
@@ -677,17 +682,20 @@ namespace Scarlet.Communications
             {
                 foreach (Queue<Packet> SendQueue in SendQueues.Values)
                 {
-                    Packet ToSend = SendQueue.Dequeue();
-                    while (ToSend != null)
+                    while (SendQueue.Count > 0)
                     {
-                        try
+                        Packet ToSend = SendQueue.Dequeue();
+                        while (ToSend != null)
                         {
-                            SendNow(ToSend);
-                        }
-                        catch (Exception Exc)
-                        {
-                            Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to send packet.");
-                            Log.Exception(Log.Source.NETWORK, Exc);
+                            try
+                            {
+                                SendNow(ToSend);
+                            }
+                            catch (Exception Exc)
+                            {
+                                Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to send packet.");
+                                Log.Exception(Log.Source.NETWORK, Exc);
+                            }
                         }
                     }
                 }

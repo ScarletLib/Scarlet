@@ -86,8 +86,8 @@ namespace Scarlet.Communications
             byte[] Output = new byte[Packet.HEADER_LENGTH + this.Payload.Length];
             Buffer.BlockCopy(this.Timestamp, 0, Output, 0, this.Timestamp.Length);
             Output[8] = this.ID;
-            Buffer.BlockCopy(UtilData.ToBytes((ushort)(Packet.HEADER_LENGTH + this.Payload.Length)), 0, Output, 8, sizeof(ushort));
-            Buffer.BlockCopy(this.Payload, 0, Output, Packet.HEADER_LENGTH - 1, this.Payload.Length);
+            Buffer.BlockCopy(UtilData.ToBytes((ushort)(Packet.HEADER_LENGTH + this.Payload.Length)), 0, Output, 9, sizeof(ushort));
+            Buffer.BlockCopy(this.Payload, 0, Output, Packet.HEADER_LENGTH, this.Payload.Length);
             return Output;
         }
 

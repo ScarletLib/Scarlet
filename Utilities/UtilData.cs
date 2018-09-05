@@ -65,72 +65,72 @@ namespace Scarlet.Utilities
 
         public static bool ToBool(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(bool) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(bool) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToBoolean(EnsureBigEndian(Input, Start, sizeof(bool)), Start);
         }
 
         public static char ToChar(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(char) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(char) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToChar(EnsureBigEndian(Input, Start, sizeof(char)), Start);
         }
 
         public static double ToDouble(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(double) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(double) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToDouble(EnsureBigEndian(Input, Start, sizeof(double)), Start);
         }
 
         public static float ToFloat(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(float) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(float) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToSingle(EnsureBigEndian(Input, Start, sizeof(float)), Start);
         }
 
         public static int ToInt(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(int) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(int) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToInt32(EnsureBigEndian(Input, Start, sizeof(int)), Start);
         }
 
         public static long ToLong(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(long) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(long) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToInt64(EnsureBigEndian(Input, Start, sizeof(long)), Start);
         }
 
         public static short ToShort(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(short) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(short) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToInt16(EnsureBigEndian(Input, Start, sizeof(short)), Start);
         }
 
         public static uint ToUInt(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(uint) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(uint) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToUInt32(EnsureBigEndian(Input, Start, sizeof(uint)), Start);
         }
 
         public static ulong ToULong(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(ulong) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(ulong) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToUInt64(EnsureBigEndian(Input, Start, sizeof(ulong)), Start);
         }
 
         public static ushort ToUShort(byte[] Input, int Start = 0)
         {
-            if (Input.Length != sizeof(ushort) + Start) { throw new FormatException("Not enough data to complete conversion."); }
+            if (Input.Length < sizeof(ushort) + Start) { throw new FormatException("Not enough data to complete conversion."); }
             return BitConverter.ToUInt16(EnsureBigEndian(Input, Start, sizeof(ushort)), Start);
         }
 
         /// <summary> Returns a string from the byte representation of the string in unicode </summary>
         /// <param name="Input"> Byte representation of the unicode string </param>
         /// <returns> String representation of the bytes </returns>
-        public static string ToString(byte[] Input)
+        public static string ToString(byte[] Input, int Start = 0)
         {
-            if (Input == null || Input.Length == 0 || Input.Length % 2 == 1) { throw new FormatException("Given byte[] does not convert to string."); }
-            StringBuilder Output = new StringBuilder(Input.Length / 2);
-            for (int i = 0; i < Input.Length; i += 2)
+            if (Input == null || (Input.Length - Start) == 0 || (Input.Length - Start) % 2 == 1) { throw new FormatException("Given byte[] does not convert to string."); }
+            StringBuilder Output = new StringBuilder((Input.Length - Start) / 2);
+            for (int i = Start; i < Input.Length; i += 2)
             {
                 Output.Append((char)(Input[i] << 8 | Input[i + 1]));
             }
