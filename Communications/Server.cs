@@ -513,14 +513,17 @@ namespace Scarlet.Communications
         {
             while (!Stopping)
             {
-                Packet CurrentPacket = ReceiveQueue.Dequeue();
-
-                if (CurrentPacket != null)
+                while (ReceiveQueue.Count != 0)
                 {
-                    CurrentPacket = (Packet)CurrentPacket.Clone();
-                    ProcessOnePacket(CurrentPacket);
+                    Packet CurrentPacket = ReceiveQueue.Dequeue();
+
+                    if (CurrentPacket != null)
+                    {
+                        CurrentPacket = (Packet)CurrentPacket.Clone();
+                        ProcessOnePacket(CurrentPacket);
+                    }
                 }
-                if (ReceiveQueue.Count == 0) { Thread.Sleep(OperationPeriod); }
+                Thread.Sleep(OperationPeriod);
             }
         }
 

@@ -241,9 +241,12 @@ namespace Scarlet.Communications
         {
             while (!StopThreads)
             {
-                Packet SendPacket;
-                lock (PacketSendQueue) { SendPacket = PacketSendQueue.Dequeue(); }
-                SendNow(SendPacket);
+                while (PacketSendQueue.Count != 0)
+                {
+                    Packet SendPacket;
+                    lock (PacketSendQueue) { SendPacket = PacketSendQueue.Dequeue(); }
+                    SendNow(SendPacket);
+                }
                 Thread.Sleep(OperationPeriod);
             }
         }
@@ -385,12 +388,15 @@ namespace Scarlet.Communications
         {
             while (!StopThreads)
             {
-                Packet CurrentPacket = PacketProcessQueue?.Dequeue();
-                if (CurrentPacket != null)
+                while (PacketProcessQueue?.Count != 0)
                 {
-                    CurrentPacket.Endpoint = CurrentPacket.Endpoint ?? "Server";
+                    Packet CurrentPacket = PacketProcessQueue?.Dequeue();
+                    if (CurrentPacket != null)
+                    {
+                        CurrentPacket.Endpoint = CurrentPacket.Endpoint ?? "Server";
 
-                    Parse.ParseMessage(CurrentPacket);
+                        Parse.ParseMessage(CurrentPacket);
+                    }
                 }
                 Thread.Sleep(OperationPeriod);
             }
