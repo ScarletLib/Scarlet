@@ -40,6 +40,14 @@ namespace Scarlet.TestSuite
             {
                 Utils.Start(args);
             }
+            else if(args[0].Equals("network", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Network.Start(args);
+            }
+            else
+            {
+                Log.Output(Log.Severity.ERROR, Log.Source.GUI, "Invalid command class.");
+            }
         }
 
         public static void ErrorExit(string error)
@@ -74,6 +82,9 @@ namespace Scarlet.TestSuite
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   filter <average/lowpass> <cycles>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "utils ___");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataLog");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "network");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   client <Server IP> <TCP> <UDP>");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   server <TCP> <UDP>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "More will be added!");
             Environment.Exit(0);
         }
