@@ -211,7 +211,7 @@ namespace Scarlet.TestSuite
 
         public static void GetInterrupt(object senser, InputInterrupt evt) => Log.Output(Log.Severity.INFO, Log.Source.HARDWAREIO, "Interrupt Received! Now " + evt.NewState);
 
-        private static BBBPin StringToPin(string pinName)
+        public static BBBPin StringToPin(string pinName)
         {
             try
             {

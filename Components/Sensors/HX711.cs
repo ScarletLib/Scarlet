@@ -13,10 +13,10 @@ namespace Scarlet.Components.Sensors
         public string System { get; set; }
         public bool TraceLogging { get; set; }
 
-        /// <summary> The amount to offset readings by, should be determined by calling <see cref="Tare"/>, then used thereafter. </summary>
+        /// <summary> Gets or sets the amount to offset readings by, should be determined by calling <see cref="Tare"/>, then used thereafter. </summary>
         public double Offset { get; set; }
 
-        /// <summary> The scale factor to apply to the readings. Used to convert raw values into values in some units. Usually determined once by using a test mass after taring. </summary>
+        /// <summary> Gets or sets the scale factor to apply to the readings. Used to convert raw values into values in some units. Usually determined once by using a test mass after taring. </summary>
         public double ScaleFactor { get; set; }
 
         private readonly IDigitalOut Clock;
