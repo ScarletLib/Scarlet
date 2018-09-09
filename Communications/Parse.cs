@@ -53,7 +53,7 @@ namespace Scarlet.Communications
 
     internal static class InternalParsing
     {
-        static InternalParsing()
+        public static void Setup()
         {
             Parse.SetParseHandler(Constants.WATCHDOG_FROM_CLIENT, ParseWatchdogFromClient);
             Parse.SetParseHandler(Constants.WATCHDOG_FROM_SERVER, ParseWatchdogFromServer);
