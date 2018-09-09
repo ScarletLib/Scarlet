@@ -95,7 +95,7 @@ namespace Scarlet.Communications
                 Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Initializing Client.");
 
                 // Start parsing
-                InternalParsing.Setup();
+                InternalParsing.Start();
 
                 // Initialize constructor variables into Client
                 Client.ClientName = ClientName;
