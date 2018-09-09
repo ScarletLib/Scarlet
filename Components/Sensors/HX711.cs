@@ -24,7 +24,7 @@ namespace Scarlet.Components.Sensors
         private Gain GainSetting = Gain.GAIN_128x;
 
         private bool LastReadFailed = false;
-        private long LastReading;
+        private int LastReading;
 
         public HX711(IDigitalOut Clock, IDigitalIn Data)
         {
@@ -61,14 +61,14 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets the raw reading. </summary>
         /// <returns> THe data as the sensor returned it. Not scaled or offset. </returns>
-        public long GetRawReading() => this.LastReading;
+        public int GetRawReading() => this.LastReading;
 
         /// <summary> Used to convert a raw reading into a adjusted one in the desired unit system. </summary>
         /// <param name="RawReading"> The raw reading, as it came from the sensor. </param>
         /// <param name="Offset"> The amount to offset the reading (done first). Used to set the correct zero point. Obtained from using <see cref="Tare"/>. </param>
         /// <param name="ScaleFactor"> The amount to scale the reading (done second). Used to convert the reading to a familiar unit system, like g or kg. Obtained by getting an adjusted reading with a test mass after taring. </param>
         /// <returns> The most recent reading in the desired unit system. </returns>
-        public static double AdjustReading(long RawReading, double Offset, double ScaleFactor)
+        public static double AdjustReading(int RawReading, double Offset, double ScaleFactor)
         {
             return (RawReading - Offset) * ScaleFactor;
         }
@@ -107,11 +107,11 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets a new reading, and sets the gain for the next reading. </summary>
         /// <returns> The raw data. </returns>
-        private long Read() // TODO: Deal with the system potentially being too fast for the sensor (clock cycles must be at least 0.2us)
+        private int Read() // TODO: Deal with the system potentially being too fast for the sensor (clock cycles must be at least 0.2us)
         {
             this.Clock.SetOutput(false);
             byte FailCounter = 0;
-            while (!this.Data.GetInput())
+            while (this.Data.GetInput())
             {
                 Thread.Sleep(1);
                 FailCounter++;
@@ -119,16 +119,16 @@ namespace Scarlet.Components.Sensors
                 {
                     Log.Output(Log.Severity.WARNING, Log.Source.SENSORS, "HX711 failed to have data ready for at least 120ms. Check the serial connections.");
                     this.LastReadFailed = true;
-                    return long.MaxValue;
+                    return int.MaxValue;
                 }
             }
             this.Clock.SetOutput(false);
 
-            ulong RawData = 0;
+            uint RawData = 0;
             for (int i = 0; i < 24; i++)
             {
                 this.Clock.SetOutput(true);
-                RawData = RawData | ((this.Data.GetInput() ? 1UL : 0UL) << i);
+                RawData = RawData | ((this.Data.GetInput() ? 1U : 0U) << (23 - i));
                 this.Clock.SetOutput(false);
             }
             for (byte i = 0; i < (int)this.GainSetting; i++)
@@ -138,15 +138,20 @@ namespace Scarlet.Components.Sensors
             }
 
             if (((RawData >> 23) & 0b1) == 0b1) { RawData |= 0xFF000000; } // Fill in top byte if the value is negative.
-            if (this.TraceLogging) { Log.Trace(this, "Got raw value: " + RawData.ToString("X16")); }
+            if (this.TraceLogging) { Log.Trace(this, "Got raw value: " + RawData.ToString("X4")); }
             this.LastReadFailed = false;
-            return unchecked((long)RawData);
+            return unchecked((int)RawData);
         }
 
         public enum Gain
         {
+            /// <summary> Input channel A, 128x gain. </summary>
             GAIN_128x = 1,
+
+            /// <summary> Input channel A, 64x gain. </summary>
             GAIN_64x = 3,
+
+            /// <summary> Input channel B, 32x gain. </summary>
             GAIN_32x = 2
         }
     }
