@@ -106,7 +106,7 @@ namespace Scarlet.Components.Sensors
         }
 
         /// <summary> Gets a new reading, and sets the gain for the next reading. </summary>
-        /// <returns> The raw data. </returns>
+        /// <returns> The raw data, or <see cref="int.MaxValue"/> if the HX711 failed to return data. </returns>
         private int Read() // TODO: Deal with the system potentially being too fast for the sensor (clock cycles must be at least 0.2us)
         {
             this.Clock.SetOutput(false);
