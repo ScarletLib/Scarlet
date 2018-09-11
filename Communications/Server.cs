@@ -63,7 +63,7 @@ namespace Scarlet.Communications
                 PacketsSent = new List<Packet>();
                 PacketsReceived = new List<Packet>();
 
-                // TODO: Packet Handler?
+                InternalParsing.Start();
                 new Thread(new ParameterizedThreadStart(StartThreads)).Start(new Tuple<int, int>(PortTCP, PortUDP));
 
                 // TODO: Watchdogs?
@@ -130,6 +130,9 @@ namespace Scarlet.Communications
             if (!Initialized) { throw new InvalidOperationException("Cannot use Server before initialization. Call Server.Start()."); }
             TCPListener = new TcpListener(new IPEndPoint(IPAddress.Any, (int)ReceivePort));
             TCPListener.Start();
+
+            List<Thread> ClientThreads = new List<Thread>();
+
             while (!Stopping)
             {
                 TcpClient Client = TCPListener.AcceptTcpClient();
@@ -137,9 +140,11 @@ namespace Scarlet.Communications
 
                 // Start sub-threads for every client.
                 Thread ClientThread = new Thread(new ParameterizedThreadStart(HandleTCPClient));
+                ClientThreads.Add(ClientThread);
                 ClientThread.Start(Client);
             }
             TCPListener.Stop();
+            ClientThreads.ForEach(x => x?.Abort());
         }
 
         /// <summary>
@@ -166,6 +171,7 @@ namespace Scarlet.Communications
                 }
                 catch (Exception Exc)
                 {
+                    if (Exc is ThreadAbortException) { throw; } // This just means Server is stopping, no need to alert.
                     Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "An error occurred when sending the handshake response to the connecting TCP client.");
                     Log.Exception(Log.Source.NETWORK, Exc);
                 }
@@ -266,6 +272,7 @@ namespace Scarlet.Communications
                     }
                     catch (Exception Exc)
                     {
+                        if (Exc is ThreadAbortException) { throw; } // This just means Server is stopping, no need to alert.
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to interpret incoming TCP client information. Terminating connection.");
                         Log.Exception(Log.Source.NETWORK, Exc);
                         SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
@@ -326,6 +333,7 @@ namespace Scarlet.Communications
             }
             catch (Exception Exc)
             {
+                if (Exc is ThreadAbortException) { throw; } // This just means Server is stopping, no need to alert.
                 Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Something went wrong while attempting to handle incoming client. Dropping connection.");
                 Log.Exception(Log.Source.NETWORK, Exc);
                 SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
@@ -424,6 +432,7 @@ namespace Scarlet.Communications
                 }
                 catch (Exception OtherExc)
                 {
+                    if (OtherExc is ThreadAbortException) { throw; } // This just means Server is stopping, no need to alert.
                     Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Failed to read data from connected client.");
                     Log.Exception(Log.Source.NETWORK, OtherExc);
                 }
