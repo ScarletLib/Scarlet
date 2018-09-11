@@ -131,7 +131,7 @@ namespace Scarlet.Communications
             TCPListener = new TcpListener(new IPEndPoint(IPAddress.Any, (int)ReceivePort));
             TCPListener.Start();
 
-            List<Thread> ClientThreads = new List<Thread>();
+            Dictionary<Thread, TcpClient> ClientThreads = new Dictionary<Thread, TcpClient>();
 
             while (!Stopping)
             {
@@ -140,12 +140,13 @@ namespace Scarlet.Communications
 
                 // Start sub-threads for every client.
                 Thread ClientThread = new Thread(new ParameterizedThreadStart(HandleTCPClient));
-                ClientThreads.Add(ClientThread);
+                ClientThreads.Add(ClientThread, Client);
                 ClientThread.Start(Client);
             }
             TCPListener.Stop();
-            ClientThreads.ForEach(x => x?.Abort());
-            ClientThreads.ForEach(x => x?.Join());
+            ClientThreads.Values.ToList().ForEach(x => x?.Close());
+            ClientThreads.Keys.ToList().ForEach(x => x?.Abort());
+            ClientThreads.Keys.ToList().ForEach(x => x?.Join());
         }
 
         /// <summary>
