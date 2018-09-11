@@ -161,7 +161,7 @@ namespace Scarlet.Communications
             {
                 try
                 {
-                    byte[] PacketData = new byte[Packet.HEADER_LENGTH + sizeof(byte) + sizeof(byte)];
+                    byte[] PacketData = new byte[Constants.PACKET_HEADER_SIZE + sizeof(byte) + sizeof(byte)];
                     Array.Copy(UtilData.ToBytes(DateTime.Now.Ticks), 0, PacketData, 0, sizeof(long)); // 0-7 (8B)
                     PacketData[8] = Constants.HANDSHAKE_FROM_SERVER; // 8 (1B)
                     Array.Copy(UtilData.ToBytes((ushort)PacketData.Length), 0, PacketData, 9, sizeof(ushort)); // 9-10 (2B)
@@ -205,7 +205,7 @@ namespace Scarlet.Communications
                 else // We got some data from the client.
                 {
                     const int HANDSHAKE_DATA_MIN_LENGTH = sizeof(byte) + sizeof(byte) + sizeof(ushort); // The amount of data we expect to see in the packet after the header, not including the variable length name.
-                    if (ReceivedByteLength < Packet.HEADER_LENGTH)
+                    if (ReceivedByteLength < Constants.PACKET_HEADER_SIZE)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake packet header. Terminating connection.");
                         SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
@@ -217,19 +217,19 @@ namespace Scarlet.Communications
                         SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
-                    else if (ReceivedByteLength == Packet.HEADER_LENGTH)
+                    else if (ReceivedByteLength == Constants.PACKET_HEADER_SIZE)
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect without sending information about itself. Terminating connection.");
                         SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
-                    else if (ReceivedByteLength < (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
+                    else if (ReceivedByteLength < (Constants.PACKET_HEADER_SIZE + HANDSHAKE_DATA_MIN_LENGTH))
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with incomplete handshake data. Terminating connection.");
                         SendHandshakeResponse(ClientServerConnectionState.CONNECTION_FAILED);
                         return;
                     }
-                    else if (ReceivedByteLength == (Packet.HEADER_LENGTH + HANDSHAKE_DATA_MIN_LENGTH))
+                    else if (ReceivedByteLength == (Constants.PACKET_HEADER_SIZE + HANDSHAKE_DATA_MIN_LENGTH))
                     {
                         Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "TCP Client tried to connect with no name. Terminating connection.");
                         SendHandshakeResponse(ClientServerConnectionState.INVALID_NAME);
@@ -266,10 +266,10 @@ namespace Scarlet.Communications
 
                     try
                     {
-                        LatencyMode = (LatencyMeasurementMode)DataBuffer[Packet.HEADER_LENGTH + 0];
-                        ScarletVersion = DataBuffer[Packet.HEADER_LENGTH + 1];
-                        UDPPort = UtilData.ToUShort(DataBuffer, (Packet.HEADER_LENGTH + 2));
-                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Packet.HEADER_LENGTH + 4), (ExpectedLength - (Packet.HEADER_LENGTH + 4))));
+                        LatencyMode = (LatencyMeasurementMode)DataBuffer[Constants.PACKET_HEADER_SIZE + 0];
+                        ScarletVersion = DataBuffer[Constants.PACKET_HEADER_SIZE + 1];
+                        UDPPort = UtilData.ToUShort(DataBuffer, (Constants.PACKET_HEADER_SIZE + 2));
+                        ClientName = UtilData.ToString(UtilMain.SubArray(DataBuffer, (Constants.PACKET_HEADER_SIZE + 4), (ExpectedLength - (Constants.PACKET_HEADER_SIZE + 4))));
                     }
                     catch (Exception Exc)
                     {
@@ -378,7 +378,7 @@ namespace Scarlet.Communications
                         lock (Clients[ConnectedClient.Name]) { Clients[ConnectedClient.Name].Connected = false; }
                         break;
                     }
-                    if (ReceivedByteLength >= Packet.HEADER_LENGTH)
+                    if (ReceivedByteLength >= Constants.PACKET_HEADER_SIZE)
                     {
                         ushort ExpectedLength = UtilData.ToUShort(UtilMain.SubArray(DataBuffer, 9, sizeof(ushort)));
                         if (ExpectedLength > ReceivedByteLength) // If we haven't gotten enough data to satisfy the packet length
@@ -406,7 +406,7 @@ namespace Scarlet.Communications
                             Array.Copy(DataBuffer, ExpectedLength, LeftoverData, 0, (ReceivedByteLength - ExpectedLength));
 
                             // TODO: If multiple packets are received combined, and the last packet does not have a complete header, then it will be discarded. Is this possible, and if so, worth addressing?
-                            if (LeftoverData.Length < Packet.HEADER_LENGTH) { Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Packet splitting length created incomplete header. The next packet(s) will fail to be interpreted. Please report this issue to the developers!"); }
+                            if (LeftoverData.Length < Constants.PACKET_HEADER_SIZE) { Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Packet splitting length created incomplete header. The next packet(s) will fail to be interpreted. Please report this issue to the developers!"); }
                         }
                         byte[] PacketData = new byte[ExpectedLength];
                         Array.Copy(DataBuffer, PacketData, ExpectedLength);
