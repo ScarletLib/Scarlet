@@ -170,6 +170,7 @@ namespace Scarlet.Communications
                 Trace("Client unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
                 Success = false;
             }
+            if (!Success) { return false; }
             Success = StartSendReceiveThreads();
             if (!Success) { Trace("Client unable to startup Send / Receive threads. Retrying."); }
             return Success;
