@@ -8,7 +8,9 @@
         public const int WATCHDOG_INTERVAL = 1000; // ms
         public const int CONNECTION_RETRY_DELAY = 5000; // ms
         public const int DEFAULT_RECEIVE_BUFFER_SIZE = 64; // bytes
-        public const int PACKET_HEADER_SIZE = 11; // bytes
+
+        /// <summary> Defines how many bytes are in the header (non-data portion at the beginning) of all <see cref="Packet"/>s. </summary>
+        public const int PACKET_HEADER_SIZE = sizeof(long) + sizeof(byte) + sizeof(ushort); // Timestamp + ID + Length
         public const int MIN_BUFFER_SIZE = PACKET_HEADER_SIZE + 4; // bytes (based on longest internal-use packets)
         #endregion
 

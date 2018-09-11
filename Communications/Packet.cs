@@ -6,9 +6,6 @@ namespace Scarlet.Communications
 {
     public class Packet : ICloneable
     {
-        /// <summary> Defines how many bytes are in the header (non-data portion at the beginning) of all <see cref="Packet"/>s. </summary>
-        public const int HEADER_LENGTH = sizeof(long) + sizeof(byte) + sizeof(ushort); // Timestamp + ID + Length
-
         /// <summary> The name of the recipient for sent packets, or the name of the sender for received packets. </summary>
         public string Endpoint { get; set; }
 

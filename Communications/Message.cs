@@ -22,12 +22,12 @@ namespace Scarlet.Communications
         /// <param name="RawData"> Incoming data array </param>
         public Message(byte[] RawData)
         {
-            if (RawData.Length < Packet.HEADER_LENGTH) { throw new ArgumentException("Raw data not sufficient for packet. Must be at least " + Packet.HEADER_LENGTH + " bytes long."); }
+            if (RawData.Length < Constants.PACKET_HEADER_SIZE) { throw new ArgumentException("Raw data not sufficient for packet. Must be at least " + Constants.PACKET_HEADER_SIZE + " bytes long."); }
             this.Timestamp = UtilMain.SubArray(RawData, 0, sizeof(long));
             this.ID = RawData[8];
             ushort ExpectedLength = UtilData.ToUShort(RawData, 9);
             if (ExpectedLength != RawData.Length) { Log.Output(Log.Severity.WARNING, Log.Source.NETWORK, "Packet data length does not match its descriptor. Expected " + ExpectedLength + " bytes, got " + RawData.Length + "."); }
-            if (RawData.Length > Packet.HEADER_LENGTH) { this.Payload = UtilMain.SubArray(RawData, Packet.HEADER_LENGTH, (RawData.Length - Packet.HEADER_LENGTH)); }
+            if (RawData.Length > Constants.PACKET_HEADER_SIZE) { this.Payload = UtilMain.SubArray(RawData, Constants.PACKET_HEADER_SIZE, (RawData.Length - Constants.PACKET_HEADER_SIZE)); }
             else { this.Payload = new byte[0]; }
         }
 
@@ -83,11 +83,11 @@ namespace Scarlet.Communications
         public byte[] GetRawData()
         {
             if (this.Payload == null) { this.Payload = new byte[0]; }
-            byte[] Output = new byte[Packet.HEADER_LENGTH + this.Payload.Length];
+            byte[] Output = new byte[Constants.PACKET_HEADER_SIZE + this.Payload.Length];
             Buffer.BlockCopy(this.Timestamp, 0, Output, 0, this.Timestamp.Length);
             Output[8] = this.ID;
-            Buffer.BlockCopy(UtilData.ToBytes((ushort)(Packet.HEADER_LENGTH + this.Payload.Length)), 0, Output, 9, sizeof(ushort));
-            Buffer.BlockCopy(this.Payload, 0, Output, Packet.HEADER_LENGTH, this.Payload.Length);
+            Buffer.BlockCopy(UtilData.ToBytes((ushort)(Constants.PACKET_HEADER_SIZE + this.Payload.Length)), 0, Output, 9, sizeof(ushort));
+            Buffer.BlockCopy(this.Payload, 0, Output, Constants.PACKET_HEADER_SIZE, this.Payload.Length);
             return Output;
         }
 
