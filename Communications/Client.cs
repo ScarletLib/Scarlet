@@ -45,6 +45,8 @@ namespace Scarlet.Communications
 
         public static string ServerName { get; private set; }
 
+        #region Private Variables
+
         private static Queue<Packet> PacketProcessQueue;
         private static Queue<Packet> PacketSendQueue;
 
@@ -60,6 +62,8 @@ namespace Scarlet.Communications
         private static volatile bool StopThreads;
         private static volatile bool SendReceiveThreadsRunning;
         private static volatile bool WatchdogFoundOnInterval;
+
+        #endregion
 
         /// <summary>
         /// 
