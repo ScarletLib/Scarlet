@@ -339,7 +339,7 @@ namespace Scarlet.Communications
         private static void ReceiveOnSocket(object ReceiveSocket)
         {
             Socket Socket = (Socket)ReceiveSocket;
-            while (!StopThreads)
+            while (!StopThreads && Socket != null)
             {
                 bool ReadFailureAlertSent = false;
                 if (Socket.Available >= Constants.PACKET_HEADER_SIZE)
