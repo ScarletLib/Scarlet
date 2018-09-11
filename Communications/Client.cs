@@ -180,7 +180,7 @@ namespace Scarlet.Communications
             // Form handshake packet
             Packet Handshake = new Packet(Constants.HANDSHAKE_FROM_CLIENT, false);
             Handshake.AppendData(new byte[] { (byte)LatencyMeasurement, (byte)Utilities.Constants.SCARLET_VERSION });
-            Handshake.AppendData(UtilData.ToBytes((ushort)PortUDP));
+            Handshake.AppendData(UtilData.ToBytes((ushort)((IPEndPoint)ServerUDP.Client.LocalEndPoint).Port));
             Handshake.AppendData(UtilData.ToBytes(ClientName));
 
             // Send handshake packet via TCP immediately
@@ -194,7 +194,7 @@ namespace Scarlet.Communications
             RemoteVersion = (ScarletVersion)Payload[0];
             ClientServerConnectionState = (ClientServerConnectionState)Payload[1];
             string ErrorMsg;
-            Trace("Connecting to server resulted in state " + ClientServerConnectionState + ". Servier is on version " + RemoteVersion + ".");
+            Trace("Connecting to server resulted in state " + ClientServerConnectionState + ". Server is on version " + RemoteVersion + ".");
             switch (ClientServerConnectionState)
             {
                 case ClientServerConnectionState.OKAY:

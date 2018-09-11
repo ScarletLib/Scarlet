@@ -145,6 +145,7 @@ namespace Scarlet.Communications
             }
             TCPListener.Stop();
             ClientThreads.ForEach(x => x?.Abort());
+            ClientThreads.ForEach(x => x?.Join());
         }
 
         /// <summary>
