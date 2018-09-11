@@ -40,6 +40,10 @@ namespace Scarlet.TestSuite
             {
                 Utils.Start(args);
             }
+            else if (args[0].Equals("dev", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Device.Start(args);
+            }
         }
 
         public static void ErrorExit(string error)
@@ -74,6 +78,8 @@ namespace Scarlet.TestSuite
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   filter <average/lowpass> <cycles>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "utils ___");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   DataLog");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "dev ___");
+            Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "   HX711 <pi/bbb> <datapin> <clockpin>");
             Log.ForceOutput(Log.Severity.INFO, Log.Source.GUI, "More will be added!");
             Environment.Exit(0);
         }
