@@ -18,9 +18,9 @@ namespace Scarlet.Utilities
         public static void Start(string SystemName)
         {
             if (Started) { return; }
-            FileInfo = new FileInfo( "ScarletStore-" + SystemName + FileExtension);
+            FileInfo = new FileInfo("ScarletStore-" + SystemName + FileExtension);
             CheckForBackups();
-            if(!File.Exists(FileInfo.FullName)) { File.Create(FileInfo.FullName).Close(); }
+            if (!File.Exists(FileInfo.FullName)) { File.Create(FileInfo.FullName).Close(); }
             Data = new Dictionary<string, string>();
             foreach (string Line in File.ReadAllLines(FileInfo.FullName))
             {
@@ -29,28 +29,11 @@ namespace Scarlet.Utilities
             Started = true;
         }
 
-        private static void CheckForBackups()
-        {
-            FileInfo OldFile = new FileInfo(FileInfo.Name + "-old" + FileExtension);
-            if(File.Exists(OldFile.FullName))
-            {
-                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "StateStore found a backup file in place, meaning that something went wrong while saving last time. This backup file will now be used.");
-                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "If this keeps happening, there may be a corruption problem. Check the *.txt-corrupt file to see why this may be.");
-                if (File.Exists(FileInfo.FullName)) // New file exists
-                {
-                    FileInfo CorrFile = new FileInfo(FileInfo.Name + "-corrupt" + FileExtension);
-                    if(File.Exists(CorrFile.FullName)) { File.Delete(CorrFile.FullName); } // If we already have an old new one, get rid of it.
-                    File.Move(FileInfo.FullName, CorrFile.FullName);
-                }
-                File.Move(OldFile.FullName, FileInfo.FullName); // Replace the potentially corrupt file with the backup
-            }
-        }
-
         /// <summary> Saves the configuration to disk. </summary>
         public static void Save()
         {
             List<string> Lines = new List<string>(Data.Count);
-            foreach(KeyValuePair<string, string> Item in Data)
+            foreach (KeyValuePair<string, string> Item in Data)
             {
                 Lines.Add(Item.Key + '=' + Item.Value);
             }
@@ -60,7 +43,9 @@ namespace Scarlet.Utilities
             File.Delete(OldFile.FullName); // Delete the backup if saving went OK
         }
 
-        /// <summary> Sets the specified proprty internally. Does not change the file, you must use Save() to save changes to file. </summary>
+        /// <summary> Sets the specified property internally. Does not change the file, you must use Save() to save changes to file. </summary>
+        /// <param name="Key"> The reference for the data to set. </param>
+        /// <param name="Value"> The data to associate to the key. </param>
         public static void Set(string Key, string Value)
         {
             lock (Data)
@@ -71,18 +56,39 @@ namespace Scarlet.Utilities
         }
 
         /// <summary> Gets the specified property, or null if it doesn't exist. </summary>
+        /// <param name="Key"> The key to get associated data for. </param>
         public static string Get(string Key)
         {
             lock (Data) { return Data.ContainsKey(Key) ? Data[Key] : null; }
         }
 
         /// <summary> Gets the specified property, or if it doesn't exist, sets it to the default value and then returns that default value. </summary>
+        /// <param name="Key"> The key to get associated data for, or which to set if it doesn't exist. </param>
+        /// <param name="DefaultValue"> The value to set the key to, and return, if the key is not found. </param>
         public static string GetOrCreate(string Key, string DefaultValue)
         {
             lock (Data)
             {
                 if (!Data.ContainsKey(Key)) { Data.Add(Key, DefaultValue); }
                 return Data[Key];
+            }
+        }
+
+        /// <summary> Checks if a backup file exists, and uses it instead. This likely means that the program crashed during saving last time. </summary>
+        private static void CheckForBackups()
+        {
+            FileInfo OldFile = new FileInfo(FileInfo.Name + "-old" + FileExtension);
+            if (File.Exists(OldFile.FullName))
+            {
+                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "StateStore found a backup file in place, meaning that something went wrong while saving last time. This backup file will now be used.");
+                Log.Output(Log.Severity.WARNING, Log.Source.OTHER, "If this keeps happening, there may be a corruption problem. Check the *.txt-corrupt file to see why this may be.");
+                if (File.Exists(FileInfo.FullName)) // New file exists
+                {
+                    FileInfo CorrFile = new FileInfo(FileInfo.Name + "-corrupt" + FileExtension);
+                    if (File.Exists(CorrFile.FullName)) { File.Delete(CorrFile.FullName); } // If we already have an old new one, get rid of it.
+                    File.Move(FileInfo.FullName, CorrFile.FullName);
+                }
+                File.Move(OldFile.FullName, FileInfo.FullName); // Replace the potentially corrupt file with the backup
             }
         }
     }

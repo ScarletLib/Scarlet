@@ -16,6 +16,7 @@ namespace Scarlet.Components.Motors
         private bool Stopped; // Whether or not the motor is stopped
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
+        public bool TraceLogging { get; set; }
 
         /// <summary> Initializes a CytronMD30C Motor controller </summary>
         /// <param name="PWMOut"> PWM Output to set the speed of the motor controller </param>

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace Scarlet.Utilities
 {
@@ -55,6 +56,8 @@ namespace Scarlet.Utilities
 
         private static object ConsoleLock = new object();
         private static object FileLock = new object();
+
+        private static ObjectIDGenerator IDGen = new ObjectIDGenerator();
 
         /// <summary> Outputs a general log message if configured to output this type of message. </summary>
         /// <param name="Severity"> How severe this message is. This partially determines if it is output. </param>
@@ -112,6 +115,24 @@ namespace Scarlet.Utilities
                     break;
             }
             Message = "[" + DateTime.Now.ToLongTimeString() + "] " + Message;
+            WriteLine(Message);
+            Console.ResetColor();
+        }
+
+        public static void Trace(object Sender, string Message, bool Output = true)
+        {
+            if (!Output) { return; }
+            Message = string.Format("[{0}] [TRC] [{1}#{2}] {3}", DateTime.Now.ToLongTimeString(), Sender.GetType().Name, IDGen.GetId(Sender, out bool IgnoreMe), Message);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            WriteLine(Message);
+            Console.ResetColor();
+        }
+
+        public static void Trace(Type StaticSender, string Message, bool Output = true)
+        {
+            if (!Output) { return; }
+            Message = string.Format("[{0}] [TRC] [{1}#S] {2}", DateTime.Now.ToLongTimeString(), StaticSender.Name, Message);
+            Console.ForegroundColor = ConsoleColor.Gray;
             WriteLine(Message);
             Console.ResetColor();
         }

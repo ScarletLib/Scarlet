@@ -15,6 +15,7 @@ namespace Scarlet.Components.Motors
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
         private bool Stopped; // Whether or not the motor is stopped
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
+        public bool TraceLogging { get; set; }
 
         /// <summary> Initializes a Talon Motor controller </summary>
         /// <param name="PWMOut"> PWM output to control the motor controller </param>

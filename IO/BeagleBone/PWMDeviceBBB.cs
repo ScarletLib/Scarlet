@@ -40,7 +40,7 @@ namespace Scarlet.IO.BeagleBone
 
         /// <summary> Gets the PWM output corresponding to a given pin on the BeagleBone Black. </summary>
         /// <param name="Pin"> The pin to find a PWM output associated with. </param>
-        /// <returns> A <c>PWMOutputBBB</c>, or null if the given pin is not valid. </returns>
+        /// <returns> A <see cref="PWMOutputBBB"/>, or <c>null</c> if the given pin is not valid. </returns>
         public static PWMOutputBBB GetFromPin(BBBPin Pin)
         {
             switch (Pin)
@@ -66,18 +66,21 @@ namespace Scarlet.IO.BeagleBone
             return null;
         }
 
-        /// <summary> Prepares the given PWM ports for use. Should only be called from BeagleBone.Initialize(). </summary>
+        /// <summary> Prepares the given PWM ports for use. Should only be called from <see cref="BeagleBone.Initialize(SystemMode, bool)"/>. </summary>
+        /// <param name="EnableBuses"> Whether to enable each of the PWM devices. </param>
         internal static void Initialize(bool[] EnableBuses)
         {
             if (EnableBuses == null || EnableBuses.Length != 3) { throw new Exception("Invalid enable array given to PWMBBB.Initialize."); }
 
-            //                                                             A1            A2                             B1            B2
+            ////                                                                    A1            A2                             B1            B2
             if (EnableBuses[0]) { PWMDevice0 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_22, BBBPin.P9_31 }, new BBBPin[] { BBBPin.P9_21, BBBPin.P9_29 }); }
             if (EnableBuses[1]) { PWMDevice1 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P9_14, BBBPin.P8_36 }, new BBBPin[] { BBBPin.P9_16, BBBPin.P8_34 }); }
             if (EnableBuses[2]) { PWMDevice2 = new PWMDeviceBBB(new BBBPin[] { BBBPin.P8_19, BBBPin.P8_45 }, new BBBPin[] { BBBPin.P8_13, BBBPin.P8_46 }); }
         }
 
         /// <summary> Converts a pin number to the corresponding PWM device and output number. Needed as every output is connected to 2 physical pins. </summary>
+        /// <param name="Pin"> The pin to find the PWM ID of. </param>
+        /// <returns> The PWM ID corresponding to the pin, or <see cref="PWMPortEnum.PWM_NONE"/> if the given pin is invalid. </returns>
         internal static PWMPortEnum PinToPWMID(BBBPin Pin)
         {
             switch (Pin)
@@ -109,7 +112,9 @@ namespace Scarlet.IO.BeagleBone
         public PWMOutputBBB OutputA { get; private set; }
         public PWMOutputBBB OutputB { get; private set; }
 
-        /// <summary> This should only be initialized from PWMBBB. </summary>
+        /// <summary> This should only be initialized from <see cref="PWMBBB"/>. </summary>
+        /// <param name="PinsA"> The pins in channel A. </param>
+        /// <param name="PinsB"> The pins in channel B. </param>
         internal PWMDeviceBBB(BBBPin[] PinsA, BBBPin[] PinsB)
         {
             this.OutputA = new PWMOutputBBB(PinsA, this);
@@ -118,6 +123,7 @@ namespace Scarlet.IO.BeagleBone
 
         /// <summary> Sets the clock frequency of this PWM device. Note that this gets applied to both outputs. </summary>
         /// <param name="Frequency"> The new frequency, in Hz. </param>
+        /// <exception cref="InvalidOperationException"> If you attempt to change the frequency before initialization. </exception>
         public void SetFrequency(float Frequency)
         {
             if (this.OutputA.Port != null) { this.OutputA.Port.FrequencyHz = (uint)Math.Round(Frequency); }
@@ -131,13 +137,15 @@ namespace Scarlet.IO.BeagleBone
 
     public class PWMOutputBBB : IPWMOutput
     {
+        internal PWMPortMM Port { get; private set; }
+
         private BBBPin[] Pins;
         private PWMDeviceBBB Parent;
         private float DutyCycle = -1;
 
-        internal PWMPortMM Port;
-
-        /// <summary> This should only be initialized from PWMDeviceBBB. </summary>
+        /// <summary> This should only be initialized from <see cref="PWMDeviceBBB"/>. </summary>
+        /// <param name="Pins"> The two pins that correspond to this output channel. </param>
+        /// <param name="Parent"> The PWM device that this output belongs to. </param>
         internal PWMOutputBBB(BBBPin[] Pins, PWMDeviceBBB Parent)
         {
             this.Pins = Pins;
@@ -146,6 +154,38 @@ namespace Scarlet.IO.BeagleBone
         }
 
         public void Dispose() { }
+
+        /// <summary> Sets the device's (both output A and B) clock frequency to the given one, in Hz. </summary>
+        /// <param name="Frequency"> The frequency to set the device to. Rounded to nearest Hz. </param>
+        public void SetFrequency(float Frequency) { this.Parent.SetFrequency(Frequency); }
+
+        /// <summary> Sets the output to the given duty cycle. Must be between 0.0 and 1.0. </summary>
+        /// <param name="DutyCycle"> The duty cycle to set the output to. </param>
+        public void SetOutput(float DutyCycle)
+        {
+            this.Port.DutyPercent = DutyCycle * 100F;
+            this.DutyCycle = DutyCycle * 100F;
+        }
+
+        /// <summary> <c>PWMOutputBBB</c> does not support clock delay. This will do nothing. </summary>
+        /// <param name="ClockDelay"> Does nothing. </param>
+        public void SetDelay(float ClockDelay) { }
+
+        /// <summary> Sets the output state. </summary>
+        /// <param name="Enabled"> Whether PWM output is enabled. </param>
+        public void SetEnabled(bool Enabled) { this.Port.RunState = Enabled; }
+
+        /// <summary> Gets the current duty cycle, from 0.0 to 1.0. </summary>
+        public float GetOutput() { return this.Port.DutyPercent / 100.000F; }
+
+        /// <summary> Gets the current output frequency, in Hz. </summary>
+        public uint GetFrequency() { return Port.FrequencyHz; }
+
+        /// <summary> Re-sets the duty cycle. This must be done after changing the clock frequency, as it will have incorrect output afterwards. </summary>
+        internal void ResetOutput()
+        {
+            if (this.DutyCycle != -1) { this.Port.DutyPercent = this.DutyCycle; }
+        }
 
         /// <summary> Prepares the PWM output for use. </summary>
         private void Initialize()
@@ -227,35 +267,6 @@ namespace Scarlet.IO.BeagleBone
             Enabler.Flush();
             Enabler.Close();
             this.Port = new PWMPortMM(Device);
-        }
-
-        /// <summary> Sets the device's (both output A and B) clock frequency to the given one, in Hz. </summary>
-        public void SetFrequency(float Frequency) { this.Parent.SetFrequency(Frequency); }
-
-        /// <summary> Sets the output to the given duty cycle. Must be between 0.0 and 1.0. </summary>
-        public void SetOutput(float DutyCycle)
-        {
-            this.Port.DutyPercent = DutyCycle * 100F;
-            this.DutyCycle = DutyCycle * 100F;
-        }
-
-        /// <summary> <c>PWMOutputBBB</c> does not support clock delay. This will do nothing. </summary>
-        /// <param name="ClockDelay"> Does nothing. </param>
-        public void SetDelay(float ClockDelay) { }
-
-        /// <summary> Sets the output state. </summary>
-        public void SetEnabled(bool Enabled) { this.Port.RunState = Enabled; }
-
-        /// <summary> Gets the current duty cycle, from 0.0 to 1.0. </summary>
-        public float GetOutput() { return this.Port.DutyPercent / 100.000F; }
-
-        /// <summary> Gets the current output frequency, in Hz. </summary>
-        public uint GetFrequency() { return Port.FrequencyHz; }
-
-        /// <summary> Re-sets the duty cycle. This must be done after changing the clock frequency, as it will have incorrect output afterwards. </summary>
-        internal void ResetOutput()
-        {
-            if (this.DutyCycle != -1) { this.Port.DutyPercent = this.DutyCycle; }
         }
     }
 }

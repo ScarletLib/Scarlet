@@ -13,6 +13,7 @@ namespace Scarlet.Components.Sensors
         private static double[] AccelSensitivity = new double[] { 2.0, 4.0, 8.0, 16.0 };
         private static double[] GyroSensitivity = new double[] { 250.0, 500.0, 1000.0, 2000.0 };
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         public MPU6050(II2CBus Bus, byte DeviceID)
         {

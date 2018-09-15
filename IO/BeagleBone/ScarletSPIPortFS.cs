@@ -49,7 +49,7 @@ namespace BBBCSIO
     ///    21 Dec 14  Cynic - Originally written
     /// </history>
     public class ScarletSPIPortFS : PortFS
-    { // TODO: Go through and update documentation for changes made.
+    {
 
         // the SPI port we use
         private SPIPortEnum spiPort = SPIPortEnum.SPIPORT_NONE;
@@ -83,6 +83,7 @@ namespace BBBCSIO
         /// </summary>
         /// <param name="spiPortIn">The SPI port we use</param>
         /// <history>
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Renamed
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public ScarletSPIPortFS(SPIPortEnum spiPortIn) : base(GpioEnum.GPIO_NONE)
@@ -121,7 +122,7 @@ namespace BBBCSIO
         /// <param name="rxByteBuf">The buffer with bytes to receive. Can be NULL</param>
         /// <param name="numBytes">The number of bytes to send/receive
         /// <history>
-        ///    16 Sep 17  Cai Biesinger: Scarlet - Modified for better integration with Scarlet.
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: switching from file descriptor GPIO to IDigitalOut.
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public void SPITransfer(IDigitalOut output, byte[] txByteBuf, byte[] rxByteBuf, int numBytes)
@@ -178,6 +179,7 @@ namespace BBBCSIO
                     finally
                     {
                         // raise the slave select
+                        // CaiB 2017-09-16: Chenged this to true, BBBCSIO never released SS.
                         output.SetOutput(true);
                     }
 
@@ -213,6 +215,7 @@ namespace BBBCSIO
         /// <param name="ssHandle">The SPI Slave Device handle</param>
         /// <returns>the spi mode</returns>
         /// <history>
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Removing SS file descriptors
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public SPIModeEnum GetMode()
@@ -237,7 +240,7 @@ namespace BBBCSIO
             }
             return (SPIModeEnum)mode;
         }
-            
+
         /// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
         /// <summary>
         /// Sets the SPI mode. This is used for all Slave Devices on the port
@@ -246,6 +249,7 @@ namespace BBBCSIO
         /// </summary>
         /// <param name="spiMode">The spi mode to set</param>
         /// <history>
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public void SetMode(SPIModeEnum spiMode)
@@ -276,6 +280,7 @@ namespace BBBCSIO
         /// </summary>
         /// <returns>the spi port speed in Hertz</returns>
         /// <history>
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public uint GetDefaultSpeedInHz()
@@ -300,7 +305,7 @@ namespace BBBCSIO
             }
             return speedInHz;
         }
-            
+
         /// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
         /// <summary>
         /// Sets the Default SPI speed in Hertz. This value can be overridden on 
@@ -308,6 +313,7 @@ namespace BBBCSIO
         /// </summary>
         /// <param name="spiSpeedInHz">The speed in Hertz to set</param>
         /// <history>
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public void SetDefaultSpeedInHz(uint spiSpeedInHz)
@@ -329,8 +335,12 @@ namespace BBBCSIO
                 // it failed
                 throw new Exception("ExternalIoCtl on device " + ssHandle.SPISlaveDevice + " failed. retval="+retVal.ToString());
             }
-        }           
+        }
 
+        // CaiB 2017-09-16: Removed this method, as we are no longer using file descriptors for SS control.
+        // private SPISlaveDeviceHandle GetFirstSlaveDeviceWithFD()
+
+        // 16 Sep 17  Cai Biesinger - Modified for Scarlet: Prepares the general port file descriptor instead of individual SS line file descriptors.
         private SPISlaveDeviceHandle EnableSPIDevice()
         {
             string deviceFileName;
@@ -398,9 +408,10 @@ namespace BBBCSIO
         /// 
         /// </summary>
         /// <returns>ssHandle - the handle for the Slave Device or null for fail</returns>
-        /// <param name="spiSlaveDeviceIn">The GPIO of the pin we use as the slave select</param>
+        ///// <param name="spiSlaveDeviceIn">The GPIO of the pin we use as the slave select</param>
+        /// <param name="output"> The <see cref="IDigitalOut"/> to prepare for SPI CS use. </param>
         /// <history>
-        ///    16 Sep 17  Cai Biesinger: Scarlet - Modified for better integration with Scarlet.
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Switched from direct GPIO control to IDigitalOut.
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         public void EnableSPIGPIOSlaveDevice(IDigitalOut output)
@@ -422,57 +433,15 @@ namespace BBBCSIO
             SlaveDevices.Add(output);
         }
 
-        /// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
-        /// <summary>
-        /// Disables a SPI slave device. 
-        /// </summary>
-        /// <param name="ssHandle">The SPI Slave Device handle to disable</param>
-        /// <history>
-        ///    21 Dec 14  Cynic - Originally written
-        /// </history>
-        /*private void DisableSPISlaveDevice(SPISlaveDeviceHandle ssHandle)
-        {
-            if (ssHandle == null) return;
-
-            // are we an internal chip select type slave device?
-            if ((ssHandle.SPISlaveDevice == SPISlaveDeviceEnum.SPI_SLAVEDEVICE_CS0) ||
-                (ssHandle.SPISlaveDevice == SPISlaveDeviceEnum.SPI_SLAVEDEVICE_CS1))
-            {
-                // yes we are, close it this way
-                               
-                // does it have a valid file descriptor
-                if (ssHandle.SpiDevFileDescriptor < 0) return;
-                // do an external close
-                ExternalFileClose(ssHandle.SpiDevFileDescriptor);
-                // mark it as having been closed
-                ssHandle.Reset();
-            }
-            else if (ssHandle.SPISlaveDevice == SPISlaveDeviceEnum.SPI_SLAVEDEVICE_GPIO)
-            {
-                // yes we are, close it this way
-
-                // does it have a valid file descriptor
-                if (ssHandle.GpioSlaveSelect == null) return;
-                // close it
-                ssHandle.GpioSlaveSelect.ClosePort();
-                ssHandle.GpioSlaveSelect.Dispose();
-                ssHandle.GpioSlaveSelect = null;
-                // mark it as having been closed
-                ssHandle.Reset();
-            }
-            else
-            {
-                // unknown type of slave device should never happen
-                throw new Exception ("Unknown SPI Slave Device:" + ssHandle.SPISlaveDevice.ToString());
-            }
-        }*/
+        // CaiB 2017-09-16: Removed, as we no longer use device handles.
+        // private void DisableSPISlaveDevice(SPISlaveDeviceHandle ssHandle)
 
         /// +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
         /// <summary>
         /// Disables all SPI slave devices. 
         /// </summary>
         /// <history>
-        ///    16 Sep 17  Cai Biesinger: Scarlet - Modified for better integration with Scarlet.
+        ///    16 Sep 17  Cai Biesinger - Modified for Scarlet: Disposes IDigitalOut objects instead of closing handles.
         ///    21 Dec 14  Cynic - Originally written
         /// </history>
         private void DisableAllSPISlaveDevices()

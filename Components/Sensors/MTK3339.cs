@@ -11,6 +11,7 @@ namespace Scarlet.Components.Sensors
     public class MTK3339 : ISensor
     {
         public string System { get; set; }
+        public bool TraceLogging { get; set; }
 
         public Data GPSData { get; private set; }
 

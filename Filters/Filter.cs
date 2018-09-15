@@ -4,10 +4,10 @@ namespace Scarlet.Filters
 {
     /// <summary>
     ///  This is an interface meant to wrap all filters in the Filters namespace.
-    ///  
-    ///  * * * Some Filters require use of just the Feed(T Input) method. Others require a given Feed(T Input, T Rate).
+    ///  * * * Some Filters require use of just the Feed(T Input) method. Others may require a given Feed(T Input, T Rate).
     ///        See the documentation for the given filter to determine necessary information.
     /// </summary>
+    /// <typeparam name="T"> T must be a numeric type. </typeparam>
     public interface IFilter<T> where T : IComparable
     {
         /// <summary>
