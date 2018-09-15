@@ -82,6 +82,7 @@
     <Compile Include="Components\Motors\VESC.cs" />
     <Compile Include="Components\Sensors\BME280.cs" />
     <Compile Include="Components\Sensors\BNO055.cs" />
+    <Compile Include="Components\Sensors\HX711.cs" />
     <Compile Include="Components\Sensors\INA226.cs" />
     <Compile Include="Components\Outputs\PCA9685.cs" />
     <Compile Include="Components\Outputs\RGBLED.cs" />
