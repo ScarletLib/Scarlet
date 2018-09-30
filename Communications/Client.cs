@@ -236,6 +236,10 @@ namespace Scarlet.Communications
         {
             if (!Event.StatusConnected && !ThreadIsRunning(ConnectionThread))
             {
+                ServerTCP?.Close();
+                ServerUDP?.Close();
+                ServerTCP = new TcpClient();
+                ServerUDP = new UdpClient();
                 ConnectionThread = ConnectThreadFactory();
                 ConnectionThread.Start();
             }
