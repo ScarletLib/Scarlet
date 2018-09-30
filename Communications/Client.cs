@@ -57,6 +57,7 @@ namespace Scarlet.Communications
         private static Thread ReceiveTCPThread;
         private static Thread SendThread;
         private static Thread PacketProcessThread;
+        private static Thread WatchdogThread;
 
         private static TcpClient ServerTCP;
         private static UdpClient ServerUDP;
@@ -494,14 +495,17 @@ namespace Scarlet.Communications
                 ReceiveUDPThread = ReceiveThreadFactory();
                 ReceiveTCPThread = ReceiveThreadFactory();
                 PacketProcessThread = ProcessIncomingThreadFactory();
+                WatchdogThread = WatchdogThreadFactory();
                 SendThread.Start();
                 ReceiveUDPThread.Start(ServerUDP.Client);
                 ReceiveTCPThread.Start(ServerTCP.Client);
                 PacketProcessThread.Start();
+                WatchdogThread.Start();
                 bool Success = SendThread.IsAlive;
                 Success &= ReceiveUDPThread.IsAlive;
                 Success &= ReceiveTCPThread.IsAlive;
                 Success &= PacketProcessThread.IsAlive;
+                Success &= WatchdogThread.IsAlive;
                 SendReceiveThreadsRunning = Success;
                 if (Success) { Trace("Client successfully started send and receive threads."); }
                 else { Trace("Client failed starting send and receive threads."); }
