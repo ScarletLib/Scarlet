@@ -179,7 +179,10 @@ namespace Scarlet.Communications
                 }
             }
 
-            NetworkStream ReceiveStream = Client.GetStream();
+            NetworkStream ReceiveStream = null;
+            try { ReceiveStream = Client.GetStream(); }
+            catch(ObjectDisposedException) { return; }
+
             if (!ReceiveStream.CanRead)
             {
                 Log.Output(Log.Severity.ERROR, Log.Source.NETWORK, "Client TCP NetworkStream connection does not permit reading.");
