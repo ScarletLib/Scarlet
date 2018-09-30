@@ -121,6 +121,10 @@ namespace Scarlet.Communications
                 PacketProcessQueue = new Queue<Packet>();
                 PacketSendQueue = new Queue<Packet>();
 
+                // Initialize TcpClient and UdpClient
+                ServerTCP = new TcpClient();
+                ServerUDP = new UdpClient();
+
                 StopThreads = false;
                 SendReceiveThreadsRunning = false;
 
@@ -149,7 +153,6 @@ namespace Scarlet.Communications
         private static bool TryOpenConnection()
         {
             // Open TCP Connection
-            ServerTCP = new TcpClient();
             IAsyncResult TCPConnResult = ServerTCP.BeginConnect(ServerIP, PortTCP, null, null);
             bool Success = TCPConnResult.AsyncWaitHandle.WaitOne(Constants.CONNECTION_RETRY_DELAY);
             if (!Success)
@@ -164,7 +167,6 @@ namespace Scarlet.Communications
             }
 
             // Open UDP Connection
-            ServerUDP = new UdpClient();
             try { ServerUDP.Connect(new IPEndPoint(ServerIP, PortUDP)); }
             catch (SocketException)
             {
@@ -348,7 +350,6 @@ namespace Scarlet.Communications
             while (!StopThreads && Socket != null)
             {
                 bool ReadFailureAlertSent = false;
-                Trace("Available bytes on socket: " + Socket.Available);
                 if (Socket.Available >= Constants.PACKET_HEADER_SIZE)
                 {
                     byte[] ReceiveBuffer = new byte[ReceiveBufferSize];
