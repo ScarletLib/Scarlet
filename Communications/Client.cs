@@ -344,9 +344,9 @@ namespace Scarlet.Communications
             while (!StopThreads && Socket != null)
             {
                 bool ReadFailureAlertSent = false;
+                Trace("Available bytes on socket: " + Socket.Available);
                 if (Socket.Available >= Constants.PACKET_HEADER_SIZE)
                 {
-                    Trace("Available bytes on socket: " + Socket.Available);
                     byte[] ReceiveBuffer = new byte[ReceiveBufferSize];
                     try
                     {
