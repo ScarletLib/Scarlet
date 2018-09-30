@@ -236,10 +236,12 @@ namespace Scarlet.Communications
         {
             if (!Event.StatusConnected && !ThreadIsRunning(ConnectionThread))
             {
+                Trace("Closing TCP/UDP connections.");
                 ServerTCP?.Close();
                 ServerUDP?.Close();
                 ServerTCP = new TcpClient();
                 ServerUDP = new UdpClient();
+                Trace("Opening Connection thread.");
                 ConnectionThread = ConnectThreadFactory();
                 ConnectionThread.Start();
             }
