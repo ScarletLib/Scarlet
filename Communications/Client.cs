@@ -124,7 +124,6 @@ namespace Scarlet.Communications
                 // Initialize TcpClient and UdpClient
                 ServerTCP = new TcpClient();
                 ServerUDP = new UdpClient();
-                Trace("Client listening on TCP Port: " + ((IPEndPoint)ServerTCP.Client.LocalEndPoint).Port.ToString() + " UDP Port: " + ((IPEndPoint)ServerUDP.Client.LocalEndPoint).Port);
 
                 StopThreads = false;
                 SendReceiveThreadsRunning = false;
@@ -178,6 +177,7 @@ namespace Scarlet.Communications
             if (!Success) { return false; }
             Success = StartSendReceiveThreads();
             if (!Success) { Trace("Client unable to startup Send / Receive threads. Retrying."); }
+            else { Trace("Client listening on TCP Port: " + ((IPEndPoint)ServerTCP.Client.LocalEndPoint).Port.ToString() + " UDP Port: " + ((IPEndPoint)ServerUDP.Client.LocalEndPoint).Port); }
             return Success;
         }
 
@@ -420,7 +420,7 @@ namespace Scarlet.Communications
 
         public static void Stop()
         {
-            new Thread(() => 
+            new Thread(() =>
             {
                 StopThreads = true;
                 CloseConnection();
