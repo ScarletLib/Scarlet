@@ -387,6 +387,7 @@ namespace Scarlet.Communications
                         }
                     }
                 }
+                Trace("Stopping receive process on Socket. " + ReceiveSocket ?? "Socket is null.");
                 Thread.Sleep(OperationPeriod);
             }
         }
@@ -415,9 +416,12 @@ namespace Scarlet.Communications
 
         public static void Stop()
         {
-            StopThreads = true;
-
-            CloseConnection();
+            new Thread(() => 
+            {
+                StopThreads = true;
+                CloseConnection();
+                Initialized = false;
+            }).Start();
             Log.Output(Log.Severity.DEBUG, Log.Source.NETWORK, "Stopping Client.");
         }
 
@@ -442,7 +446,7 @@ namespace Scarlet.Communications
                     break;
                 case LatencyMeasurementMode.BASIC:
                     LatencyInfo = 0;
-                    break;                    
+                    break;
             }
             if (LatencyInfo != null) { WatchdogPacket.AppendData(UtilData.ToBytes((short)LatencyInfo)); }
             WatchdogPacket.AppendData(UtilData.ToBytes(ClientName));
