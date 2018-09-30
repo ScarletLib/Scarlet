@@ -11,7 +11,9 @@ using System.Threading.Tasks;
 namespace Scarlet.Communications
 {
     /// <summary>
-    /// 
+    /// Client handles TCP and UDP send and receive to a remote Scarlet Server. Includes connection handling and connection quality reporting. 
+    /// Also handles conditional packet sending for latent networks, automatic buffer length adjustment, and remote time synchronization.
+    /// More information about Client and Scarlet networking available on the Scarlet Wiki: https://github.com/huskyroboticsteam/Scarlet/wiki/Networking
     /// </summary>
     public static class Client
     {
@@ -25,8 +27,8 @@ namespace Scarlet.Communications
 
         public static int ReceiveBufferSize { get; private set; }
         public static int OperationPeriod { get; private set; }
-        public static int PortUDP { get; private set; }
-        public static int PortTCP { get; private set; }
+        public static ushort PortUDP { get; private set; }
+        public static ushort PortTCP { get; private set; }
         public static int ConnectionQuality { get; private set; }
 
         public static IPAddress ServerIP { get; private set; }
@@ -65,17 +67,14 @@ namespace Scarlet.Communications
 
         #endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="ClientName"></param>
-        /// <param name="ServerIP"></param>
-        /// <param name="PortTCP"></param>
-        /// <param name="PortUDP"></param>
-        /// <param name="ReceiveBufferSize"></param>
-        /// <param name="OperationPeriod"></param>
+        /// <summary> Starts a Client with the given parameters. Call this method before using any functionality of Client. </summary>
+        /// <param name="ClientName"> Arbitrary name of the Client. </param>
+        /// <param name="ServerIP"> IP of remote server. </param>
+        /// <param name="PortTCP"> TCP Connection port of remote server. </param>
+        /// <param name="PortUDP"> UDP Connection port of remote server. </param>
+        /// <param name="OperationPeriod"> Cyclic send / receive period. (Lower = faster, more CPU/Network usage) </param>
         /// <exception cref="Exception"> If ServerIP is unable to be parsed as an IPAddress object. </exception>
-        public static void Start(string ClientName, string ServerIP, int PortTCP, int PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
+        public static void Start(string ClientName, string ServerIP, ushort PortTCP, ushort PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             IPAddress ServerIPAsType = IPAddress.None;
             bool Valid = IPAddress.TryParse(ServerIP, out ServerIPAsType);
@@ -83,16 +82,14 @@ namespace Scarlet.Communications
             Start(ClientName, IPAddress.Parse(ServerIP), PortTCP, PortUDP, OperationPeriod, LatencyMode);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="ServerIP"></param>
-        /// <param name="PortTCP"></param>
-        /// <param name="PortUDP"></param>
-        /// <param name="ClientName"></param>
-        /// <param name="ReceiveBufferSize"></param>
-        /// <param name="OperationPeriod"></param>
-        public static void Start(string ClientName, IPAddress ServerIP, int PortTCP, int PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
+        /// <summary> Starts a Client with the given parameters. Call this method before using any functionality of Client. </summary>
+        /// <param name="ClientName"> Arbitrary name of the Client. </param>
+        /// <param name="ServerIP"> IP of remote server. </param>
+        /// <param name="PortTCP"> TCP Connection port of remote server. </param>
+        /// <param name="PortUDP"> UDP Connection port of remote server. </param>
+        /// <param name="OperationPeriod"> Cyclic send / receive period. (Lower = faster, more CPU/Network usage) </param>
+        /// <exception cref="Exception"> If ServerIP is unable to be parsed as an IPAddress object. </exception>
+        public static void Start(string ClientName, IPAddress ServerIP, ushort PortTCP, ushort PortUDP, int OperationPeriod = 20, LatencyMeasurementMode LatencyMode = LatencyMeasurementMode.FULL)
         {
             if (!Initialized)
             {
@@ -104,7 +101,7 @@ namespace Scarlet.Communications
                 // Initialize constructor variables into Client
                 Client.ClientName = ClientName;
                 Client.OperationPeriod = OperationPeriod;
-                Client.PortTCP = PortTCP;
+                Client.PortTCP = PortTCP; // TODO: Ensure ports are in valid range
                 Client.PortUDP = PortUDP;
                 Client.ServerIP = ServerIP;
 
