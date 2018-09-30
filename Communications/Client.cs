@@ -346,6 +346,7 @@ namespace Scarlet.Communications
                 bool ReadFailureAlertSent = false;
                 if (Socket.Available >= Constants.PACKET_HEADER_SIZE)
                 {
+                    Trace("Available bytes on socket: " + Socket.Available);
                     byte[] ReceiveBuffer = new byte[ReceiveBufferSize];
                     try
                     {
@@ -389,7 +390,7 @@ namespace Scarlet.Communications
                 }
                 Thread.Sleep(OperationPeriod);
             }
-            Trace("Stopping receive process on Socket. " + ReceiveSocket ?? "Socket is null.");
+            Trace("Stopping receive process on Socket. " + ReceiveSocket == null ? "" : "Socket is null.");
         }
 
         private static void ProcessPackets()
@@ -499,6 +500,8 @@ namespace Scarlet.Communications
                 Success &= ReceiveTCPThread.IsAlive;
                 Success &= PacketProcessThread.IsAlive;
                 SendReceiveThreadsRunning = Success;
+                if (Success) { Trace("Client successfully started send and receive threads."); }
+                else { Trace("Client failed starting send and receive threads."); }
             }
             return SendReceiveThreadsRunning;
         }
