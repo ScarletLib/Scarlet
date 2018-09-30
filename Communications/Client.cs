@@ -153,6 +153,8 @@ namespace Scarlet.Communications
         private static bool TryOpenConnection()
         {
             // Open TCP Connection
+            ServerTCP?.Close();
+            ServerUDP?.Close();
             IAsyncResult TCPConnResult = ServerTCP.BeginConnect(ServerIP, PortTCP, null, null);
             bool Success = TCPConnResult.AsyncWaitHandle.WaitOne(Constants.CONNECTION_RETRY_DELAY);
             if (!Success)
