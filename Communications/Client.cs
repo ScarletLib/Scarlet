@@ -153,17 +153,12 @@ namespace Scarlet.Communications
         private static bool TryOpenConnection()
         {
             // Open TCP Connection
-
             bool Success = true;
-            try
-            {
-                ServerTCP.Connect(ServerIP, PortTCP);
-            }
+            try { ServerTCP.Connect(ServerIP, PortTCP); }
             catch (SocketException) { Success = false; }
 
             if (!Success)
             {
-                CloseConnection();
                 Trace("Client unable to connect to Server TCP port at " + ServerIP.ToString() + ":" + PortTCP.ToString() + " within " + Constants.CONNECTION_RETRY_DELAY.ToString() + " ms. Retrying.");
             }
             else
@@ -173,7 +168,7 @@ namespace Scarlet.Communications
             }
 
             // Open UDP Connection
-            try { ServerUDP.Connect(new IPEndPoint(ServerIP, PortUDP)); }
+            try { ServerUDP.Connect(ServerIP, PortUDP); }
             catch (SocketException)
             {
                 Trace("Client unable to connect to Server UDP socket at " + ServerIP.ToString() + ":" + PortUDP.ToString() + ". Retrying.");
