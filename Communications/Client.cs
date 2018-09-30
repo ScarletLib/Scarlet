@@ -387,9 +387,9 @@ namespace Scarlet.Communications
                         }
                     }
                 }
-                Trace("Stopping receive process on Socket. " + ReceiveSocket ?? "Socket is null.");
                 Thread.Sleep(OperationPeriod);
             }
+            Trace("Stopping receive process on Socket. " + ReceiveSocket ?? "Socket is null.");
         }
 
         private static void ProcessPackets()
