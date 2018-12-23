@@ -351,7 +351,7 @@ namespace Scarlet.Communications
             // The client is now connected.
             ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = true });
 
-            StartWatchdog(ConnectedClient);
+            StartWatchdog(ConnectedClient.Name);
 
             // Receive data from client.
             DataBuffer = new byte[ReceiveBufferSize];
@@ -502,49 +502,48 @@ namespace Scarlet.Communications
         #endregion
 
         #region Watchdogs
-        private static void StartWatchdog(ScarletClient Client)
+        private static void StartWatchdog(string ClientName)
         {
-            Client.WatchdogSend = new Thread(SendWatchdogs);
-            Client.WatchdogSend.Start(Client);
+            if (Clients[ClientName].WatchdogSend != null && Clients[ClientName].WatchdogSend.ThreadState != ThreadState.Stopped) { return; }
+            Clients[ClientName].WatchdogSend = new Thread(SendWatchdogs);
+            Clients[ClientName].WatchdogSend.Start(ClientName);
         }
 
-        private static void SendWatchdogs(object ClientObj)
+        private static void SendWatchdogs(object ClientNameObj)
         {
-            ScarletClient Client = (ScarletClient)ClientObj;
-            if (Client == null) { return; }
-            Log.Trace(typeof(Server), "Starting to send watchdogs for client \"" + Client.Name + "\".", TraceLogging);
+            string ClientName = (string)ClientNameObj;
+            if(!Clients.ContainsKey(ClientName)) { return; }
+            Log.Trace(typeof(Server), "Starting to send watchdogs for client \"" + Clients[ClientName].Name + "\".", TraceLogging);
 
-            Packet TemplatePacket = new Packet(Constants.WATCHDOG_FROM_SERVER, true, Client.Name);
+            Packet TemplatePacket = new Packet(Constants.WATCHDOG_FROM_SERVER, true, Clients[ClientName].Name);
 
             while(!Stopping)
             {
                 bool IsConnected;
                 DateTime LastReceived;
-                lock (Client)
+                if (!Clients.ContainsKey(ClientName)) { Thread.Sleep(Constants.WATCHDOG_INTERVAL);  continue; }
+                lock (Clients[ClientName])
                 {
-                    IsConnected = Client.Connected;
-                    LastReceived = Client.LastWatchdogReceived;
+                    IsConnected = Clients[ClientName].Connected;
+                    LastReceived = Clients[ClientName].LastWatchdogReceived;
                 }
 
-                if (IsConnected)
+                if (!IsConnected) { Thread.Sleep(Constants.WATCHDOG_INTERVAL); continue; }
+                if (LastReceived.Ticks != 0 && LastReceived.AddMilliseconds(Constants.WATCHDOG_WAIT) < DateTime.Now) // If we've gotten one, and it was more than the timeout ago.
                 {
-                    Thread.Sleep(Constants.WATCHDOG_INTERVAL);
-                    continue;
-                }
-                if (LastReceived.AddMilliseconds(Constants.WATCHDOG_WAIT) < DateTime.Now)
-                {
-                    Client.Connected = false;
-                    ClientConnChange(new ClientConnectionChangeEvent() { ClientName = Client.Name, IsNowConnected = false });
+                    Clients[ClientName].Connected = false;
+                    ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ClientName, IsNowConnected = false });
                 }
 
                 // Send a new packet.
                 Packet ToSend = (Packet)TemplatePacket.Clone();
-                if (Client.LatencyMode == LatencyMeasurementMode.BASIC) { TemplatePacket.AppendData(UtilData.ToBytes(Client.ConnectionLatency)); }
-                else if (Client.LatencyMode == LatencyMeasurementMode.FULL) { TemplatePacket.AppendData(new byte[] { 0x00, Client.ConnectionQuality }); }
+                if (Clients[ClientName].LatencyMode == LatencyMeasurementMode.BASIC) { TemplatePacket.AppendData(UtilData.ToBytes(Clients[ClientName].ConnectionLatency)); }
+                else if (Clients[ClientName].LatencyMode == LatencyMeasurementMode.FULL) { TemplatePacket.AppendData(new byte[] { 0x00, Clients[ClientName].ConnectionQuality }); }
 
                 Send(ToSend);
                 Thread.Sleep(Constants.WATCHDOG_INTERVAL);
             }
+            Log.Trace(typeof(Server), "No longer sending watchdogs for client \"" + (string)ClientNameObj + "\".", TraceLogging);
         }
 
         internal static void ReceiveWatchdog(Packet ReceivedPacket)
