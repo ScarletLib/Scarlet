@@ -181,7 +181,7 @@ namespace Scarlet.Communications
 
             NetworkStream ReceiveStream = null;
             try { ReceiveStream = Client.GetStream(); }
-            catch(ObjectDisposedException) { return; }
+            catch(Exception) { return; }
 
             if (!ReceiveStream.CanRead)
             {
