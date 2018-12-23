@@ -135,6 +135,7 @@ namespace Scarlet.Communications
                     ConnectionThread = ConnectThreadFactory();
                     ConnectionThread.Start();
                 }
+                Initialized = true;
             }
             else { Trace("Client.Start() called when Client is already initialized."); }
         }

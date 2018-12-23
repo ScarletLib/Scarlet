@@ -67,15 +67,15 @@ namespace Scarlet.Communications
 
         public static void ParseWatchdogFromServer(Packet Watchdog) { Client.HandleWatchdog(Watchdog); }
 
-        public static void ParseWatchdogFromClient(Packet Watchdog) { }
+        public static void ParseWatchdogFromClient(Packet Watchdog) { Server.ReceiveWatchdog(Watchdog); }
 
-        public static void ParseClientHandshake(Packet ClientHandshake) { }
+        public static void ParseClientHandshake(Packet ClientHandshake) { } // TODO: Handle unexpected handshakes.
 
         public static void ParseServerHandshake(Packet ServerHandshake) { Client.ReceiveHandshake(ServerHandshake); }
 
-        public static void ParseTimeSynchronization(Packet TimeSync) { }
+        public static void ParseTimeSynchronization(Packet TimeSync) { } // TODO: Implement time synchronization.
 
-        public static void ParseBufferLengthAdjustment(Packet BufferAdjustment) { }
+        public static void ParseBufferLengthAdjustment(Packet BufferAdjustment) { } // TODO: Implement dynamic buffer resizing.
 
         #endregion
     }

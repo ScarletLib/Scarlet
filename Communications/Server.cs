@@ -351,7 +351,7 @@ namespace Scarlet.Communications
             // The client is now connected.
             ClientConnChange(new ClientConnectionChangeEvent() { ClientName = ConnectedClient.Name, IsNowConnected = true });
 
-            // TODO: Add to watchdog dispatch
+            StartWatchdog(ConnectedClient);
 
             // Receive data from client.
             DataBuffer = new byte[ReceiveBufferSize];
@@ -499,6 +499,66 @@ namespace Scarlet.Communications
             }
             Listener.BeginReceive(HandleUDPData, Listener);
         }
+        #endregion
+
+        #region Watchdogs
+        private static void StartWatchdog(ScarletClient Client)
+        {
+            Client.WatchdogSend = new Thread(SendWatchdogs);
+            Client.WatchdogSend.Start(Client);
+        }
+
+        private static void SendWatchdogs(object ClientObj)
+        {
+            ScarletClient Client = (ScarletClient)ClientObj;
+            if (Client == null) { return; }
+            Log.Trace(typeof(Server), "Starting to send watchdogs for client \"" + Client.Name + "\".", TraceLogging);
+
+            Packet TemplatePacket = new Packet(Constants.WATCHDOG_FROM_SERVER, true, Client.Name);
+
+            while(!Stopping)
+            {
+                bool IsConnected;
+                DateTime LastReceived;
+                lock (Client)
+                {
+                    IsConnected = Client.Connected;
+                    LastReceived = Client.LastWatchdogReceived;
+                }
+
+                if (IsConnected)
+                {
+                    Thread.Sleep(Constants.WATCHDOG_INTERVAL);
+                    continue;
+                }
+                if (LastReceived.AddMilliseconds(Constants.WATCHDOG_WAIT) < DateTime.Now)
+                {
+                    Client.Connected = false;
+                    ClientConnChange(new ClientConnectionChangeEvent() { ClientName = Client.Name, IsNowConnected = false });
+                }
+
+                // Send a new packet.
+                Packet ToSend = (Packet)TemplatePacket.Clone();
+                if (Client.LatencyMode == LatencyMeasurementMode.BASIC) { TemplatePacket.AppendData(UtilData.ToBytes(Client.ConnectionLatency)); }
+                else if (Client.LatencyMode == LatencyMeasurementMode.FULL) { TemplatePacket.AppendData(new byte[] { 0x00, Client.ConnectionQuality }); }
+
+                Send(ToSend);
+                Thread.Sleep(Constants.WATCHDOG_INTERVAL);
+            }
+        }
+
+        internal static void ReceiveWatchdog(Packet ReceivedPacket)
+        {
+            if (!Initialized || Stopping) { Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "Received watchdog packet at invalid time, ignoring."); return; }
+            if (!Clients.ContainsKey(ReceivedPacket.Endpoint)) { Log.Output(Log.Severity.INFO, Log.Source.NETWORK, "Received watchdog packet from unknown client, ignoring."); return; }
+            ScarletClient Client = Clients[ReceivedPacket.Endpoint];
+            lock(Client)
+            {
+                Client.LastWatchdogReceived = DateTime.Now;
+                // TODO: Implement latency information.
+            }
+        }
+
         #endregion
 
         /// <summary> Tries to find the client name that matches the given IPEndPoint. </summary>
@@ -728,6 +788,9 @@ namespace Scarlet.Communications
             public LatencyMeasurementMode LatencyMode { get; set; }
             public byte ScarletVersion { get; set; }
             public byte ConnectionQuality { get; set; }
+            public short ConnectionLatency { get; set; }
+            public Thread WatchdogSend { get; set; }
+            public DateTime LastWatchdogReceived { get; set; }
         }
     }
 }
