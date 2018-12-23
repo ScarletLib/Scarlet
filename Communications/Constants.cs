@@ -4,10 +4,17 @@
     internal static class Constants
     {
         #region Communication Defaults
-        public const int WATCHDOG_WAIT = 5000;  // ms
-        public const int WATCHDOG_INTERVAL = 1000; // ms
-        public const int CONNECTION_RETRY_DELAY = 5000; // ms
-        public const int DEFAULT_RECEIVE_BUFFER_SIZE = 64; // bytes
+        /// <summary> How long (in ms) client/server tolerate lack of watchdog packets before they attempt a re-connection. </summary>
+        public const int WATCHDOG_WAIT = 5000;
+
+        /// <summary> The interval (in ms) at which to send watchdog packets. </summary>
+        public const int WATCHDOG_INTERVAL = 1000;
+
+        /// <summary> How long (in ms) to wait before retrying a connection. </summary>
+        public const int CONNECTION_RETRY_DELAY = 5000;
+
+        /// <summary> How large (in bytes) the default send/receive buffers should be. </summary>
+        public const int DEFAULT_RECEIVE_BUFFER_SIZE = 64;
 
         /// <summary> Defines how many bytes are in the header (non-data portion at the beginning) of all <see cref="Packet"/>s. </summary>
         public const int PACKET_HEADER_SIZE = sizeof(long) + sizeof(byte) + sizeof(ushort); // Timestamp + ID + Length
