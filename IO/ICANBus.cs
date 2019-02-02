@@ -13,6 +13,10 @@ namespace Scarlet.IO
         /// <returns> A tuple, with the first element being the ID of the received CAN frame and the second being the payload. </returns>
         Tuple<uint, byte[]> Read();
 
+        /// <summary> Reads a CAN frame asynchronously, returning the payload and the ID of the received CAN frame. </summary>
+        /// <returns> A task that will return a tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
+        public Task<Tuple<uint, byte[]>> ReadAsync();
+
         /// <summary> Cleans up the bus object, freeing resources. </summary>
         void Dispose();
     }
