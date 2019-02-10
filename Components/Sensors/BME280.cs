@@ -178,9 +178,9 @@ namespace Scarlet.Components.Sensors
         private int ProcessTemperatureInternal(int RawTemp)
         {
             double Var1, Var2;
-            Var1 = RawTemp / 16384.0 - this.CompParams.T1 / 1024.0;
+            Var1 = (RawTemp / 16384.0) - (this.CompParams.T1 / 1024.0);
             Var1 = Var1 * this.CompParams.T2;
-            Var2 = RawTemp / 131072.0 - this.CompParams.T1 / 8192.0;
+            Var2 = (RawTemp / 131072.0) - (this.CompParams.T1 / 8192.0);
             Var2 = (Var2 * Var2) * this.CompParams.T3;
             return (int)(Var1 + Var2);
         }
@@ -203,18 +203,18 @@ namespace Scarlet.Components.Sensors
             double Var1, Var2, Var3, Press;
             Var1 = (TempComp / 2.0) - 64000.0;
             Var2 = Var1 * Var1 * this.CompParams.P6 / 32768.0;
-            Var2 = Var2 + Var1 * this.CompParams.P5 * 2.0;
+            Var2 = (Var2 + Var1) * this.CompParams.P5 * 2.0;
             Var2 = (Var2 / 4.0) + (this.CompParams.P4 * 65536.0);
             Var3 = this.CompParams.P3 * Var1 * Var1 / 524288.0;
-            Var1 = (Var3 + this.CompParams.P2 * Var1) / 524288.0;
-            Var1 = (1.0 + Var1 / 32768.0) * this.CompParams.P1;
+            Var1 = (Var3 + (this.CompParams.P2 * Var1)) / 524288.0;
+            Var1 = (1.0 + (Var1 / 32768.0)) * this.CompParams.P1;
             if (Var1 > 0)
             {
                 Press = 1048576.0 - RawPress;
                 Press = (Press - (Var2 / 4096.0)) * 6250.0 / Var1;
                 Var1 = this.CompParams.P9 * Press * Press / 2147483648.0;
                 Var2 = Press * this.CompParams.P8 / 32768.0;
-                Press = Press + (Var1 + Var2 + this.CompParams.P7) / 16.0;
+                Press = Press + ((Var1 + Var2 + this.CompParams.P7) / 16.0);
                 if (Press < 30000) { return 30000; }
                 if (Press > 110000) { return 110000; }
             }
@@ -231,13 +231,13 @@ namespace Scarlet.Components.Sensors
             double Humid, Var1, Var2, Var3, Var4, Var5, Var6;
 
             Var1 = TempComp - 76800.0;
-            Var2 = (this.CompParams.H4 * 64.0 + (this.CompParams.H5 / 16384.0) * Var1);
+            Var2 = (this.CompParams.H4 * 64.0) + ((this.CompParams.H5 / 16384.0) * Var1);
             Var3 = RawHumid - Var2;
             Var4 = this.CompParams.H2 / 65536.0;
-            Var5 = (1.0 + (this.CompParams.H3 / 67108864.0) * Var1);
-            Var6 = 1.0 + (this.CompParams.H6 / 67108864.0) * Var1 * Var5;
+            Var5 = 1.0 + ((this.CompParams.H3 / 67108864.0) * Var1);
+            Var6 = 1.0 + ((this.CompParams.H6 / 67108864.0) * Var1 * Var5);
             Var6 = Var3 * Var4 * (Var5 * Var6);
-            Humid = Var6 * (1.0 - this.CompParams.H1 * Var6 / 524288.0);
+            Humid = Var6 * (1.0 - (this.CompParams.H1 * Var6 / 524288.0));
             if (Humid > 100) { return 100; }
             if (Humid < 0) { return 0; }
             return Humid;
