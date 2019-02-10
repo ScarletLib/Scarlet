@@ -10,6 +10,7 @@ namespace Scarlet.Components.Sensors
     /// Datasheet v1.19: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf
     ///     NOTE: This is for a similar device, the BMP280 (P for pressure only). This describes register LSB/MSB order, but has no info about humidity.
     /// </summary>
+    /// Includes code adapted from the BME280_driver library from Bosch Sensortec, found here: https://github.com/BoschSensortec/BME280_driver
     public class BME280 : ISensor
     {
         public string System { get; set; }
@@ -106,11 +107,11 @@ namespace Scarlet.Components.Sensors
         public DataUnit GetData()
         {
             return new DataUnit("BME280")
-            {
-                { "Temperature", this.Temperature },
-                { "Pressure", this.Pressure },
-                { "Humidity", this.Humidity }
-            }.SetSystem(this.System);
+        {
+            { "Temperature", this.Temperature },
+            { "Pressure", this.Pressure },
+            { "Humidity", this.Humidity }
+        }.SetSystem(this.System);
         }
 
         /// <summary> Checks if the device is responding by querying a known, constant register value. </summary>
@@ -176,10 +177,12 @@ namespace Scarlet.Components.Sensors
         /// <param name="RawTemp"> The temperature as read directly from the device's registers. </param>
         private int ProcessTemperatureInternal(int RawTemp)
         {
-            int Var1, Var2;
-            Var1 = ((((RawTemp >> 3) - (this.CompParams.T1 << 1))) * (this.CompParams.T2)) >> 11;
-            Var2 = (((((RawTemp >> 4) - (this.CompParams.T1)) * ((RawTemp >> 4) - (this.CompParams.T1))) >> 12) * (this.CompParams.T3)) >> 14;
-            return Var1 + Var2;
+            double Var1, Var2;
+            Var1 = RawTemp / 16384.0 - this.CompParams.T1 / 1024.0;
+            Var1 = Var1 * this.CompParams.T2;
+            Var2 = RawTemp / 131072.0 - this.CompParams.T1 / 8192.0;
+            Var2 = (Var2 * Var2) * this.CompParams.T3;
+            return (int)(Var1 + Var2);
         }
 
         /// <summary> Gets the actual external temperature. </summary>
@@ -188,7 +191,7 @@ namespace Scarlet.Components.Sensors
         /// <returns> The external temperature reading in increments of 0.01 degrees Celsius. </returns>
         private double ProcessTemperature(int TempInternal)
         {
-            return (((TempInternal * 5) + 128) >> 8) / 100.00D;
+            return TempInternal / 5120.0;
         }
 
         /// <summary> Gets the pressure reading. </summary>
@@ -197,20 +200,26 @@ namespace Scarlet.Components.Sensors
         /// <returns> Pressure reading in 1/256 increments, in Pa. </returns>
         private double ProcessPressure(int RawPress, int TempComp)
         {
-            long Var1, Var2, P;
-            Var1 = ((long)TempComp) - 128000;
-            Var2 = Var1 * Var1 * this.CompParams.P6;
-            Var2 = Var2 + ((Var1 * this.CompParams.P5) << 17);
-            Var2 = Var2 + (((long)this.CompParams.P4) << 35);
-            Var1 = ((Var1 * Var1 * this.CompParams.P3) >> 8) + ((Var1 * this.CompParams.P2) << 12);
-            Var1 = (((((long)1) << 47) + Var1)) * (this.CompParams.P1) >> 33;
-            if (Var1 == 0) { return 0; }
-            P = 1048576 - RawPress;
-            P = (((P << 31) - Var2) * 3125) / Var1;
-            Var1 = ((this.CompParams.P9) * (P >> 13) * (P >> 13)) >> 25;
-            Var2 = ((this.CompParams.P8) * P) >> 19;
-            P = ((P + Var1 + Var2) >> 8) + (((long)this.CompParams.P7) << 4);
-            return P / 256.000D;
+            double Var1, Var2, Var3, Press;
+            Var1 = (TempComp / 2.0) - 64000.0;
+            Var2 = Var1 * Var1 * this.CompParams.P6 / 32768.0;
+            Var2 = Var2 + Var1 * this.CompParams.P5 * 2.0;
+            Var2 = (Var2 / 4.0) + (this.CompParams.P4 * 65536.0);
+            Var3 = this.CompParams.P3 * Var1 * Var1 / 524288.0;
+            Var1 = (Var3 + this.CompParams.P2 * Var1) / 524288.0;
+            Var1 = (1.0 + Var1 / 32768.0) * this.CompParams.P1;
+            if (Var1 > 0)
+            {
+                Press = 1048576.0 - RawPress;
+                Press = (Press - (Var2 / 4096.0)) * 6250.0 / Var1;
+                Var1 = this.CompParams.P9 * Press * Press / 2147483648.0;
+                Var2 = Press * this.CompParams.P8 / 32768.0;
+                Press = Press + (Var1 + Var2 + this.CompParams.P7) / 16.0;
+                if (Press < 30000) { return 30000; }
+                if (Press > 110000) { return 110000; }
+            }
+            else { return 0; }
+            return Press;
         }
 
         /// <summary> Gets the humidity reading. </summary>
@@ -219,14 +228,19 @@ namespace Scarlet.Components.Sensors
         /// <returns> Humidity reading in 1/1024 increments, in % from 0-100. </returns>
         private double ProcessHumidity(int RawHumid, int TempComp)
         {
-            int Var1;
-            Var1 = (TempComp - 76800);
-            Var1 = (((((RawHumid << 14) - ((this.CompParams.H4) << 20) - ((this.CompParams.H5) * Var1)) + 16384) >> 15) * (((((((Var1 * (this.CompParams.H6)) >> 10) *
-                (((Var1 * (this.CompParams.H3)) >> 11) + 32768)) >> 10) + 2097152) * (this.CompParams.H2) + 8192) >> 14));
-            Var1 = (Var1 - (((((Var1 >> 15) * (Var1 >> 15)) >> 7) * this.CompParams.H1) >> 4));
-            Var1 = (Var1 < 0 ? 0 : Var1);
-            Var1 = (Var1 > 419430400 ? 419430400 : Var1);
-            return (Var1 >> 12) / 1024.000D;
+            double Humid, Var1, Var2, Var3, Var4, Var5, Var6;
+
+            Var1 = TempComp - 76800.0;
+            Var2 = (this.CompParams.H4 * 64.0 + (this.CompParams.H5 / 16384.0) * Var1);
+            Var3 = RawHumid - Var2;
+            Var4 = this.CompParams.H2 / 65536.0;
+            Var5 = (1.0 + (this.CompParams.H3 / 67108864.0) * Var1);
+            Var6 = 1.0 + (this.CompParams.H6 / 67108864.0) * Var1 * Var5;
+            Var6 = Var3 * Var4 * (Var5 * Var6);
+            Humid = Var6 * (1.0 - this.CompParams.H1 * Var6 / 524288.0);
+            if (Humid > 100) { return 100; }
+            if (Humid < 0) { return 0; }
+            return Humid;
         }
         #endregion
 
