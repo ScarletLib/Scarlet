@@ -56,7 +56,6 @@ namespace Scarlet.Utilities
         private static int maxOrd = 12;
         private static double a = 6378.137;
         private static double b = 6356.7523142;
-
         private static double re = 6371.2;
         private static double a2 = a * a;
         private static double b2 = b * b;
@@ -72,7 +71,7 @@ namespace Scarlet.Utilities
             cp[0] = snorm[0] = pp[0] = 1.0;
             dp[0, 0] = 0.0;
             //Read WMM COF coefficients
-            for (int i = 3; i < wmm_coefficients.Length; i += 6)
+            for (int i = 0; i < wmm_coefficients.Length; i += 6)
             {
                 int n = (int)(wmm_coefficients[i]);
                 int m = (int)(wmm_coefficients[i + 1]);
@@ -124,13 +123,12 @@ namespace Scarlet.Utilities
             double otime; double oalt; double olat; double olon;
             otime = oalt = olat = olon = -1000.0;
         }
-        public static double calcGeoMag(double lat, double lon, double year = 2019, double altitude = 0)
+        public static double calcGeoMag(double lat, double lon, double year = 2019, double altitude = -1000)
         {
             double glat = lat;
             double glon = lon;
             double alt = altitude;
             double time = year;
-
             double dt = time - 2015;
             double pi = Math.PI;
             double dtr = pi / 180.0;
@@ -142,9 +140,6 @@ namespace Scarlet.Utilities
             double crlat = Math.Cos(rlat);
             double srlat2 = srlat * srlat;
             double crlat2 = crlat * crlat;
-
-
-
             double st = 0;
             double ct = 0;
             double ca = 0;
@@ -210,16 +205,13 @@ namespace Scarlet.Utilities
                             dp[m, n] = ct * dp[m, n - 1] - st * snorm[n - 1 + m * 13] - k[m, n] * dp[m, n - 2];
                         }
                     }
-
                     //TIME ADJUST THE GAUSS COEFFICIENTS
                     tc[m, n] = c[m, n] + dt * cd[m, n];
                     if (m != 0)
                     {
                         tc[n, m - 1] = c[n, m - 1] + dt * cd[n, m - 1];
                     }
-
                     //ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
-
                     double temp1, temp2;
                     double par = ar * snorm[n + m * 13];
                     if (m == 0)
@@ -232,14 +224,11 @@ namespace Scarlet.Utilities
                         temp1 = tc[m, n] * cp[m] + tc[n, m - 1] * sp[m];
                         temp2 = tc[m, n] * sp[m] - tc[n, m - 1] * cp[m];
                     }
-
                     bt = bt - ar * temp1 * dp[m, n];
                     bp += (fm[m] * temp2 * par);
                     br += (fn[n] * temp1 * par);
-
                 }
             }
-
             if (st == 0.0)
             {
                 bp = bpp;
@@ -248,11 +237,9 @@ namespace Scarlet.Utilities
             {
                 bp /= st;
             }
-
             double bx = -bt * ca - br * sa;
             double by = bp;
             double bz = bt * sa - br * ca;
-
             return (Math.Atan2(by, bx) / dtr);
         }
     }

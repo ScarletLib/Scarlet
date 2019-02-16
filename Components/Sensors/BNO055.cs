@@ -307,7 +307,6 @@ namespace Scarlet.Components.Sensors
             double lat = tup.Item1;
             double lon = tup.Item2;
             double dec = Scarlet.Utilities.DeclinationHelper.calcGeoMag(lat, lon);
-
             Tuple<float, float, float> readings = this.GetVector(BNO055.VectorType.VECTOR_MAGNETOMETER);
             double headingDirection = 0;
             if (readings.Item2 > 0)
@@ -327,14 +326,11 @@ namespace Scarlet.Components.Sensors
                 headingDirection = 0;
             }
             headingDirection += dec;
-
             if (headingDirection > 360)
             {
                 headingDirection -= 360;
             }
-
-
-            return 0.0;
+            return headingDirection;
         }
 
         /// <summary> Sets the operation mode of the BNO055. Only use if you know what you're doing! </summary>

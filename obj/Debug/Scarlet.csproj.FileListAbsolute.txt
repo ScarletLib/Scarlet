@@ -1,0 +1,9 @@
+/Users/jeremyl/Scarlet/bin/Debug/Scarlet.dll
+/Users/jeremyl/Scarlet/bin/Debug/Scarlet.pdb
+/Users/jeremyl/Scarlet/bin/Debug/BBBCSIO.dll
+/Users/jeremyl/Scarlet/obj/Debug/Scarlet.csprojResolveAssemblyReference.cache
+/Users/jeremyl/Scarlet/obj/Debug/Scarlet.csproj.CoreCompileInputs.cache
+/Users/jeremyl/Scarlet/obj/Debug/Scarlet.dll
+/Users/jeremyl/Scarlet/obj/Debug/Scarlet.pdb
+/Users/jeremyl/Scarlet/bin/Debug/System.Half.dll
+/Users/jeremyl/Scarlet/bin/Debug/System.Half.xml
