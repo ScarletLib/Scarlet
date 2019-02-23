@@ -761,8 +761,10 @@ namespace Scarlet.Communications
                         while (ToSend != null)
                         {
                             try
-                            {
-                                SendNow(ToSend);
+                            { // TODO fix this logic
+                                PacketSendResult Result = SendNow(ToSend);
+                                if (ToSend.IsUDP) { ToSend = null; }
+                                if (Result.Result == PacketSendResult.Status.SUCCESS) { ToSend = null; } // TODO: Fix this, it should send all remaining packets here, and put failed ones back at the end of the queue.
                             }
                             catch (Exception Exc)
                             {
