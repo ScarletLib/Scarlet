@@ -34,10 +34,10 @@ namespace UnitTest.ComponentTesting
             Assert.AreEqual(128422, IntTempOut);
 
             double TempOut = (double)SensAccess.Invoke("ProcessTemperature", IntTempOut);
-            Assert.AreEqual(25.08, TempOut);
+            Assert.IsTrue(Math.Abs(25.08 - TempOut) < 0.1);
 
             double PressOut = (double)SensAccess.Invoke("ProcessPressure", 415148, IntTempOut);
-            Assert.IsTrue(Math.Abs(100653.265625 - PressOut) < 1);
+            Assert.IsTrue(Math.Abs(100653.265625 - PressOut) < 0.1);
         }
     }
 }
