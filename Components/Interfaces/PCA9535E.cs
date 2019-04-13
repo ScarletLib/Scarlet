@@ -106,7 +106,10 @@ namespace Scarlet.Components.Interfaces
 
         private void SetOutput(byte Channel, bool State)
         {
-            // TODO: Implement.
+            byte RegisterID = (byte)((Channel > 7) ? 3 : 2);
+            byte Output = this.Bus.ReadRegister(this.Address, RegisterID, 1)[0];
+            Output = (byte)(Output & ~(0b1 << (Channel % 8)) | ((State ? 1 : 0) << (Channel % 8)));
+            this.Bus.WriteRegister(this.Address, RegisterID, new byte[] { Output });
         }
     }
 }
