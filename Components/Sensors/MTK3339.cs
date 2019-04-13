@@ -7,7 +7,7 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
-    public class MTK3339 : ISensor
+    public class MTK3339 : ISensor, IGps
     {
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }

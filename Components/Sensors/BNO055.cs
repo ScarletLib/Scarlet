@@ -213,7 +213,7 @@ namespace Scarlet.Components.Sensors
         private byte Address;
         private OperationMode Mode;
         private II2CBus I2C;
-        private MTK3339 gps;
+        private IGps gps;
 
         private float X, Y, Z;
         public string System { get; set; }
@@ -226,7 +226,7 @@ namespace Scarlet.Components.Sensors
         /// <param name="I2C"> The I2C bus to communicate over. </param>
         /// <param name="ID"> ID of BNO055. -1 by default. You probably shouldn't change this. </param>
         /// <param name="Address"> The I2C address of the BNO055. Defaults to 0x28. You probably shouldn't change this. </param>
-        public BNO055(II2CBus I2C, int ID = -1, byte Address = BNO055_ADDRESS_A, MTK3339 gps = null)
+        public BNO055(II2CBus I2C, int ID = -1, byte Address = BNO055_ADDRESS_A, IGps gps = null)
         {
             this.ID = ID;
             this.Address = Address;
