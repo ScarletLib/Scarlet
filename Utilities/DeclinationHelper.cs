@@ -2,6 +2,10 @@
 
 namespace Scarlet.Utilities
 {
+    /// <summary>
+    /// Code and data sourced from The World Magnetic Model, available here: https://www.ngdc.noaa.gov/geomag/WMM/
+    /// The original code is in the public domain.
+    /// </summary>
     public static class DeclinationHelper
     {
         private static double[,] c = new double[13, 13]; // Gauss wmm_coefficients of geomagnetic model
