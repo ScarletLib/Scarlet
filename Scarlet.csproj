@@ -141,8 +141,7 @@
     <Compile Include="Utilities\UtilData.cs" />
     <Compile Include="Utilities\UtilMain.cs" />
     <Compile Include="Utilities\DeclinationHelper.cs" />
-    <Compile Include="Components\IGps.cs" />
-    <Compile Include="Components\Sensors\IGps.cs" />
+    <Compile Include="Components\IGPS.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

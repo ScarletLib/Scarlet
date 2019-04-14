@@ -7,7 +7,7 @@ using Scarlet.Utilities;
 
 namespace Scarlet.Components.Sensors
 {
-    public class MTK3339 : ISensor, IGps
+    public class MTK3339 : ISensor, IGPS
     {
         public float Latitude { get; private set; }
         public float Longitude { get; private set; }
@@ -79,7 +79,7 @@ namespace Scarlet.Components.Sensors
         public bool Test() => HasFix();
 
         /// <summary> Gets new readings from GPS. </summary>
-        public void UpdateState() => GetCoords();
+        public void UpdateState() => GetCoordinates();
 
         /// <summary> Queries the GPS to see if it has a fix. </summary>
         /// <returns> <c>true</c>, if fix was hased, <c>false</c> otherwise. </returns>
@@ -91,10 +91,7 @@ namespace Scarlet.Components.Sensors
 
         /// <summary> Gets the GPS coordinates of this GPS. </summary>
         /// <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
-        public Tuple<float, float> GetCoords()
-        {
-            return new Tuple<float, float>(this.Latitude, this.Longitude);
-        }
+        public Tuple<float, float> GetCoordinates() { return new Tuple<float, float>(this.Latitude, this.Longitude); }
 
         /// <summary> Converts a string number to a degree value. </summary>
         /// <returns> The degree value. </returns>

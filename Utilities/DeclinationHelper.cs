@@ -1,4 +1,5 @@
 ﻿using System;
+
 namespace Scarlet.Utilities
 {
     public static class DeclinationHelper
@@ -70,7 +71,8 @@ namespace Scarlet.Utilities
             sp[0] = 0.0;
             cp[0] = snorm[0] = pp[0] = 1.0;
             dp[0, 0] = 0.0;
-            //Read WMM COF coefficients
+
+            // Read WMM COF coefficients
             for (int i = 0; i < wmm_coefficients.Length; i += 6)
             {
                 int n = (int)(wmm_coefficients[i]);
@@ -90,11 +92,11 @@ namespace Scarlet.Utilities
                     }
                 }
             }
+
             // Convert Schmidt normalized Gauss coefficients to unnormalized
             snorm[0] = 1.0;
             for (int n = 1; n <= maxOrd; n++)
             {
-
                 snorm[n] = snorm[n - 1] * (2 * n - 1) / n;
                 int j = 2;
 
@@ -111,24 +113,31 @@ namespace Scarlet.Utilities
                     }
                     c[m, n] = snorm[n + m * 13] * c[m, n];
                     cd[m, n] = snorm[n + m * 13] * cd[m, n];
-                }   //for(m...)
+                }
 
                 fn[n] = (n + 1);
                 fm[n] = n;
-
-            }   //for(n...)
+            }
 
             k[1, 1] = 0.0;
 
             double otime; double oalt; double olat; double olon;
             otime = oalt = olat = olon = -1000.0;
         }
-        public static double calcGeoMag(double lat, double lon, double year = 2019, double altitude = -1000)
+
+        /// <summary> Calculates the geographic magnetic variance based upon location and time. </summary>
+        /// <param name="Latitude"> The latitude of which variation should be calculated. </param>
+        /// <param name="Longitude">The longitude of which variation should be calculated. </param>
+        /// <param name="Year"> The year for which calculations should be done. </param>
+        /// <param name="Altitude"> The altitude of which variation should be calculated. </param>
+        /// <returns> A geomagnetic variance modifier to correct for the Earth's changing magnetic field. </returns>
+        public static double CalcGeoMag(double Latitude, double Longitude, double Year = double.NaN, double Altitude = -1000)
         {
-            double glat = lat;
-            double glon = lon;
-            double alt = altitude;
-            double time = year;
+            if (Year == double.NaN) { Year = DateTime.Now.Year; }
+            double glat = Latitude;
+            double glon = Longitude;
+            double alt = Altitude;
+            double time = Year;
             double dt = time - 2015;
             double pi = Math.PI;
             double dtr = pi / 180.0;
@@ -193,25 +202,18 @@ namespace Scarlet.Utilities
                         }
                         if (n > 1 && n != m)
                         {
-                            if (m > n - 2)
-                            {
-                                snorm[n - 2 + m * 13] = 0.0;
-                            }
-                            if (m > n - 2)
-                            {
-                                dp[m, n - 2] = 0.0;
-                            }
+                            if (m > n - 2) { snorm[n - 2 + m * 13] = 0.0; }
+                            if (m > n - 2) { dp[m, n - 2] = 0.0; }
                             snorm[n + m * 13] = ct * snorm[n - 1 + m * 13] - k[m, n] * snorm[n - 2 + m * 13];
                             dp[m, n] = ct * dp[m, n - 1] - st * snorm[n - 1 + m * 13] - k[m, n] * dp[m, n - 2];
                         }
                     }
-                    //TIME ADJUST THE GAUSS COEFFICIENTS
+
+                    // TIME ADJUST THE GAUSS COEFFICIENTS
                     tc[m, n] = c[m, n] + dt * cd[m, n];
-                    if (m != 0)
-                    {
-                        tc[n, m - 1] = c[n, m - 1] + dt * cd[n, m - 1];
-                    }
-                    //ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
+                    if (m != 0) { tc[n, m - 1] = c[n, m - 1] + dt * cd[n, m - 1]; }
+
+                    // ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
                     double temp1, temp2;
                     double par = ar * snorm[n + m * 13];
                     if (m == 0)
@@ -229,14 +231,8 @@ namespace Scarlet.Utilities
                     br += (fn[n] * temp1 * par);
                 }
             }
-            if (st == 0.0)
-            {
-                bp = bpp;
-            }
-            else
-            {
-                bp /= st;
-            }
+            if (st == 0.0) { bp = bpp; }
+            else { bp /= st; }
             double bx = -bt * ca - br * sa;
             double by = bp;
             double bz = bt * sa - br * ca;
