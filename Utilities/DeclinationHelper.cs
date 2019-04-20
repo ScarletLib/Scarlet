@@ -4,22 +4,32 @@ namespace Scarlet.Utilities
 {
     /// <summary>
     /// Code and data sourced from The World Magnetic Model, available here: https://www.ngdc.noaa.gov/geomag/WMM/
-    /// The original code is in the public domain.
+    /// The original code is in the public domain. Changes of the fluid flow in the Earth's outer core lead to unpredictable
+    /// changes in the Earth's magnetic field. Fortunately, the system has large inertia, so that these changes take place over
+    /// time scales of many years. By surveying the field for a few years, one can precisely map the present field
+    /// and its rate of changes and then linearly extrapolate it out into the future.
+    /// 
+    /// Although the calculation for the magnetic declination remains the same, the coefficients used to calculate this
+    /// declination change as time progresses. To address this change, the WMM website updates its values about every six months.
+    /// To update this program, update the wmm_coefficients array. The new values are hosted on the WMM website. In order to 
+    /// download the data, you must verify you are a student. The WMM.COF file will have three unrelated tokens of data. 
+    /// These are: beginning of time interval, file version, and the date the coefficients were calculated.
+    /// DO NOT INCLUDE THESE TOKENS IN THE WMM ARRAY. Do not include the lines with 9's at the end.
     /// </summary>
     public static class DeclinationHelper
     {
-        private static double[,] c = new double[13, 13]; // Gauss wmm_coefficients of geomagnetic model
-        private static double[,] cd = new double[13, 13]; // Gauss wmm_coefficients of secular geomagnetic model
-        private static double[,] tc = new double[13, 13]; // time adjusted wmm_coefficients
-        private static double[,] dp = new double[13, 13]; // theta derivative of p(n,m) (unnormalized)
+        private static double[,] mainGauss = new double[13, 13]; // Gauss wmm_coefficients of geomagnetic model
+        private static double[,] secularGauss = new double[13, 13]; // Gauss wmm_coefficients of secular geomagnetic model
+        private static double[,] timeAdjustGauss = new double[13, 13]; // time adjusted wmm_coefficients
+        private static double[,] thetaDerivative = new double[13, 13]; // theta derivative of p(n,m) (unnormalized)
         private static double[] snorm = new double[169]; // Schmidt normalization factors
-        private static double[] sp = new double[13]; // sine of spherical coordinates
-        private static double[] cp = new double[13];
-        private static double[] fn = new double[13];
-        private static double[] fm = new double[13];
-        private static double[] pp = new double[13];
-        private static double[,] k = new double[13, 13];
-        private static double[] wmm_coefficients = new double[]
+        private static double[] sineSphericalCoord = new double[13]; // sine of spherical coordinates
+        private static double[] cosineSphericalCoord = new double[13]; // cosine of spherical coordinates 
+        private static double[] fn = new double[13]; // cosine of spherical coordinates
+        private static double[] fm = new double[13]; // cosine of spherical coordinates
+        private static double[] legendrePolynomial = new double[13]; // The associated Legendre polynomials for m=1 (unnormalized)
+        private static double[,] k = new double[13, 13]; // The associated Legendre polynomials for m=1 (unnormalized)
+        private static double[] wmm_coefficients = new double[] // Obtained from WMM website
         {
             1, 0, -29438.2, 0.0, 7.0, 0.0, 1, 1, -1493.5,
                 4796.3, 9.0, -30.2, 2, 0, -2444.5, 0.0, -11.0, 0.0, 2, 1, 3014.7, -2842.4,
@@ -58,23 +68,23 @@ namespace Scarlet.Utilities
                 0.0, 12, 12, -0.0, 0.8, -0.1, -0.1
         };
 
-        private static int maxOrd = 12;
-        private static double a = 6378.137;
-        private static double b = 6356.7523142;
-        private static double re = 6371.2;
-        private static double a2 = a * a;
-        private static double b2 = b * b;
-        private static double c2 = a2 - b2;
-        private static double a4 = a2 * a2;
-        private static double b4 = b2 * b2;
-        private static double c4 = a4 - b4;
+        private static int maxOrd = 12; // The maximum order of spherical harmonic model
+        private static double majorAxis= 6378.137; // Semi-major axis of WGS-84 ellipsoid, in km
+        private static double minorAxis = 6356.7523142; // Semi-minor axis of WGS-84 ellipsoid, in km
+        private static double re = 6371.2; // Mean radius of IAU-66 ellipsoid, in km 
+        private static double majorAxisSquared = majorAxis * majorAxis; // majorAxis squared
+        private static double minorAxisSquared = minorAxis * minorAxis; // minorAxis squared
+        private static double c2 = majorAxisSquared - minorAxisSquared; // majorAxis squared minus minorAxis squared
+        private static double a4 = majorAxisSquared * majorAxisSquared; // majorAxis to the fourth
+        private static double b4 = minorAxisSquared * minorAxisSquared; // minorAxis to the fourth
+        private static double c4 = a4 - b4; //majorAxis to the fourth minus minorAxis to the fourth 
 
         static DeclinationHelper()
         {
             // initialize constants
-            sp[0] = 0.0;
-            cp[0] = snorm[0] = pp[0] = 1.0;
-            dp[0, 0] = 0.0;
+            sineSphericalCoord[0] = 0.0;
+            cosineSphericalCoord[0] = snorm[0] = legendrePolynomial[0] = 1.0;
+            thetaDerivative[0, 0] = 0.0;
 
             // Read WMM COF coefficients
             for (int i = 0; i < wmm_coefficients.Length; i += 6)
@@ -87,12 +97,12 @@ namespace Scarlet.Utilities
                 double dhnm = wmm_coefficients[i + 5];
                 if (m <= n)
                 {
-                    c[m, n] = gnm;
-                    cd[m, n] = dgnm;
+                    mainGauss[m, n] = gnm;
+                    secularGauss[m, n] = dgnm;
                     if (m != 0)
                     {
-                        c[n, m - 1] = hnm;
-                        cd[n, m - 1] = dhnm;
+                        mainGauss[n, m - 1] = hnm;
+                        secularGauss[n, m - 1] = dhnm;
                     }
                 }
             }
@@ -106,17 +116,17 @@ namespace Scarlet.Utilities
 
                 for (int m = 0, D1 = 1, D2 = (n - m + D1) / D1; D2 > 0; D2--, m += D1)
                 {
-                    k[m, n] = (double)(((n - 1) * (n - 1)) - (m * m)) / (double)((2 * n - 1) * (2 * n - 3));
+                    k[m, n] = (double)(((n - 1) * (n - 1)) - (m * m)) / (double)(((2 * n) - 1) * ((2 * n) - 3));
                     if (m > 0)
                     {
                         double flnmj = ((n - m + 1) * j) / (double)(n + m);
-                        snorm[n + m * 13] = snorm[n + (m - 1) * 13] * Math.Sqrt(flnmj);
+                        snorm[n + (m * 13)] = snorm[n + (m - 1) * 13] * Math.Sqrt(flnmj);
                         j = 1;
-                        c[n, m - 1] = snorm[n + m * 13] * c[n, m - 1];
-                        cd[n, m - 1] = snorm[n + m * 13] * cd[n, m - 1];
+                        mainGauss[n, m - 1] = snorm[n + (m * 13)] * mainGauss[n, m - 1];
+                        secularGauss[n, m - 1] = snorm[n + (m * 13)] * secularGauss[n, m - 1];
                     }
-                    c[m, n] = snorm[n + m * 13] * c[m, n];
-                    cd[m, n] = snorm[n + m * 13] * cd[m, n];
+                    mainGauss[m, n] = snorm[n + m * 13] * mainGauss[m, n];
+                    secularGauss[m, n] = snorm[n + m * 13] * secularGauss[m, n];
                 }
 
                 fn[n] = (n + 1);
@@ -129,12 +139,12 @@ namespace Scarlet.Utilities
             otime = oalt = olat = olon = -1000.0;
         }
 
-        /// <summary> Calculates the geographic magnetic variance based upon location and time. </summary>
-        /// <param name="Latitude"> The latitude of which variation should be calculated. </param>
-        /// <param name="Longitude">The longitude of which variation should be calculated. </param>
+        /// <summary> Calculates the geographic magnetic declination based upon location and time. </summary>
+        /// <param name="Latitude"> The latitude (in decimal degrees) of which variation should be calculated. </param>
+        /// <param name="Longitude">The longitude (in decimal degrees) of which variation should be calculated. WEST IS NEGATIVE.</param>
         /// <param name="Year"> The year for which calculations should be done. </param>
-        /// <param name="Altitude"> The altitude of which variation should be calculated. </param>
-        /// <returns> A geomagnetic variance modifier to correct for the Earth's changing magnetic field. </returns>
+        /// <param name="Altitude"> The altitude (in kilometers) of which variation should be calculated. </param>
+        /// <returns> A geomagnetic declination value to correct for the Earth's changing magnetic field. </returns>
         public static double CalcGeoMag(double Latitude, double Longitude, double Year = double.NaN, double Altitude = -1000)
         {
             if (Year == double.NaN) { Year = DateTime.Now.Year; }
@@ -142,10 +152,9 @@ namespace Scarlet.Utilities
             double glon = Longitude;
             double alt = Altitude;
             double time = Year;
-            double dt = time - 2015;
-            double pi = Math.PI;
-            double dtr = pi / 180.0;
-            double rlon = glon * dtr;
+            double dt = time - 2015; // Difference in time
+            double dtr = Math.PI / 180.0; // Degrees to radians
+            double rlon = glon * dtr; 
             double rlat = glat * dtr;
             double srlon = Math.Sin(rlon);
             double srlat = Math.Sin(rlat);
@@ -158,19 +167,20 @@ namespace Scarlet.Utilities
             double ca = 0;
             double sa = 0;
             double r = 0;
-            sp[1] = srlon;
-            cp[1] = crlon;
-
+            sineSphericalCoord[1] = srlon;
+            cosineSphericalCoord[1] = crlon;
+                
+            // Convert from geodetic coordinates to spherical coordinates.
             if (Math.Abs(alt - -1000) <= 1e-6 || Math.Abs(glat - -1000) <= 1e-6)
             {
-                double q = Math.Sqrt(a2 - c2 * srlat2);
+                double q = Math.Sqrt(majorAxisSquared - c2 * srlat2);
                 double q1 = alt * q;
-                double q2 = ((q1 + a2) / (q1 + b2)) * ((q1 + a2) / (q1 + b2));
+                double q2 = ((q1 + majorAxisSquared) / (q1 + minorAxisSquared)) * ((q1 + majorAxisSquared) / (q1 + minorAxisSquared));
                 ct = srlat / Math.Sqrt(q2 * crlat2 + srlat2);
                 st = Math.Sqrt(1.0 - ct * ct);
                 double r2 = ((alt * alt) + 2.0 * q1 + (a4 - c4 * srlat2) / (q * q));
                 r = Math.Sqrt(r2);
-                double d = Math.Sqrt(a2 * crlat2 + b2 * srlat2);
+                double d = Math.Sqrt(majorAxisSquared * crlat2 + minorAxisSquared * srlat2);
                 ca = (alt + d) / r;
                 sa = c2 * crlat * srlat / (r * d);
             }
@@ -178,8 +188,8 @@ namespace Scarlet.Utilities
             {
                 for (int n = 2; n <= 12; n++)
                 {
-                    sp[n] = sp[1] * cp[n - 1] + cp[1] * sp[n - 1];
-                    cp[n] = cp[1] * cp[n - 1] - sp[1] * sp[n - 1];
+                    sineSphericalCoord[n] = sineSphericalCoord[1] * cosineSphericalCoord[n - 1] + cosineSphericalCoord[1] * sineSphericalCoord[n - 1];
+                    cosineSphericalCoord[n] = cosineSphericalCoord[1] * cosineSphericalCoord[n - 1] - sineSphericalCoord[1] * sineSphericalCoord[n - 1];
                 }
             }
 
@@ -192,52 +202,57 @@ namespace Scarlet.Utilities
                 ar = ar * aor;
                 for (int m = 0, D3 = 1, D4 = (n + m + D3) / D3; D4 > 0; D4--, m += D3)
                 {
+                    // Compute unnormalized associated legendre polynomials and derivatives via recursion relations
                     if (Math.Abs(alt - -1000) <= 1e-6 || Math.Abs(glat - -1000) <= 1e-6)
                     {
                         if (n == m)
                         {
                             snorm[n + m * 13] = st * snorm[n - 1 + (m - 1) * 13];
-                            dp[m, n] = st * dp[m - 1, n - 1] + ct * snorm[n - 1 + (m - 1) * 13];
+                            thetaDerivative[m, n] = st * thetaDerivative[m - 1, n - 1] + ct * snorm[n - 1 + (m - 1) * 13];
                         }
                         if (n == 1 && m == 0)
                         {
                             snorm[n + m * 13] = ct * snorm[n - 1 + m * 13];
-                            dp[m, n] = ct * dp[m, n - 1] - st * snorm[n - 1 + m * 13];
+                            thetaDerivative[m, n] = ct * thetaDerivative[m, n - 1] - st * snorm[n - 1 + m * 13];
                         }
                         if (n > 1 && n != m)
                         {
                             if (m > n - 2) { snorm[n - 2 + m * 13] = 0.0; }
-                            if (m > n - 2) { dp[m, n - 2] = 0.0; }
+                            if (m > n - 2) { thetaDerivative[m, n - 2] = 0.0; }
                             snorm[n + m * 13] = ct * snorm[n - 1 + m * 13] - k[m, n] * snorm[n - 2 + m * 13];
-                            dp[m, n] = ct * dp[m, n - 1] - st * snorm[n - 1 + m * 13] - k[m, n] * dp[m, n - 2];
+                            thetaDerivative[m, n] = ct * thetaDerivative[m, n - 1] - st * snorm[n - 1 + m * 13] - k[m, n] * thetaDerivative[m, n - 2];
                         }
                     }
 
                     // TIME ADJUST THE GAUSS COEFFICIENTS
-                    tc[m, n] = c[m, n] + dt * cd[m, n];
-                    if (m != 0) { tc[n, m - 1] = c[n, m - 1] + dt * cd[n, m - 1]; }
+                    timeAdjustGauss[m, n] = mainGauss[m, n] + dt * secularGauss[m, n];
+                    if (m != 0) { timeAdjustGauss[n, m - 1] = mainGauss[n, m - 1] + dt * secularGauss[n, m - 1]; }
 
                     // ACCUMULATE TERMS OF THE SPHERICAL HARMONIC EXPANSIONS
                     double temp1, temp2;
                     double par = ar * snorm[n + m * 13];
                     if (m == 0)
                     {
-                        temp1 = tc[m, n] * cp[m];
-                        temp2 = tc[m, n] * sp[m];
+                        temp1 = timeAdjustGauss[m, n] * cosineSphericalCoord[m];
+                        temp2 = timeAdjustGauss[m, n] * sineSphericalCoord[m];
                     }
                     else
                     {
-                        temp1 = tc[m, n] * cp[m] + tc[n, m - 1] * sp[m];
-                        temp2 = tc[m, n] * sp[m] - tc[n, m - 1] * cp[m];
+                        temp1 = (timeAdjustGauss[m, n] * cosineSphericalCoord[m]) + (timeAdjustGauss[n, m - 1] * sineSphericalCoord[m]);
+                        temp2 = (timeAdjustGauss[m, n] * sineSphericalCoord[m]) - (timeAdjustGauss[n, m - 1] * cosineSphericalCoord[m]);
                     }
-                    bt = bt - ar * temp1 * dp[m, n];
+                    bt = bt - ar * temp1 * thetaDerivative[m, n];
                     bp += (fm[m] * temp2 * par);
                     br += (fn[n] * temp1 * par);
                 }
             }
             if (st == 0.0) { bp = bpp; }
             else { bp /= st; }
-            double bx = -bt * ca - br * sa;
+            // Rotating magnetic vector components from spherical to geodetic coordinates
+            // bx must be the east-west field component
+            // by must be the north-south field component
+            // bz must be the vertical field component
+            double bx = (-bt * ca) - (br * sa);
             double by = bp;
             double bz = bt * sa - br * ca;
             return (Math.Atan2(by, bx) / dtr);
