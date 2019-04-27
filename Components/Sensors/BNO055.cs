@@ -213,6 +213,7 @@ namespace Scarlet.Components.Sensors
         private byte Address;
         private OperationMode Mode;
         private II2CBus I2C;
+        private IGPS GPS;
 
         private float X, Y, Z;
         public string System { get; set; }
@@ -225,11 +226,13 @@ namespace Scarlet.Components.Sensors
         /// <param name="I2C"> The I2C bus to communicate over. </param>
         /// <param name="ID"> ID of BNO055. -1 by default. You probably shouldn't change this. </param>
         /// <param name="Address"> The I2C address of the BNO055. Defaults to 0x28. You probably shouldn't change this. </param>
-        public BNO055(II2CBus I2C, int ID = -1, byte Address = BNO055_ADDRESS_A)
+        /// <param name="GPS"> A GPS to use to correct for location-based magnetic declination. </param>
+        public BNO055(II2CBus I2C, int ID = -1, byte Address = BNO055_ADDRESS_A, IGPS GPS = null)
         {
             this.ID = ID;
             this.Address = Address;
             this.I2C = I2C;
+            this.GPS = GPS;
             Begin();
         }
 
@@ -288,6 +291,31 @@ namespace Scarlet.Components.Sensors
                 default:
                     return new Tuple<float, float, float>(X / 100.0f, Y / 100.0f, Z / 100.0f);
             }
+        }
+
+        /// <summary>
+        /// Gets the true heading from a magnetometer using the gps to calculate magnetic declination.
+        /// This method should not be called if the construction of the BNO055 is not given a GPS.
+        /// </summary>
+        /// <returns> The true heading. </returns>
+        public double GetTrueHeading()
+        {
+            if (this.GPS == null) { return 0.0; }
+            Tuple<float, float> GPSData = this.GPS.GetCoordinates();
+            double Latitude = GPSData.Item1;
+            double Longitude = GPSData.Item2;
+            double DeclinationCorrection = DeclinationHelper.CalcGeoMag(Latitude, Longitude);
+            Tuple<float, float, float> Readings = GetVector(VectorType.VECTOR_MAGNETOMETER);
+            double HeadingDirection = 0;
+
+            if (Readings.Item2 > 0) { HeadingDirection = 90 - (Math.Atan2(Readings.Item1, Readings.Item2) * 180 / Math.PI); }
+            else if (Readings.Item2 < 0) { HeadingDirection = 270 - (Math.Atan(Readings.Item1 / Readings.Item2) * 180 / Math.PI); }
+            else if (Math.Abs(Readings.Item2) <= 1e-6 && Readings.Item1 < 0) { HeadingDirection = 180; }
+            else if (Math.Abs(Readings.Item2) <= 1e-6 && Readings.Item1 > 0) { HeadingDirection = 0; }
+
+            HeadingDirection += DeclinationCorrection;
+            HeadingDirection %= 360;
+            return HeadingDirection;
         }
 
         /// <summary> Sets the operation mode of the BNO055. Only use if you know what you're doing! </summary>
