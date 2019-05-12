@@ -91,6 +91,7 @@ namespace Scarlet.Components.Interfaces
         public void SetChannelMode(byte Channel, bool IsOutput)
         {
             if (Channel > 15) { throw new ArgumentException("Only channels 0-15 available, tried to set mode on channel " + Channel); }
+            this.IsChannelOutput[Channel] = IsOutput;
             byte RegisterID = (byte)((Channel > 7) ? 7 : 6);
             byte Config = this.Bus.ReadRegister(this.Address, RegisterID, 1)[0];
             Config = (byte)(Config & ~(0b1 << (Channel % 8)) | ((IsOutput ? 0 : 1) << (Channel % 8)));
