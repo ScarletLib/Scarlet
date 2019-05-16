@@ -1,9 +1,5 @@
-﻿using Scarlet.IO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Scarlet.IO;
 
 namespace Scarlet.Components.Interfaces
 {
@@ -46,12 +42,15 @@ namespace Scarlet.Components.Interfaces
         {
             private readonly PCA9535E Parent;
             private readonly byte ID;
+
             internal PCA9535Output(PCA9535E Parent, byte ChannelID)
             {
                 this.Parent = Parent;
                 this.ID = ChannelID;
             }
 
+            /// <summary>Sets the output state. </summary>
+            /// <param name="Output"> Whether the pin should be logic high (true), or low (false). </param>
             public void SetOutput(bool Output)
             {
                 if (!this.Parent.IsChannelOutput[this.ID]) { throw new InvalidOperationException("Channel " + this.ID + " is set to input mode, cannot set output."); }
@@ -64,11 +63,14 @@ namespace Scarlet.Components.Interfaces
         private readonly II2CBus Bus;
         private readonly byte Address;
 
-        /// <summary> Checks whether the given channel is currently in output mode (true), or input mode (false). </summary>
+        /// <summary> Gets whether the given channel is currently in output mode (true), or input mode (false). </summary>
         public bool[] IsChannelOutput { get; private set; }
         public PCA9535Input[] Inputs { get; private set; }
         public PCA9535Output[] Outputs { get; private set; }
 
+        /// <summary> Prepares the PCS9535E device for use. </summary>
+        /// <param name="Bus"> The I2C bus used to communicate with the device. </param>
+        /// <param name="Address"> The I2C address that the device is using. </param>
         public PCA9535E(II2CBus Bus, byte Address)
         {
             this.Bus = Bus;
@@ -76,7 +78,7 @@ namespace Scarlet.Components.Interfaces
             this.IsChannelOutput = new bool[16];
             this.Inputs = new PCA9535Input[16];
             this.Outputs = new PCA9535Output[16];
-            for(byte i = 0; i < this.Inputs.Length; i++)
+            for (byte i = 0; i < this.Inputs.Length; i++)
             {
                 this.IsChannelOutput[i] = false;
                 this.Inputs[i] = new PCA9535Input(this, i);
