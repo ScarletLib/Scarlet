@@ -79,6 +79,7 @@
     <Compile Include="Components\Motors\Servo.cs" />
     <Compile Include="Components\Motors\TalonMC.cs" />
     <Compile Include="Components\Motors\VESC.cs" />
+    <Compile Include="Components\Outputs\MAX571x.cs" />
     <Compile Include="Components\Sensors\BME280.cs" />
     <Compile Include="Components\Sensors\BNO055.cs" />
     <Compile Include="Components\Sensors\HX711.cs" />
