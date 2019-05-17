@@ -1,9 +1,5 @@
-﻿using Scarlet.IO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Scarlet.IO;
 
 namespace Scarlet.Components.Outputs
 {
@@ -103,6 +99,19 @@ namespace Scarlet.Components.Outputs
             this.SPI.Write(this.ChipSelect, new byte[] { Ref, 0x00, 0x00 }, 3);
         }
 
+        /// <summary> Gets the maximum value that can be output. This depends on the reference voltage. </summary>
+        /// <returns> THe highest voltage that the DAC can output. </returns>
+        public double GetRange()
+        {
+            switch (this.ReferenceMode)
+            {
+                case VoltageReferenceMode.Reference2V048: return 2.048;
+                case VoltageReferenceMode.Reference2V500: return 2.500;
+                case VoltageReferenceMode.Reference4V096: return 4.096;
+                default: return this.ExternalRefVoltage;
+            }
+        }
+
         /// <summary> Updates all channels with previously prepared values at once. Use <see cref="PrepareAllOutputs"/> or <see cref="AnalogueOutMAX571x.PrepareOutput(double)"/> to prepare one or more outputs. Outputs without prepared values will not change from their current values. </summary>
         public void UpdateAllOutputs() { this.SPI.Write(this.ChipSelect, new byte[] { (byte)Register.LOAD_ALL, 0x00, 0x00 }, 3); }
 
@@ -119,7 +128,7 @@ namespace Scarlet.Components.Outputs
         public void SetAllOutputs(double Output)
         {
             ushort Code = VoltageToCode(Output);
-            this.SPI.Write(this.ChipSelect, new byte[3] { (byte)Register.CODE_ALL_LOAD_ALL, (byte)(Code >> 8), (byte)Code}, 3);
+            this.SPI.Write(this.ChipSelect, new byte[3] { (byte)Register.CODE_ALL_LOAD_ALL, (byte)(Code >> 8), (byte)Code }, 3);
         }
 
         /// <summary> Updates the specified channel with previously prepared value. Use <see cref="PrepareAllOutputs"/> or <see cref="AnalogueOutMAX571x.PrepareOutput(double)"/> to prepare one or more outputs. If no value was prepared for this channel, output will not change from the current value. </summary>
@@ -144,19 +153,6 @@ namespace Scarlet.Components.Outputs
             this.SPI.Write(this.ChipSelect, new byte[3] { (byte)((byte)Register.CODEn_LOADn | (Channel & 0b11)), (byte)(Code >> 8), (byte)Code }, 3);
         }
 
-        /// <summary> Gets the maximum value that can be output. This depends on the reference voltage. </summary>
-        /// <returns> THe highest voltage that the DAC can output. </returns>
-        public double GetRange()
-        {
-            switch (this.ReferenceMode)
-            {
-                case VoltageReferenceMode.Reference2V048: return 2.048;
-                case VoltageReferenceMode.Reference2V500: return 2.500;
-                case VoltageReferenceMode.Reference4V096: return 4.096;
-                default: return this.ExternalRefVoltage;
-            }
-        }
-
         /// <summary> Translates a desired output voltage into the DAC's CODE value. Handles values outside available range by capping. </summary>
         /// <param name="Voltage"> The voltage to convert. </param>
         /// <returns> The register-fitted code value. Already left-aligned. </returns>
@@ -168,7 +164,7 @@ namespace Scarlet.Components.Outputs
 
             double BitValue = Range / (uint)this.DeviceType;
             ushort RawValue = (ushort)Math.Round(Voltage / BitValue);
-            switch(this.DeviceType)
+            switch (this.DeviceType)
             {
                 case Resolution.BitCount8: return (ushort)(RawValue << 8);
                 case Resolution.BitCount10: return (ushort)(RawValue << 6);
@@ -193,10 +189,5 @@ namespace Scarlet.Components.Outputs
             CODE_ALL_LOAD_ALL = 0b1000_0010, // Updates all registers, then latches to all outputs
             NOP = 0b1100_0000 // Does nothing
         }
-
-        // internal reference initially powered down
-        // All serial operations 24b long
-        // DAC data left-justified. (8b: data << 8, 10b: data << 6, 12b: data << 4)
-
     }
 }
