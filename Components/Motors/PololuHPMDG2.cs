@@ -14,6 +14,11 @@ namespace Scarlet.Components.Motors
     /// Used for this product:
     /// https://www.pololu.com/product/2994/
     /// Other variations of device not tested and may not be supported.
+    /// 
+    /// TODO:
+    ///     STOP on FAULT
+    ///     Get Status of FAULT
+    ///     Set Sleep
     /// </summary>
     public class PololuHPMDG2 : IMotor
     {
