@@ -35,6 +35,7 @@ namespace Scarlet.Components.Motors
         public PololuHPMDG2(IPWMOutput PWMOut,
                             IDigitalOut GPIOOut,
                             float MaxSpeed,
+                            int PWMFrequency = 20000,
                             IDigitalOut Sleep = null,
                             IDigitalIn Fault = null,
                             IFilter<float> SpeedFilter = null)
@@ -42,7 +43,7 @@ namespace Scarlet.Components.Motors
             this.PWMOut = PWMOut;
             this.MaxSpeed = Math.Abs(MaxSpeed);
             this.Filter = SpeedFilter;
-            this.PWMOut.SetFrequency(5000);
+            this.PWMOut.SetFrequency(PWMFrequency);
             this.PWMOut.SetEnabled(true);
             this.GPIOOut = GPIOOut;
             this.GPIOOut.SetOutput(false);
