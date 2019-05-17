@@ -14,35 +14,67 @@ namespace Scarlet.Components.Motors
     /// Used for this product:
     /// https://www.pololu.com/product/2994/
     /// Other variations of device not tested and may not be supported.
-    /// 
-    /// TODO:
-    ///     STOP on FAULT
-    ///     Get Status of FAULT
-    ///     Set Sleep
     /// </summary>
     public class PololuHPMDG2 : IMotor
     {
         private IFilter<float> Filter; // Filter for speed output
         private readonly IPWMOutput PWMOut;
         private readonly float MaxSpeed;
-        private readonly IDigitalOut GPIOOut;
+        private readonly IDigitalOut Direction;
+        /// <summary> Sleep pin. (Active Low) </summary>
+        private readonly IDigitalOut SleepPin;
+        private readonly IDigitalIn FaultPin;
 
+        private bool SleepHelper;
         private bool Stopped; // Whether or not the motor is stopped
         private bool OngoingSpeedThread; // Whether or not a thread is running to set the speed
+
+        /// <summary> 
+        /// Returns the target speed of the motor. 
+        /// If the motor output is filtered, this speed may not be the current PWM output. 
+        /// </summary>
         public float TargetSpeed { get; private set; } // Target speed (-1.0 to 1.0) of the motor
+
+        /// <summary> Whether or not to log this object to the console for debugging</summary>
         public bool TraceLogging { get; set; }
+
+        /// <summary> 
+        /// If true, motor will be disabled if a Fault is detected. Must be re-enabled by SetEnabled(). 
+        /// Ignored if fault pin not set in constructor
+        /// </summary>
+        public bool StopOnFault { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not to sleep the motor.
+        /// No effect if Sleep Pin not set in constructor.
+        /// </summary>
+        public bool Sleep
+        {
+            get { return this.SleepHelper; }
+            set
+            {
+                this.SleepHelper = value;
+                this.SleepPin?.SetOutput(!SleepHelper);
+            }
+        }
+
+        /// <summary> Whether or not the motor is in a fault state. </summary>
+        public bool Fault { get { return this.FaultPin != null ? this.FaultPin.GetInput() : false; } }
 
         /// <summary> Initializes a CytronMD30C Motor controller </summary>
         /// <param name="PWMOut"> PWM Output to set the speed of the motor controller </param>
-        /// <param name="GPIOOut"> GPIO Output that sets the direction of the motor </param>
+        /// <param name="DirectionPin"> GPIO Output that sets the direction of the motor </param>
         /// <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+        /// <param name="PWMFrequency"> Frequency of PWM Output </param>
+        /// <param name="SleepPin"> Output for sleep pin. Can be null if unused. </param>
+        /// <param name="FaultPin"> Input for fault pin. Can be null if unused. </param>
         /// <param name="SpeedFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
         public PololuHPMDG2(IPWMOutput PWMOut,
-                            IDigitalOut GPIOOut,
+                            IDigitalOut DirectionPin,
                             float MaxSpeed,
                             int PWMFrequency = 20000,
-                            IDigitalOut Sleep = null,
-                            IDigitalIn Fault = null,
+                            IDigitalOut SleepPin = null,
+                            IDigitalIn FaultPin = null,
                             IFilter<float> SpeedFilter = null)
         {
             this.PWMOut = PWMOut;
@@ -50,8 +82,12 @@ namespace Scarlet.Components.Motors
             this.Filter = SpeedFilter;
             this.PWMOut.SetFrequency(PWMFrequency);
             this.PWMOut.SetEnabled(true);
-            this.GPIOOut = GPIOOut;
-            this.GPIOOut.SetOutput(false);
+            this.Direction = DirectionPin;
+            this.Direction.SetOutput(false);
+            this.FaultPin = FaultPin;
+            this.SleepPin = SleepPin;
+            // Set sleep false by default
+            this.Sleep = false;
             this.SetSpeedDirectly(0.0f);
         }
 
@@ -117,11 +153,13 @@ namespace Scarlet.Components.Motors
         /// <param name="Speed"> Speed from -1.0 to 1.0 </param>
         private void SetSpeedDirectly(float Speed)
         {
+            // Check fault conditions
+            if (StopOnFault && this.Fault) { SetEnabled(false); }
             if (Speed > this.MaxSpeed) { Speed = this.MaxSpeed; }
             if (Speed * -1 > this.MaxSpeed) { Speed = -1 * this.MaxSpeed; }
             if (this.Stopped) { Speed = 0; }
             this.PWMOut.SetOutput(Math.Abs(Speed));
-            this.GPIOOut.SetOutput(Math.Sign(Speed) < 0);
+            this.Direction.SetOutput(Math.Sign(Speed) < 0);
         }
 
     }
