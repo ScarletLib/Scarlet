@@ -1,5 +1,6 @@
 ﻿using System;
 using Scarlet.IO;
+using Scarlet.Utilities;
 
 namespace Scarlet.Components.Outputs
 {
@@ -60,6 +61,7 @@ namespace Scarlet.Components.Outputs
         public enum Resolution : uint { BitCount8 = 256, BitCount10 = 1024, BitCount12 = 4096 }
 
         public AnalogueOutMAX571x[] Outputs { get; private set; }
+        public bool TraceLogging { get; set; }
         private readonly Resolution DeviceType;
         private VoltageReferenceMode ReferenceMode;
         public double ExternalRefVoltage { get; private set; }
@@ -149,6 +151,7 @@ namespace Scarlet.Components.Outputs
         /// <param name="Output"> The new voltage to output on the given channel. </param>
         private void SetOutput(byte Channel, double Output)
         {
+            if (this.TraceLogging) { Log.Trace(this, "Setting DAC output #" + Channel + " to " + Output + "V."); }
             ushort Code = VoltageToCode(Output);
             this.SPI.Write(this.ChipSelect, new byte[3] { (byte)((byte)Register.CODEn_LOADn | (Channel & 0b11)), (byte)(Code >> 8), (byte)Code }, 3);
         }
