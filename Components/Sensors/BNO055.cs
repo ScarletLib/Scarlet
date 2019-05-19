@@ -209,11 +209,11 @@ namespace Scarlet.Components.Sensors
             VECTOR_GRAVITY = Register.BNO055_GRAVITY_DATA_X_LSB_ADDR
         }
 
-        private int ID;
-        private byte Address;
+        private readonly int ID;
+        private readonly byte Address;
         private OperationMode Mode;
-        private II2CBus I2C;
-        private IGPS GPS;
+        private readonly II2CBus I2C;
+        private readonly IGPS GPS;
 
         private float X, Y, Z;
         public string System { get; set; }
@@ -233,7 +233,8 @@ namespace Scarlet.Components.Sensors
             this.Address = Address;
             this.I2C = I2C;
             this.GPS = GPS;
-            Begin();
+            bool SetupSuccess = Begin();
+            if (!SetupSuccess) { Log.Output(Log.Severity.WARNING, Log.Source.SENSORS, "BNO055 failed to initialize. Perhaps the sensor is not connected?"); }
         }
 
         /// <summary>
@@ -251,6 +252,7 @@ namespace Scarlet.Components.Sensors
             Write8((byte)Register.BNO055_PAGE_ID_ADDR, 0);
 
             byte id = Read8((byte)Register.BNO055_CHIP_ID_ADDR);
+            if (this.TraceLogging) { Log.Trace(this, "Got back chip address 0x" + id.ToString("X2") + ", expected 0x" + BNO055_ID.ToString("X2")); }
             if (id != BNO055_ID) { return false; }
 
             Write8((byte)Register.BNO055_SYS_TRIGGER_ADDR, 0x20);
@@ -278,7 +280,7 @@ namespace Scarlet.Components.Sensors
             short Y = 0;
             short Z = 0;
 
-            byte[] buffer = I2C.ReadRegister(Address, (byte)VectorType, 6);
+            byte[] buffer = this.I2C.ReadRegister(this.Address, (byte)VectorType, 6);
             X = (short)((buffer[1] << 8) | buffer[0]);
             Y = (short)((buffer[3] << 8) | buffer[2]);
             Z = (short)((buffer[5] << 8) | buffer[4]);
@@ -307,12 +309,14 @@ namespace Scarlet.Components.Sensors
             double DeclinationCorrection = DeclinationHelper.CalcGeoMag(Latitude, Longitude);
             Tuple<float, float, float> Readings = GetVector(VectorType.VECTOR_MAGNETOMETER);
             double HeadingDirection = 0;
+            if (this.TraceLogging) { Log.Trace(this, "Calculating declination-compensated heading. Lat: " + Latitude + ", Long: " + Longitude + ", Correction Amount: " + DeclinationCorrection + ", Readings: [" + Readings.Item1 + "," + Readings.Item2 + "," + Readings.Item3 + "]"); }
 
             if (Readings.Item2 > 0) { HeadingDirection = 90 - (Math.Atan2(Readings.Item1, Readings.Item2) * 180 / Math.PI); }
             else if (Readings.Item2 < 0) { HeadingDirection = 270 - (Math.Atan(Readings.Item1 / Readings.Item2) * 180 / Math.PI); }
             else if (Math.Abs(Readings.Item2) <= 1e-6 && Readings.Item1 < 0) { HeadingDirection = 180; }
             else if (Math.Abs(Readings.Item2) <= 1e-6 && Readings.Item1 > 0) { HeadingDirection = 0; }
 
+            if (this.TraceLogging) { Log.Trace(this, "Raw heading is " + HeadingDirection); }
             HeadingDirection += DeclinationCorrection;
             HeadingDirection %= 360;
             return HeadingDirection;
@@ -331,8 +335,7 @@ namespace Scarlet.Components.Sensors
         /// <returns> Whether or not the BNO055 worked. </returns>
         public bool Test()
         {
-            Begin();
-            Tuple<float, float, float> XYZ = this.GetVector(VectorType.VECTOR_MAGNETOMETER);
+            Tuple<float, float, float> XYZ = GetVector(VectorType.VECTOR_MAGNETOMETER);
             return (XYZ.Item1 != 0.0f || XYZ.Item2 != 0.0f || XYZ.Item3 != 0.0f);
         }
 
@@ -348,12 +351,12 @@ namespace Scarlet.Components.Sensors
         /// <summary> Reads a byte from the specified register. </summary>
         /// <returns> The byte that was read. </returns>
         /// <param name="Register"> The register to read from. </param>
-        private byte Read8(byte Register) => I2C.ReadRegister(Address, Register, 1)[0];
+        private byte Read8(byte Register) => this.I2C.ReadRegister(this.Address, Register, 1)[0];
 
         /// <summary> Writes the specified byte and to the Register. </summary>        
         /// <param name="Register"> Register to write to. </param>
         /// <param name="Data"> Byte to write.</param>
-        private void Write8(byte Register, byte Data) => I2C.WriteRegister(Address, Register, new byte[] { Data });
+        private void Write8(byte Register, byte Data) => this.I2C.WriteRegister(this.Address, Register, new byte[] { Data });
 
         public DataUnit GetData()
         {
