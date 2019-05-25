@@ -11,8 +11,8 @@
         /// <param name="Input"> The underlying input whose values should be transformed. </param>
         /// <param name="RangeTransform"> The mathematical expression to use when transforming range information (Input to Parent). </param>
         /// <param name="InputTransform"> The mathematical expression to use when transforming input voltage value information (Input to Parent). </param>
-        /// <param name="InputRawTransform"> Same as InputTransform, but for the raw values. If left null, the same transform will be used instead. </param>
         /// <param name="RangeRawTransform"> Same as RangeTransform, but for the raw values. If left null, the same transform will be used instead. </param>
+        /// <param name="InputRawTransform"> Same as InputTransform, but for the raw values. If left null, the same transform will be used instead. </param>
         public AnalogueInTransform(IAnalogueIn Input, TransformTypes.DoubleTransform RangeTransform, TransformTypes.DoubleTransform InputTransform, TransformTypes.LongTransform RangeRawTransform = null, TransformTypes.LongTransform InputRawTransform = null)
         {
             this.Range = RangeTransform;
