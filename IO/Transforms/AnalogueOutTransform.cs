@@ -3,16 +3,14 @@
     /// <summary> Data transformer for <see cref="IAnalogueOut"/> data streams. </summary>
     public class AnalogueOutTransform : IAnalogueOut
     {
-        private readonly DataTransform Range, Output;
+        private readonly TransformTypes.DoubleTransform Range, Output;
         private readonly IAnalogueOut Base;
 
-        public delegate double DataTransform(double Input);
-
         /// <summary> Sets up the data transformer. </summary>
-        /// <param name="Output"> THe underlying output whose values should be transformed. </param>
+        /// <param name="Output"> The underlying output whose values should be transformed. </param>
         /// <param name="RangeTransform"> The mathematical expression to use when transforming range information (Output to Parent). </param>
         /// <param name="OutputTransform"> The mathematical expression to use when transforming output value information (Parent to Output). </param>
-        public AnalogueOutTransform(IAnalogueOut Output, DataTransform RangeTransform, DataTransform OutputTransform)
+        public AnalogueOutTransform(IAnalogueOut Output, TransformTypes.DoubleTransform RangeTransform, TransformTypes.DoubleTransform OutputTransform)
         {
             this.Range = RangeTransform;
             this.Output = OutputTransform;
