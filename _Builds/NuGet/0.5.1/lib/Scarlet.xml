@@ -1,0 +1,2925 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Scarlet</name>
+    </assembly>
+    <members>
+        <member name="T:Scarlet.Communications.PacketBuffer">
+            <summary> This defines the interface of packet buffer. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketBuffer.Enqueue(Scarlet.Communications.Packet,System.Int32)">
+            <summary> Add a packet to buffer. </summary>
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Priority of packet. </param>
+        </member>
+        <member name="M:Scarlet.Communications.PacketBuffer.Peek">
+            <summary> Get next packet without removing it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketBuffer.Dequeue">
+            <summary> Get next packet and remove it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="P:Scarlet.Communications.PacketBuffer.Count">
+            <summary> Get the total number of packets in the buffer. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketBuffer.IsEmpty">
+            <summary> Return whether the buffer is empty </summary>
+            <returns> true if buffer is empty, false otherwise. </returns>
+        </member>
+        <member name="T:Scarlet.Communications.QueueBuffer">
+            <summary> This class is a basic packet buffer. It is just a queue with thread safety guarantee. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.QueueBuffer.Enqueue(Scarlet.Communications.Packet,System.Int32)">
+            <summary> Add a packet to buffer. </summary>
+            
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Should always be zero because there's just one queue. </param>
+            
+            <exception cref="T:System.ArgumentException"> If priority is not zero since there's just one queue. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.QueueBuffer.Peek">
+            <summary> Get next packet without removing it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.QueueBuffer.Dequeue">
+            <summary> Get next packet and remove it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="P:Scarlet.Communications.QueueBuffer.Count">
+            <summary> Get the total number of packets in the buffer. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.PriorityBuffer">
+            <summary> This defines a priority buffer that dequeue the highest priority packet first. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PriorityBuffer.#ctor(Scarlet.Communications.PacketBuffer[])">
+            <summary> Construct priority buffer with a list of sub-buffers. </summary>
+            <param name="Buffers"> List of buffers for each priority. Low index means higher priority. </param>
+        </member>
+        <member name="M:Scarlet.Communications.PriorityBuffer.Enqueue(Scarlet.Communications.Packet,System.Int32)">
+            <summary> Add a packet to buffer. </summary>
+            
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Priority of packet. Lower number means higher priority. </param>
+            
+            <exception cref="T:System.ArgumentOutOfRangeException"> If priority is out of range. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.PriorityBuffer.Peek">
+            <summary> Get next packet without removing it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PriorityBuffer.Dequeue">
+            <summary> Get next packet and remove it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="P:Scarlet.Communications.PriorityBuffer.Count">
+            <summary> Get the total number of packets in the buffer. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.BandwidthControlBuffer">
+            <summary> This defines a bandwidth control buffer that controlls the bandwidth for each priority. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.#ctor(Scarlet.Communications.PacketBuffer[],System.Int32[],System.Int32)">
+            <summary> Construct a controller. </summary>
+            
+            <remarks> If `BandwidthAllocation` is null, it will be set to all 1's. </remarks>
+            
+            <param name="Buffers"> List of buffers for each priority. </param>
+            <param name="BandwidthAllocation"> List of integers that represent the portion of bandwidth assigned to each priority. </param>
+            <param name="MaximumToken"> Maximum token bucket size. </param>
+            
+            <exception cref="T:System.ArgumentException"> If length of `Buffers` and `BandwidthAllocation` is not equal. </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"> If maximum token bucket size is not positive. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.AddToken(System.Int32)">
+            <summary> Add `Multiple * BandwidthAllocation[i]` tokens to each token bucket. </summary>
+            <param name="Multiple"> How many tokens to add. </param>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.NextBucket">
+            <summary>
+            Find next bucket that have both packet and sufficient token.
+            If no bucket have both packet and sufficient token, find the bucket with packet but insufficient token.
+            </summary>
+            
+            <remarks> It changes `CurrentBucket` to next candidate. </remarks>
+            
+            <returns> true if all buffers are empty. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.Enqueue(Scarlet.Communications.Packet,System.Int32)">
+            <summary> Add a packet to buffer. </summary>
+            
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Priority of packet. </param>
+            
+            <exception cref="T:System.ArgumentOutOfRangeException"> If priority is out of range. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.Peek">
+            <summary> Get next packet without removing it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.BandwidthControlBuffer.Dequeue">
+            <summary> Get next packet and remove it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="P:Scarlet.Communications.BandwidthControlBuffer.Count">
+            <summary> Get the total number of packets in the buffer. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.GenericController">
+            <summary>
+            This defines a generic controller.
+            The order of absolute priority is EMERGENT > HIGH == MEDIUM == LOW > LOWEST,
+            and the bandwidth allocation of HIGH : MEDIUM : LOW is 3 : 2 : 1.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.GenericController.#ctor">
+            <summary> Construct a generic Controller. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.GenericController.Enqueue(Scarlet.Communications.Packet,System.Int32)">
+            <summary> Add a packet to buffer. </summary>
+            
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Priority of packet. </param>
+            
+            <exception cref="T:System.ArgumentOutOfRangeException"> If priority is out of range. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.GenericController.Enqueue(Scarlet.Communications.Packet,Scarlet.Communications.PacketPriority)">
+            <summary> Add a packet to buffer. </summary>
+            
+            <param name="Packet"> The packet to add. </param>
+            <param name="Priority"> Priority of packet. </param>
+            
+            <exception cref="T:System.ArgumentOutOfRangeException"> If priority is out of range. </exception>
+        </member>
+        <member name="M:Scarlet.Communications.GenericController.Peek">
+            <summary> Get next packet without removing it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.GenericController.Dequeue">
+            <summary> Get next packet and remove it. </summary>
+            <remarks> It will return null if the buffer is empty instead of throwing an exception. </remarks>
+            <returns> Next packet if buffer is not empty, or null otherwise. </returns>
+        </member>
+        <member name="P:Scarlet.Communications.GenericController.Count">
+            <summary> Get the total number of packets in the buffer. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.PacketScanner">
+            <summary> A helper class that extract data from <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.#ctor(Scarlet.Communications.Packet)">
+            <summary> Construct a new scanner from <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="Packet"> The packet to extract data from. </param>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextData(System.Int32)">
+            <summary> Get next data block and move cursor forward. </summary>
+            <param name="Size"> Size of data block in bytes. </param>
+            <returns> Next data block in bytes. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextBool">
+            <summary> Interperate next data block as bool. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextChar">
+            <summary> Interperate next data block as char. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextDouble">
+            <summary> Interperate next data block as double. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextFloat">
+            <summary> Interperate next data block as float. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextInt">
+            <summary> Interperate next data block as int. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextString">
+            <summary> Interperate data from cursor to the end as string. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextString(System.Int32)">
+            <summary> Interperate next `Length` bytes of data as a string. </summary>
+            <remarks> Because each char occupies 2 bytes, the returned string should have half of the length. </remarks>
+            <param name="Length"> Length of data in bytes. </param>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextBytes">
+            <summary> Get data from cursor to the end. </summary>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextBytes(System.Int32)">
+            <summary> Get data from cursor of length `Length`. </summary>
+            <param name="Length"> Length of data in bytes. </param>
+            <returns> Next data. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.NextByte">
+            <summary> Interperate next data block as byte. </summary>
+            <returns> Next byte. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.PacketScanner.PeekNextByte">
+            <summary> Get next byte without moving the cursor. </summary>
+            <returns> Next byte. </returns>
+        </member>
+        <member name="T:Scarlet.Communications.PacketWriter">
+            <summary> A helper class that can construct a <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketWriter.#ctor(System.Byte,System.Boolean,System.String)">
+            <summary> Write into a new <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="ID"> Packet ID. </param>
+            <param name="IsUDP"> Whether it is a UDP packet. </param>
+        </member>
+        <member name="M:Scarlet.Communications.PacketWriter.#ctor(Scarlet.Communications.Packet)">
+            <summary> Write into an existing <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="Packet"> The packet to write into. </param>
+        </member>
+        <member name="M:Scarlet.Communications.PacketWriter.Put(System.Boolean)">
+            <summary> Put data into the packet. </summary>
+            <remarks> Those methods can be chained together because they return `this`. </remarks>
+            <param name="data"> Data to append into the packet. </param>
+            <returns> `this` </returns>
+        </member>
+        <member name="T:Scarlet.Communications.SafePacketScanner">
+            <summary> This is an enhanced version of <see cref="T:Scarlet.Communications.PacketScanner"/> that can check data type consistancy when reading data. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketScanner.#ctor(Scarlet.Communications.PacketScanner)">
+            <summary> Construct <see cref="T:Scarlet.Communications.SafePacketScanner"/> from a normal <see cref="T:Scarlet.Communications.PacketScanner"/>. </summary>
+            <param name="Scanner"> A normal packet scanner. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketScanner.#ctor(Scarlet.Communications.Packet)">
+            <summary> Construct <see cref="T:Scarlet.Communications.SafePacketScanner"/> from an existing <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="Packet"> The packet to read data from. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketScanner.HasNext(Scarlet.Communications.TypeID)">
+            <summary> Check if there's next data block available. </summary>
+            <param name="Type"> The expected type of next data block. </param>
+            <returns> true if there is data of expected type; false otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketScanner.AssertType(Scarlet.Communications.TypeID)">
+            <summary> Throw <see cref="T:System.InvalidOperationException"/> if type of next data block is not expected type. </summary>
+            <param name="Type"> Expected type. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketScanner.NextBool">
+            <summary>
+            Check the type of next data block.
+            Return the data block as the requested type if the type matches. 
+            </summary>
+            <exception cref="T:System.InvalidOperationException"> If type doesn't match. </exception>
+            <returns> Next data. </returns>
+        </member>
+        <member name="T:Scarlet.Communications.SafePacketWriter">
+            <summary> This is an enhanced verision of <see cref="T:Scarlet.Communications.PacketWriter"/> that will also record the type of data so the receiver can check data type consistancy. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketWriter.#ctor(Scarlet.Communications.PacketWriter)">
+            <summary> Construct a <see cref="T:Scarlet.Communications.SafePacketWriter"/> from a normal <see cref="T:Scarlet.Communications.PacketWriter"/>. </summary>
+            <param name="Writer"> A normal <see cref="T:Scarlet.Communications.PacketWriter"/>. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketWriter.#ctor(Scarlet.Communications.Packet)">
+            <summary> Cosntruct a <see cref="T:Scarlet.Communications.SafePacketWriter"/> from an existing <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="Packet"> The <see cref="T:Scarlet.Communications.Packet"/> to write data into. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketWriter.#ctor(System.Byte,System.Boolean,System.String)">
+            <summary> Construct an empty <see cref="T:Scarlet.Communications.SafePacketWriter"/> with an empty <see cref="T:Scarlet.Communications.Packet"/>. </summary>
+            <param name="ID"> Packet ID. </param>
+            <param name="IsUDP"> Whether it is an UDP packet. </param>
+        </member>
+        <member name="M:Scarlet.Communications.SafePacketWriter.Put(System.Boolean)">
+            <summary> Put data into packet. </summary>
+            <remarks> Those methods can be chained together because they return `this`. </remarks>
+            <param name="data"> The packet to be written. </param>
+            <returns> `this` </returns>
+        </member>
+        <member name="T:Scarlet.Communications.ConnectionStatusChanged">
+            <summary>
+            This class contains the endpoint of the connection, and the status of the connection.
+            It overloads EventArgs and is used in triggering connection changes between points on the communication stream.
+            </summary>
+        </member>
+        <member name="P:Scarlet.Communications.ConnectionStatusChanged.StatusEndpoint">
+            <summary> The Endpoint that either is or is not connected to the current system. </summary>
+        </member>
+        <member name="P:Scarlet.Communications.ConnectionStatusChanged.StatusConnected">
+            <summary> The status of the endpoints connection with the current system. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.WatchdogManager">
+            <summary>
+            WatchdogManager handles internal watchdog receiving and sending for both Clients and Servers.
+            Not meant for End-User. Is internal to Scarlet.
+            For more information about watchdogs, visit the OneNote documentation.
+            * All watchdogs are send with UDP
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Start(System.Boolean,System.String)">
+            <summary>
+            Starts a watchdog manager.
+            Parameters default to a server watchdog. If you are a server you can just call <see cref="M:Scarlet.Communications.WatchdogManager.Start(System.Boolean,System.String)"/>
+            Will not change any functionality unless WatchdogManager is in a stopped state.
+            </summary>
+            <param name="IsClient"> Whether or not the watchdog sender is a client </param>
+            <param name="MyName"> The name of the watchdog sender </param>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Stop">
+            <summary> Stops the watchdog. Call <see cref="M:Scarlet.Communications.WatchdogManager.Start(System.Boolean,System.String)"/> again to restart the watchdog process. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.AddWatchdog(System.String)">
+            <summary>
+            Adds a watchdog endpoint.
+            Useful for servers, cannot use with Client Watchdogs. 
+            Creates a new Watchdog for send-receive
+            </summary>
+            <param name="Endpoint"> The endpoint to add </param>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.RemoveWatchdog(System.String)">
+            <summary>
+            Removes a watchdog endpoint from the system completely.
+            Use only if you are a server
+            </summary>
+            <param name="Endpoint"> The endpoint to remove </param>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.FoundWatchdog(System.String)">
+            <summary>
+            Call this if you have found a watchdog.
+            If you are client, make sure that the Endpoint is "Server".
+            This is the basis of the operation, when you receive a watchdog packet, call this method to invoke a watchdog is found.
+            </summary>
+            <param name="Endpoint"> The endpoint the watchdog was found on </param>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.IsConnected">
+            <summary> Checks if there is a connection, only for Client </summary>
+            <returns> Whether or not there is a server connection </returns>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.IsConnected(System.String)">
+            <summary> Checks if there is a client connection given an endpoint. Only for server </summary>
+            <param name="Endpoint"> Endpoint to check </param>
+            <returns> Whether or not there is a watchdog connection with the given endpoint </returns>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Send">
+            <summary> Sends all required watchdogs over the network. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.OnConnectionChange(Scarlet.Communications.ConnectionStatusChanged)">
+            <summary> Invokes a connection change event. Call when a connection status changes. </summary>
+            <param name="Event"> The event to trigger </param>
+        </member>
+        <member name="T:Scarlet.Communications.WatchdogManager.Watchdog">
+            <summary>
+            Internal class to the watchdog manager.
+            Handles processing of watchdogs
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Watchdog.#ctor(System.String)">
+            <summary> Constructs a watchdog object </summary>
+            <param name="ListenFor"> The endpoint to listen for (i.e. not the sender) </param>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Watchdog.FoundWatchdog">
+            <summary> Call this on the watchdog if the watchdog was found on the cycle </summary>
+        </member>
+        <member name="M:Scarlet.Communications.WatchdogManager.Watchdog.Listen">
+            <summary> An interactive thread that will stop if WatchdogManager.Stop() is called </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketHandler.Start">
+            <summary>
+            Starts the PacketHandler.
+            PacketHandler ensures Start procedure is only ran once, so multiple calls to Start() will not interfere with each other.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.PacketHandler.ParseWatchdogPacket(Scarlet.Communications.Packet)">
+            <summary> Watchdog parse handler </summary>
+            <param name="WatchdogPacket"> Packet to parse </param>
+        </member>
+        <member name="T:Scarlet.Communications.Client">
+            <summary>
+            Client is a class used to network a client to a server.
+            Please read the Scarlet documentation before use.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.Start(System.String,System.Int32,System.Int32,System.String,System.Int32,System.Int32,System.Boolean)">
+            <summary> Starts a Client process. </summary>
+            <param name="ServerIP"> String representation of the IP Address of server.</param>
+            <param name="PortTCP"> Target port for TCP Communications on the server.</param>
+            <param name="PortUDP"> Target port for UDP Communications on the server.</param>
+            <param name="Name"> Name of client. </param>
+            <param name="ReceiveBufferSize"> Size of buffer for receving incoming packet. Unit: byte. Increase this if you are receiving larger packets. </param>
+            <param name="OperationPeriod"> Time to wait after receiving or sending each packet. Unit: ms. Decrease this if the send/receive operations cannot keep up with your data rate. </param>
+            <param name="UsePriorityQueue"> If it is true, packet priority control will be enabled, and packets will be sent in an order corresponding to their importance. If false, packets are sent in the order that they are provided. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Client.ConnectionChange(System.Object,Scarlet.Communications.ConnectionStatusChanged)">
+            <summary> Event triggered when WatchdogManager detects a change in connection status. </summary>
+            <param name="Sender"> If triggered internally by WatchdogManager, this will be "Watchdog Timer" </param>
+            <param name="Args"> A ConnectionStatusChanged object containing the new status of the Client. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Client.ConnectionAliveOutput(System.Boolean)">
+            <summary>
+            Logs to the console the appropriate information if the connection is alive or dead. 
+            * Will tell the console that the connection will be retried if the connection is not alive.
+            </summary>
+            <param name="IsAlive"> Whether or not the connection is now alive </param>
+        </member>
+        <member name="M:Scarlet.Communications.Client.Startup">
+            <summary> Starts up the Client </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.InitialStartup">
+            <summary>
+            Initializes the client for the FIRST time.
+            Only call this method once.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.RetryConnecting">
+            <summary> Retries sending names to the server until the Watchdog Manager finds watchdog ping again. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.RetryStart">
+            <summary> Retry Startup until connection is established </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendNames">
+            <summary>
+            Assumes TCP and UCP clients are connected.
+            Sends name to initialize a connection with server.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.InitializeClients">
+            <summary> Initializes the Client connections </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.InitializeTCPClient">
+            <summary> Initializes TCP Client connection </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.StartThreads">
+            <summary> Starts the threads for the receive, send, and processing systems. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.RetryConnectionThreadFactory">
+            <summary> Creates a new thread for handling connection retries </summary>
+            <returns> New RetryConnecting Thread </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.RetryStartupThreadFactory">
+            <summary> Creates a new thread for handling startup retries </summary>
+            <returns> New RetryStart Thread </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.ReceiveFromSocket(System.Object)">
+            <summary>
+            Receives packets from a given socket
+            Object type parameter, because it must be if called from a thread.
+            </summary>
+            <param name="ReceiveSocket"> The socket to recieve from. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Client.ProcessPackets">
+            <summary> Processes packets/sends them to the parsing system. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.Send(Scarlet.Communications.Packet,Scarlet.Communications.PacketPriority)">
+            <summary>
+            Sends a packet. Handles both UDP and TCP.
+            Places the packet into sending queue to wait to be sent.
+            </summary>
+            
+            <remark> Please use SendNow for packets that need to be send immediately. </remark>
+            
+            <param name="SendPacket"> Packet to send. </param>
+            <returns> true if packet is successfully added to queue. false otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendNow(Scarlet.Communications.Packet)">
+            <summary> Sends a packet asynchronously, handles both UDP and TCP Packets. </summary>
+            <param name="SendPacket"> Packet to send. </param>
+            <returns> Success of packet sending. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendUDPNow(Scarlet.Communications.Packet)">
+            <summary>
+            Assumes IsConnected is true.
+            Sends a packet to the Server UDP port.
+            </summary>
+            <param name="UDPPacket"> The Packet to send via UDP </param>
+            <returns> True always, because there is no way to detect a successful UDP transmission </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendTCPNow(Scarlet.Communications.Packet)">
+            <summary>
+            Assumes IsConnected is true.
+            Sends a packet to the Server TCP port.
+            </summary>
+            <param name="TCPPacket"> The Packet to send via TCP </param>
+            <returns> The success of the TCP transmission </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendPackets">
+            <summary> Iteratively sends packets to the server from the send queue. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendError(System.Byte,System.Int32)">
+            <summary>
+            Sends an error packet to the server via
+            TCP.
+            Adds Error packet to packet send queue
+            </summary>
+            <param name="ErrorPacketID">ID for the Error Packet</param>
+            <param name="ErrorCode">Error code for the indicated error</param>
+        </member>
+        <member name="M:Scarlet.Communications.Client.SendRegardless(Scarlet.Communications.Packet)">
+            <summary> Sends a Packet regardless of the connection status of Client. This method will throw an exception if you try and send a TCP exception without IsConnected being true. </summary>
+            <param name="SendPacket"> The Packet to send </param>
+            <returns> Whether or not the packet was sent. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.Stop">
+            <summary>
+            Stops the Client.
+            Removes all packets from the receuve and send queues.
+            Changes the initialization state of the Client.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Client.GetReceiveQueueCount">
+            <summary> Gets the length of the current receive queue. i.e. The number of packets that have yet to be parsed. </summary>
+            <returns> The length of the recieve queue </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Client.GetSendQueueCount">
+            <summary> Gets the length of the current send queue. i.e. The number of packets that have yet to be sent. </summary>
+            <returns> The length of the send queue </returns>
+        </member>
+        <member name="T:Scarlet.Communications.TypeID">
+            <summary> Represents data type. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.PacketPriority">
+            <summary> Represents the priority of packet, from highest to lowest. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.Message">
+            <summary> This class is intended to contain packet data. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Message.#ctor(System.Byte[])">
+            <summary>
+            Constructs a message given raw data, likes when received via network.
+            Data encoded as such:
+            Timestamp: RawData[0] through RawData[3]
+            ID: RawData[4]
+            Payload: Remainder (RawData[5] though end)
+            </summary>
+            <param name="RawData"> Incoming data array </param>
+        </member>
+        <member name="M:Scarlet.Communications.Message.#ctor(System.Byte,System.Byte[],System.Byte[])">
+            <summary> Constructs a message given data that is already split. </summary>
+            <param name="ID"> The packet ID, used to determine how it is handled at the recipient. </param>
+            <param name="Payload"> The packet's data content. </param>
+            <param name="Timestamp"> The timestamp of the packet. If null or invalid, the current time gets set. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Message.#ctor(System.Byte,System.String,System.Byte[])">
+            <summary> Constructs a message given data that is already split. </summary>
+            <param name="ID"> The packet ID, used to determine how it is handled at the recipient. </param>
+            <param name="Payload"> The packet's data content. Will be converted to bytes for you. </param>
+            <param name="Timestamp"> The timestamp of the packet. If null or invalid, the current time gets set. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Message.SetTime(System.Byte[])">
+            <summary> Sets the timestamp. Must be 4 or more bytes (only first 4 used). </summary>
+            <param name="Time"> The new timestamp. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Message.AppendData(System.Byte[])">
+            <summary> Appends data to the end of <see cref="F:Scarlet.Communications.Message.Payload"/>. If <see cref="F:Scarlet.Communications.Message.Payload"/> is currently null, create it. </summary>
+            <param name="NewData"> New Data to append. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Message.GetDataSlice(System.Int32,System.Int32)">
+            <summary> Get a part of current data. </summary>
+            <param name="Offset"> Index to start copying. </param>
+            <param name="Size"> Size of data to copy. </param>
+            <returns> Data with index in range [Offset, Offset + Size). </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Message.GetDataSlice(System.Int32)">
+            <summary> Get a part of current data from an offset to the end. </summary>
+            <param name="Offset"> Index to start copying. </param>
+            <returns> Data from `Offset` to the end. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Message.GetRawData">
+            <summary>
+            Returns the raw data
+            in structure:
+            Timestamp data[0] to data[3]
+            ID at data[4]
+            Data encoded after data[4], i.e. data[5:]
+            </summary>
+            <returns> Returns all data in message </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Message.ToString">
+            <summary> Formats the Messages's contents to be human-readable. </summary>
+        </member>
+        <member name="T:Scarlet.Communications.Packet">
+            <summary> Handles packet architecture. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.#ctor(Scarlet.Communications.Message,System.Boolean,System.String)">
+            <summary> Meant for received packets. </summary>
+            <param name="Data"> The packet data </param>
+            <param name="IsUDP"> Defines whether or not packet is a UDP message. </param>
+            <param name="Endpoint"> The endpoint where this packet was received from </param>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.#ctor(System.Byte,System.Boolean,System.String)">
+            <summary> Meant for sent packets. </summary>
+            <param name="ID"> The packet ID, determining what action will be taken upon receipt </param>
+            <param name="IsUDP"> Defines whether or not packet is a UDP message. </param>
+            <param name="Endpoint"> The destination where this packet will be sent </param>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.AppendData(System.Byte[])">
+            <summary> Appends data to packet. </summary>
+            <param name="Data"> Data to append to packet. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.GetForSend(System.Byte[])">
+            <summary> Prepares the packet for sending, then returns the raw data. </summary>
+            <returns> The raw data, ready to be sent. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.GetLength">
+            <summary> Return the length of packet in bytes. </summary>
+            <returns> Length of packet in bytes. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.UpdateTimestamp">
+            <summary> Updates the packet timestamp to the current time </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.GetCurrentTime">
+            <summary> Gets the current time as a byte array for use in packets. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.ToString">
+            <summary> Formats the Packet's contents to be human-readable. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Packet.FromBytes(System.Byte[],System.Net.Sockets.ProtocolType)">
+            <summary> Returns a packet from given bytes and a protocol type for the packet. </summary>
+            <param name="PacketBytes"> Raw bytes of packet data. </param>
+            <param name="Protocol"> Protocol to use for the Packet </param>
+        </member>
+        <member name="T:Scarlet.Communications.Parse">
+            <summary> Handles packet parsing, using handlers of incoming message IDs. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Parse.SetParseHandler(System.Byte,Scarlet.Communications.Parse.ParseMethod)">
+            <summary> Sets the handler for parsing of the appropriate Message ID. </summary>
+            <param name="MessageID"> Message ID for parsing. </param>
+            <param name="ParseMethod"> Method used when incoming packet of <c>MessageID</c> is received. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Parse.ParseMessage(Scarlet.Communications.Packet)">
+            <summary> Appropriately parses incoming message. </summary>
+            <param name="NewMessage"> Message to parse. </param>
+            <returns> Whether or not parsing was successful. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Server.Start(System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean)">
+            <summary> Prepares the server for use, and starts listening for clients. </summary>
+            <param name="PortTCP"> The port to listen on for clients communicating via TCP. </param>
+            <param name="PortUDP"> The port to listen on for clients communicating via UDP. </param>
+            <param name="ReceiveBufferSize"> The size, in bytes, of the receive data buffers. Increase this if your packets are longer than the default. </param>
+            <param name="OperationPeriod"> The time, in ms, between network operations. If you are sending/receiving a lot of packets, and notice delays, lower this. </param>
+            <param name="UsePriorityQueue"> If it is ture, packet priority control will be enabled. </param>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Scarlet.Communications.Server.StartThreads(System.Object)" -->
+        <member name="M:Scarlet.Communications.Server.Stop">
+            <summary> Sends signal to all components of Server to stop, then waits for everything to shut down. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.WaitForClientsTCP(System.Object)">
+            <summary> Waits for incoming TCP clients, then creates a HandleTCPClient thread to interface with each client. </summary>
+            <param name="ReceivePort"> The port to listen for TCP clients on. Must be int. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.CreateBufferIfClientIsNew(System.String)">
+            <summary> Create a new sending buffer for client if the client is new. </summary>
+            <param name="ClientName"> Name of the client. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.HandleTCPClient(System.Object)">
+            <summary>
+            Waits for, and receives data from a connected TCP client.
+            This must be started on a thread, as it will block until CommHandler.Stopping is true, or the client disconnects.
+            </summary>
+            <param name="ClientObj"> The client to receive data from. Must be TcpClient. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.WaitForClientsUDP(System.Object)">
+            <summary> Initially starts the UDP receiver. </summary>
+            <param name="ReceivePort"> Port to listen for UDP packets on. Must be int. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.HandleUDPData(System.IAsyncResult)">
+            <summary> Processes incoming UDP packet, then starts the listener again. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.FindClient(System.Net.IPEndPoint,System.Boolean)">
+            <summary> Tries to find the client name that matches the given IPEndPoint. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.GetEndpoints(System.String)">
+            <summary> Gets the TCP and UDP endpoints of the specified client by client name. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.WatchdogStatusUpdate(System.Object,System.EventArgs)">
+            <summary> Receives watchdog events for clients disconnecting/reconnecting. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.GetClients">
+            <summary> Gets a list of clients. Clients may not be connected, or partially connected. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.ProcessPackets">
+            <summary>
+            Pushes received packets through to Parse for processing.
+            This must be started on a thread, as it will block until CommHandler.Stopping is true.
+            Assumes that packets will not be removed from ReceiveQueue anywhere but inside this method.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.ProcessOnePacket(Scarlet.Communications.Packet)">
+            <summary> Attempts to process a packet. Outputs to log and discards if processing fails. </summary>
+            <returns> Whether processing was successful. </returns>
+        </member>
+        <member name="M:Scarlet.Communications.Server.Send(Scarlet.Communications.Packet,Scarlet.Communications.PacketPriority)">
+            <summary> Adds a packet to the queue of packets to be sent. </summary>
+            <param name="Packet"> The packet to be sent. </param>
+            <param name="Priority"> Priority of packet. </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.SendNowGen(System.Object)">
+            <summary> Used for threaded applications. </summary>
+            <param name="Packet"> A Packet, which will be passed to SendNow(Packet). </param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.SendNow(Scarlet.Communications.Packet)">
+            <summary> Immediately sends a packet. Blocks until sending is complete, regardless of protocol. </summary>
+        </member>
+        <member name="M:Scarlet.Communications.Server.SendError(System.Byte,System.String,System.Int32)">
+            <summary>
+            Sends an error packet to the given 
+            endpoint via TCP.
+            Adds Error packet to packet send queue
+            </summary>
+            <param name="ErrorPacketID">ID for the Error Packet</param>
+            <param name="Endpoint">Endpoint to send the packet</param>
+            <param name="ErrorCode">Error code for the indicated error</param>
+        </member>
+        <member name="M:Scarlet.Communications.Server.SendPackets">
+            <summary>
+            Sends packets from the queue.
+            This must be started on a thread, as it will block until CommHandler.Stopping is true.
+            Assumes that packets will not be removed from SendQueue anywhere but inside this method.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.ICamera.TakePicture">
+            <summary> Takes a picture. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ICamera.Test">
+            <summary> Checks to make sure the camera is functioning correctly. </summary>
+        </member>
+        <member name="M:Scarlet.Components.IMotor.SetSpeed(System.Single)">
+            <summary> Changes the speed of the motor, subject to filtering and capping. </summary>
+        </member>
+        <member name="M:Scarlet.Components.IMotor.SetEnabled(System.Boolean)">
+            <summary> Enables or disables the motor immediately. </summary>
+        </member>
+        <member name="P:Scarlet.Components.IMotor.TraceLogging">
+            <summary> Whether to output extended debug information. Actual output varies by motor. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Inputs.TLV2544">
+            <summary>
+            200kSa/s 4-ch Analogue to Digital Converter
+            Datasheet: http://www.ti.com/lit/ds/symlink/tlv2544.pdf
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.AnalogueInTLV254x.GetInput">
+            <summary> Gets the current ADC input level. </summary>
+            <returns> The current input in Volts. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.AnalogueInTLV254x.GetRange">
+            <summary> Gets the maximum input value. Depends on voltage reference used. </summary>
+            <returns> The maximum input voltage, in Volts. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.AnalogueInTLV254x.GetRawInput">
+            <summary> Gets the raw digital input value, without voltage reference scaling. </summary>
+            <returns> The raw ADC input, in Volt-bits. Between 0 and <c>GetRawRange()</c>. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.AnalogueInTLV254x.GetRawRange">
+            <summary> The maximum digital value that the ADC can output. THis is fixed per chip type. </summary>
+            <returns> The maximum an unsigned 12bit number can hold, 4095, as this is a 12b ADC. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.#ctor(Scarlet.IO.ISPIBus,Scarlet.IO.IDigitalOut,System.Double)">
+            <summary> Prepares a TI TLV2544 ADC for use. </summary>
+            <remarks> If <c>ConversionClockSource.INTERNAL</c> is used, there must be at least 4us or 8us of delay between SPI transactions for short and long sampling respectively. </remarks>
+            <param name="SPIBus"> The SPI bus used to communicate with the device. </param>
+            <param name="ChipSelect"> The output used as chip select for the device. </param>
+            <param name="ExtRefVoltage"> Set this to the reference voltage only if using an external voltage reference. Expected values are between 0 and 5.5V. Leave as NaN if using internal reference, then select your desired reference via <c>Configure(...)</c>. </param>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.Configure(Scarlet.Components.Inputs.TLV2544.Configuration)">
+            <summary> Applies the specified configuration, and prepares the device for use. </summary>
+            <param name="Config"> The configuration to apply. </param>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.Configure">
+            <summary> Applies the default configuration, and prepares the device for use. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.PowerDown">
+            <summary> Puts the ADC to sleep, minimizing power usage. TUrn back on with <c>PowerUp</c>. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.PowerUp">
+            <summary> Brings the ADC out of sleep mode. Only needed after <c>PowerDown</c> was called. Takes 20ms. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.Test">
+            <summary> Tests the internal reference voltages to check if output values are reasonable. </summary>
+            <returns> Whether each reading was within 0.5% of the expected value. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.ReadConfig">
+            <summary> Gets the currently applied configuration. </summary>
+            <returns> The configuration that the ADC is using, as from the CONFIG register. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.GetRange">
+            <summary> Gets the current full-scale voltage. </summary>
+            <returns> The voltage represented by a reading of 4095 on an input. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.DoInputRead(System.SByte)">
+            <summary> Reads an input channel. </summary>
+            <param name="Channel"> 0 to 4 for regular input channels, -1 to -3 for test voltages. </param>
+            <returns> The raw ADC reading, which needs further processing and referencing in order to be a usable voltage. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Inputs.TLV2544.DoCommand(Scarlet.Components.Inputs.TLV2544.Command,System.UInt16,System.Boolean)">
+            <summary> Does a 12b read/write with the specified command. </summary>
+            <param name="Command"> The command (4 MSb) to send. </param>
+            <param name="Data"> The data (12 LSb) to send. </param>
+            <param name="Long"> Whether to send out additional SCLK pulses for the ADC to do sampling. </param>
+            <returns> The 12b data returned by the device. </returns>
+        </member>
+        <member name="F:Scarlet.Components.Inputs.TLV2544.Configuration.UseEOCPin">
+            <summary> If true, pin 4 outputs "End of Conversion" signal. Otherwise, outputs "~Interrupt" signal. </summary>
+            End of Conversion: "This output goes from a high-to-low logic level at the end of the sampling period and remains low until the conversion is complete and data are ready for transfer. EOC is used in conversion mode 00 only."
+            ~Interrupt: "This pin can also be programmed as an interrupt output signal to the host processor. The falling edge of ~INT indicates data are ready for output. The following ~CS↓ or ~FS clears ~INT."
+        </member>
+        <member name="T:Scarlet.Components.Inputs.TLV2544.VoltageReference">
+            <summary> Note that to use the 4V internal reference, Vcc must be at 5V (does not work in 3.3V mode). </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISensor.Test">
+            <summary> Determine whether or not the sensor is working. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISensor.UpdateState">
+            <summary> Updates the state of the sensor, usually done by getting a new reading. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISensor.GetData">
+            <summary> Gets the sensor's data in a format that can be used for easy storage. </summary>
+        </member>
+        <member name="P:Scarlet.Components.ISensor.System">
+            <summary> The sensor's purpose, like "GroundTemp". i.e. What does it measure? </summary>
+        </member>
+        <member name="P:Scarlet.Components.ISensor.TraceLogging">
+            <summary> Whether to output extended debug information. Actual output varies by sensor. </summary>
+        </member>
+        <member name="M:Scarlet.Components.IServo.SetPosition(System.Int32)">
+            <summary> Updates the position of the servo </summary>
+        </member>
+        <member name="M:Scarlet.Components.IServo.SetEnabled(System.Boolean)">
+            <summary> Enables or disables the motor immediately. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISubsystem.Initialize">
+            <summary> Prepares the subsystem for use. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISubsystem.EmergencyStop">
+            <summary> Stops all activities (outputs, motors, etc) immediately. This needs to be passed through to all relevant subcomponents. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISubsystem.UpdateState">
+            <summary> Updates the subsystem. This should be passed through to all subcomponents. </summary>
+        </member>
+        <member name="M:Scarlet.Components.ISubsystem.Exit">
+            <summary> Stops and closes all relevant resources. Called when the program is exiting. </summary>
+        </member>
+        <member name="P:Scarlet.Components.ISubsystem.TraceLogging">
+            <summary> Whether to output extended debug information. Actual output varies by subsystem. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.#ctor(Scarlet.IO.IPWMOutput,Scarlet.IO.IDigitalOut,System.Single,Scarlet.Filters.IFilter{System.Single})">
+            <summary> Initializes a CytronMD30C Motor controller </summary>
+            <param name="PWMOut"> PWM Output to set the speed of the motor controller </param>
+            <param name="GPIOOut"> GPIO Output that sets the direction of the motor </param>
+            <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+            <param name="SpeedFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.SetEnabled(System.Boolean)">
+            <summary> 
+            Immediately sets the enabled status of the motor. 
+            If false, resets TargetSpeed to 0 and stops the motor.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.SetSpeedThread">
+            <summary> Sets the speed on a thread for filtering. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.SetSpeedThreadFactory">
+            <summary> Creates a new thread for setting speed during motor filtering output </summary>
+            <returns> A new thread for changing the motor speed. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.SetSpeed(System.Single)">
+            <summary>
+            Sets the motor speed. Output may vary from the given value under the following conditions:
+            - Input exceeds maximum speed. Capped to given maximum.
+            - Filter changes value. Filter's output used instead.
+                (If filter is null, this does not occur)
+            - The motor is disabled. You must first re-enable the motor.
+            </summary>
+            <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.CytronMD30C.SetSpeedDirectly(System.Single)">
+            <summary>
+            Sets the speed directly given an input from -1.0 to 1.0
+            Takes into consideration motor stop signal and max speed restriction.
+            </summary>
+            <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.Servo.#ctor(Scarlet.IO.IPWMOutput,System.Int32,System.Single,System.Single,System.Single)">
+            <summary> Drives a basic PWM-controlled servo motor. </summary>
+            <remarks> Servos usually don't care about the PWM frequency, but about the on-time of the pulses. Therefore, the range is configured with on-times instead of PWM percentage. </remarks>
+            <param name="PWMOut"> The PWM output to use to control the servo. </param>
+            <param name="AngleRange"> The range of the servo (check the datasheet). Usually between 180 and 300. </param>
+            <param name="MaxTime_ms"> The on-time (in milliseconds) that corresponds with the maximum servo displacement. Usually between 1 and 3. </param>
+            <param name="MinTime_ms"> The on-time (in milliseconds) that corresponds with the minimum servo displacement. Less than <see cref="!:MaxTime_ms"/>, usually between 0.5 and 2. </param>
+            <param name="PWMFrequency"> The frequency to set the PWM output to. Usually between 10 and 200. </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.Servo.SetEnabled(System.Boolean)">
+            <summary> Enables/disables output to the servo. Disabling usually causes it to stop resisting external movement. </summary>
+            <param name="Enabled"> Whether to output a PWM signal to the servo. </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.Servo.SetPosition(System.Int32)">
+            <summary> Changes the servo's position to the given angle. </summary>
+            <param name="NewPosition"> The desired angle, in degrees. Input outside the range 0->AngleRange is capped at those limits. </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.#ctor(Scarlet.IO.IPWMOutput,System.Single,Scarlet.Filters.IFilter{System.Single})">
+            <summary> Initializes a Talon Motor controller </summary>
+            <param name="PWMOut"> PWM output to control the motor controller </param>
+            <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+            <param name="SpeedFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.SetEnabled(System.Boolean)">
+            <summary> 
+            Immediately sets the enabled status of the motor.
+            Stops the motor if given parameter is false.
+            Does not reset the target speed to zero, so beware
+            of resetting this to enabled.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.SetSpeedThread">
+            <summary> Sets the speed on a thread for filtering. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.SetSpeedThreadFactory">
+            <summary> Creates a new thread for setting speed during motor filtering output </summary>
+            <returns> A new thread for changing the motor speed. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.SetSpeed(System.Single)">
+            <summary>
+            Sets the motor speed. Output may vary from the given value under the following conditions:
+            - Input exceeds maximum speed. Capped to given maximum.
+            - Filter changes value. Filter's output used instead.
+                (If filter is null, this does not occur)
+            - The motor is disabled. You must first re-enable the motor.
+            </summary>
+            <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.TalonMC.SetSpeedDirectly(System.Single)">
+            <summary>
+            Sets the speed directly given an input from -1.0 to 1.0
+            Takes into consideration motor stop signal and max speed restriction.
+            </summary>
+            <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.#ctor(Scarlet.IO.IUARTBus,System.Single,System.Int32,System.Int32,System.Int32,Scarlet.Filters.IFilter{System.Int32})">
+            <summary> Initializes a VESC Motor controller </summary>
+            <param name="UARTBus"> UART output to control the motor controller </param>
+            <param name="MaxSpeed"> Limiting factor for speed (should never exceed + or - this val) </param>
+            <param name="CANForwardID"> CAN ID of the motor controller (-1 to disable CAN forwarding) </param>
+            <param name="RPMFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.#ctor(Scarlet.IO.ICANBus,System.Int32,System.Int32,System.Int32,System.UInt32,Scarlet.Filters.IFilter{System.Int32})">
+            <summary> Initializes a VESC Motor controller </summary>
+            <param name="CANBus"> CAN output to control the motor controller </param>
+            <param name="MaxRPM"> Limiting factor for speed (should never exceed + or - this val) </param>
+            <param name="RPMFilter"> Filter to use with MC. Good for ramp-up protection and other applications </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SetEnabled(System.Boolean)">
+            <summary> 
+            Immediately sets the enabled status of the motor.
+            Stops the motor if given parameter is false.
+            Does not reset the target speed to zero, so beware
+            of resetting this to enabled.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SetSpeedThread">
+            <summary> Sets the speed on a thread for filtering. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SetSpeedThreadFactory">
+            <summary> Creates a new thread for setting speed during motor filtering output </summary>
+            <returns> A new thread for changing the motor speed. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SetSpeed(System.Single)">
+            <summary>
+            Sets the motor speed. Output may vary from the given value under the following conditions:
+            - Input exceeds maximum speed. Capped to given maximum.
+            - Filter changes value. Filter's output used instead.
+                (If filter is null, this does not occur)
+            - The motor is disabled. You must first re-enable the motor.
+            </summary>
+            <param name="Speed"> The new speed to set the motor at. From -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SetRPMDirectly(System.Int32)">
+            <summary>
+            Sets the speed directly given an input from -1.0 to 1.0
+            Takes into consideration motor stop signal and max speed restriction.
+            </summary>
+            <param name="Speed">  </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SendSpeed(System.Single)">
+            <summary> Sends the speed between -1.0 and 1.0 to the motor controller </summary>
+            <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.SendRPM(System.Int32)">
+            <summary> Sends the speed to the motor controller </summary>
+            <param name="RPM"> RPM for the motor to spin at. RPM is capped at 36500 </param>
+        </member>
+        <member name="M:Scarlet.Components.Motors.VESC.ConstructPacket(System.Collections.Generic.List{System.Byte})">
+            <summary> Generates the packet for the motor controller: </summary>
+            <remarks>
+            One Start byte (value 2 for short packets and 3 for long packets)
+            One or two bytes specifying the packet length
+            The payload of the packet
+            Two bytes with a CRC checksum on the payload
+            One stop byte (value 3)
+            </remarks>
+            <param name="Speed"> Speed from -1.0 to 1.0 </param>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BME280">
+            <summary>
+            Bosch BME280 - Integrated Air Humidity, Pressure and Temperature Sensor
+            Datasheet v1.1: https://download.mikroe.com/documents/datasheets/BST-BME280_DS001-11.pdf
+            Datasheet v1.19: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf
+                NOTE: This is for a similar device, the BMP280 (P for pressure only). This describes register LSB/MSB order, but has no info about humidity.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.#ctor(Scarlet.IO.II2CBus,System.Byte)">
+            <summary> Initializes a <c>BME280</c> environmental sensor, using the I2C protocol (the device supports SPI as well). </summary>
+            <param name="I2CBus"> The I2C bus used to communicate with the device. </param>
+            <param name="DeviceAddress"> The I2C address of the device, 0x76 or 0x77 usually. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.#ctor(Scarlet.IO.ISPIBus,Scarlet.IO.IDigitalOut)">
+            <summary> WARNING: <c>BME280</c> has not been tested with SPI. </summary>
+            <param name="SPIBus"> The SPI bus used to communicate with the device. </param>
+            <param name="ChipSelect"> The output to use to signal chip select to the device. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.Configure(Scarlet.Components.Sensors.BME280.Config)">
+            <summary> Sets the device's registers to match the given <c>Configuration</c>. </summary>
+            <param name="Configuration"> The configuration to apply. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.Configure">
+            <summary> Configures the device with default settings, which should be good enough for basic functionality. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ChangeMode(Scarlet.Components.Sensors.BME280.Mode)">
+            <summary> Changes the acquisition mode of the device, or brings it in/out of SLEEP. </summary>
+            <param name="NewMode"> The <c>Mode</c> to put the device into. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.GetData">
+            <summary> Gets the sensor's current readings in an easy to store format. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.Test">
+            <summary> Checks if the device is responding by querying a known, constant register value. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.Reset">
+            <summary> Restarts the device. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.UpdateState">
+            <summary> Gets new readings from the device. </summary>
+            <exception cref="T:System.Exception"> If getting readings from the device fails. </exception>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.Write(System.Byte,System.Byte)">
+            <summary> Writes a single register. </summary>
+            <param name="Register"> The register address to write to. </param>
+            <param name="Data"> The data to write. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ProcessTemperatureInternal(System.Int32)">
+            <summary> Gets temperature in format useful for compensation of other values. </summary>
+            <remarks> Corresponds to <c>t_fine</c> in original code. </remarks>
+            <source> Datasheet, page 23 </source>
+            <param name="RawTemp"> The temperature as read directly from the device's registers. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ProcessTemperature(System.Int32)">
+            <summary> Gets the actual external temperature. </summary>
+            <source> Datasheet, page 23 </source>
+            <param name="TempInternal"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+            <returns> The external temperature reading in increments of 0.01 degrees Celsius. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ProcessPressure(System.Int32,System.Int32)">
+            <summary> Gets the pressure reading. </summary>
+            <param name="RawPress"> The pressure as read directly from the device's registers. </param>
+            <param name="TempComp"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+            <returns> Pressure reading in 1/256 increments, in Pa. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ProcessHumidity(System.Int32,System.Int32)">
+            <summary> Gets the humidity reading. </summary>
+            <param name="RawHumid"> The humidity as read directly from the device's registers. </param>
+            <param name="TempComp"> The temperature produced by <c>ProcessTemperatureInternal()</c>. </param>
+            <returns> Humidity reading in 1/1024 increments, in % from 0-100. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BME280.ReadCompVals">
+            <summary> Reads compensation values from the device. </summary>
+            <remarks> This only needs to be done once, as they are hard-coded on the chip, so will never change. </remarks>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BME280.CompensationParameters">
+            <summary> Stores the factory-set compensation values used during calculation of final readings. </summary>
+        </member>
+        <member name="F:Scarlet.Components.Sensors.BME280.Mode.SLEEP">
+            <summary> No operation, all registers accessible, lowest power, default after startup. </summary>
+        </member>
+        <member name="F:Scarlet.Components.Sensors.BME280.Mode.FORCED">
+            <summary> Performs one measurement, stores results and then returns to sleep mode. </summary>
+        </member>
+        <member name="F:Scarlet.Components.Sensors.BME280.Mode.NORMAL">
+            <summary> Continuously takes readings, waiting <c>StandbyTime</c> between readings. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BME280.StandbyTime">
+            <summary> How long to wait between readings in NORMAL operation mode. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BME280.FilterCoefficient">
+            <summary>
+            Filter to average out several readings for more consistent data, losing fast changes.
+            Only applicable to temperature and pressure (not humidity).
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BNO055.Register">
+            <summary>
+            Enum of all possible registers on the BNO055. 
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BNO055.PowerMode">
+            <summary>
+            The power mode of the BNO055. 
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BNO055.OperationMode">
+            <summary>
+            The operation mode of the BNO055. 
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.BNO055.VectorType">
+            <summary>
+            The possible types of vectors. 
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.#ctor(Scarlet.IO.II2CBus,System.Int32,System.Byte)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.BNO055"/> class, which will communicate via
+            the given I2C bus. 
+            </summary>
+            <param name="I2C"> The I2C bus to communicate over. </param>
+            <param name="ID"> ID of BNO055. -1 by default. You probably shouldn't change this. </param>
+            <param name="Address"> The I2C address of the BNO055. Defaults to 0x28. You probably shouldn't change this. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.Begin(Scarlet.Components.Sensors.BNO055.OperationMode)">
+            <summary>
+            Begins the operation of the BNO055 with the target operation mode. NDOF is the default operation mode.
+            This method is called from the constructor. Returns whether or not it succeeded. 
+            </summary>
+            <returns> Whether the BNO055 successfully initialized. </returns>
+            <param name="mode"> Operation mode at startup. NDOF by default. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.GetVector(Scarlet.Components.Sensors.BNO055.VectorType)">
+            <summary> Gets the vector corresponding to the orientation of the magnetometer according to the type specified. </summary>
+            <returns> 
+            The vector. 
+            If VECTOR_ACCELEROMETER was passed, the vector is the 3-axis acceleration in mG.
+            If VECTOR_MAGNETOMETER was passed, the vector is the Magnetic Field Strength vector in uT.
+            If VECTOR_GYROSCOPE was passed, the vector is Angular Velocity Vector in Degrees / sec.
+            If VECTOR_EULER was passed, the vector is the orientation as (Roll, Pitch, Yaw) in degrees
+            If VECTOR_LINEARACCEL was passed, returns the linear acceleration vector mG.
+            If VECTOR_GRAVITY was passed, returns the gravitational acceleration vector in mG.
+            </returns>/            
+            <param name="VectorType"> Type of vector to be read. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.SetMode(Scarlet.Components.Sensors.BNO055.OperationMode)">
+            <summary> Sets the operation mode of the BNO055. Only use if you know what you're doing! </summary>
+            <param name="Mode"> The target mode that the BNO-55 will be set to. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.Test">
+            <summary> Reads a vector from the BNO055 and ensures that none of them are 0. </summary>
+            <returns> Whether or not the BNO055 worked. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.UpdateState">
+            <summary> Reads the position according to the magnetometer and updates the class variables. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.Read8(System.Byte)">
+            <summary> Reads a byte from the specified register. </summary>
+            <returns> The byte that was read. </returns>
+            <param name="Register"> The register to read from. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.BNO055.Write8(System.Byte,System.Byte)">
+            <summary> Writes the specified byte and to the Register. </summary>        
+            <param name="Register"> Register to write to. </param>
+            <param name="Data"> Byte to write.</param>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.INA226">
+            <summary>
+            High-Side or Low-Side Measurement, Bi-Directional Current and Power Monitor
+            Datasheet: http://www.ti.com/lit/ds/symlink/ina226.pdf
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.INA226.AveragingMode">
+            <summary> Determines the number of samples that are collected and averaged. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.INA226.ConversionTime">
+            <summary> Sets the conversion time for the bus voltage measurement. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.#ctor(Scarlet.IO.II2CBus,System.Byte,System.Single,System.Double,Scarlet.Components.Sensors.INA226.AveragingMode,Scarlet.Components.Sensors.INA226.ConversionTime,Scarlet.Components.Sensors.INA226.ConversionTime)">
+            <summary> Prepares the INA226 device for use. </summary>
+            <param name="Bus"> The I2C bus the device is connected to. </param>
+            <param name="DeviceAddress"> The I2C address of the device. Set by hardware pin connections. </param>
+            <param name="MaxCurrent"> The absolute maximum current that you expect to measure with this. Used to set amplifier scaling. Usually set to the connected device's max current, like motor stall current. </param>
+            <param name="Resistor"> The resistance of the current shunt path. This should be measured with the best possible precision, as slight error here can cause large measurement error. </param>
+            <param name="Avg"> How many samples you want the chip to average for voltage/current/power values. Will stabilize readings, but reduce high-frequency response (usually not needed anyways). </param>
+            <param name="VBusTime"> Determines how long the ADC samples to measure power supply voltage. Longer (slower) times will stabilize readings, but reduce high frequency response (usually not needed anyways). </param>
+            <param name="VShuntTime"> Determines how long the ADC samples to measure shunt voltage drop. Longer (slower) times will stabilize readings, but reduce high frequency response (usually not needed anyways). </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.GetBusVoltage">
+            <summary> Gets the VBus pin voltage at the last UpdateState() call. </summary>
+            <returns> The voltage, in Volts. In increments of 1.25mV. Always positive. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.GetShuntVoltage">
+            <summary> Gets the voltage across the Vin+ and Vin- pins at the last UpdateState() call. </summary>
+            <returns> The voltage, in Volts. In increments of 2.5mV. Positive or negative. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.GetCurrent">
+            <summary> Gets the calculated current across the shunt resistor at the last UpdateState() call. </summary>
+            <returns> The current, in Amps. Increments depend on scaling, which is configured by shunt resistance and max current. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.GetPower">
+            <summary> Gets the calculated power going to the load at the last UpdateState() call. </summary>
+            <returns> The power, in Watts. Increments depend on scaling, which is configured by shunt resistance and max current. Always positive. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.ConvertBusVoltageFromRaw(System.UInt16[])">
+            <summary> Interprets the VBus pin voltage data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+            <returns> The voltage, in Volts. In increments of 1.25mV. Always positive. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.ConvertShuntVoltageFromRaw(System.UInt16[])">
+            <summary> Interprets the shunt voltage drop data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+            <returns> The voltage, in Volts. In increments of 2.5mV. Positive or negative. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.ConvertCurrentFromRaw(System.UInt16[],System.Double)">
+            <summary> Interprets the calculated current data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+            <param name="CurrentMultiplier"> The translation between bits and Amps. Usually <see cref="P:Scarlet.Components.Sensors.INA226.CurrentMultiplier"/>. </param>
+            <returns> The current, in Amps. Increments depend on scaling, which is configured by shunt resistance and max current. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.ConvertPowerFromRaw(System.UInt16[],System.Double)">
+            <summary> Interprets the calculated power data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via I2C. </param>
+            <param name="CurrentMultiplier"> The translation between bits and Amps. Usually <see cref="P:Scarlet.Components.Sensors.INA226.CurrentMultiplier"/>. </param>
+            <returns> The power, in Watts. Increments depend on scaling, which is configured by shunt resistance and max current. Always positive. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.GetData">
+            <summary> The last sensor reading, as easily accessible data. </summary>
+            <returns>
+            The following data:
+            | Name       | Type | Remarks                      |
+            |============|======|==============================|
+            |BusVoltage  |double|Power supply voltage (V)      |
+            |ShuntVoltage|double|Current shunt voltage drop (V)|
+            |Current     |double|Calculated current (A)        |
+            |Power       |double|Calculated power (W)          |
+            </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.Test">
+            <summary> Checks if the chip's manufacturer register has the correct value. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.UpdateState">
+            <summary> Takes a new reading from the sensor and stores it for later retrieval. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.INA226.SetConfig(System.Single,Scarlet.Components.Sensors.INA226.AveragingMode,Scarlet.Components.Sensors.INA226.ConversionTime,Scarlet.Components.Sensors.INA226.ConversionTime)">
+            <summary> Sets configuration and calibration registers with these settings. </summary>
+            <param name="MaxCurrent"> The maximum current that the device is expected to measure. </param>
+            <param name="Avg"> The averaging mode to use. </param>
+            <param name="VBusTime"> The bus voltage conversion time to use. </param>
+            <param name="VShuntTime"> The shunt voltage conversion time to use. </param>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LimitSwitch">
+            <summary> Quickly releases incoming interrupt events to prevent I/O system from getting bogged down, then will pass them on when UpdateState is called next. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LimitSwitch.#ctor(Scarlet.IO.IDigitalIn,System.Boolean)">
+            <param name="Input"> Must also implement IInterruptSource. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LimitSwitch.UpdateState">
+            <summary>
+            Checks if the switch has been pressed since the last UpdateState, and fires off relevant events if so.
+            Call this frequently enough to catch all presses, as only one event is registered per cycle.
+            I.e. if a switch is pressed 3 times between UpdateState() calls, only one event is sent.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LimitSwitch.EventTriggered(System.Object,System.EventArgs)">
+            <summary> Receives incoming InputInterrupt events to process. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R">
+            <summary>
+            Implements the LS7366R encoder reader. 
+            Datasheet here:
+            https://cdn.usdigital.com/assets/general/LS7366R.pdf
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.#ctor(Scarlet.IO.ISPIBus,Scarlet.IO.IDigitalOut,Scarlet.IO.IDigitalOut)">
+            <summary> Initializes the LS7366R SPI encoder counter chip. </summary>
+            <param name="SPIBus"> SPI Bus to communicate with </param>
+            <param name="ChipSelect"> Chip Select to use with SPI </param>
+            <param name="CountEnable"> Digital Out to enable the counters </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.Configure(Scarlet.Components.Sensors.LS7366R.Configuration)">
+            <summary> Configures the device given a configuration </summary>
+            <param name="Configuration"> Configuration to use. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.Configure">
+            <summary> Configures device with a default configuration </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.EnableCount(System.Boolean)">
+            <summary>
+            Sets the output of the given count enable output
+            (if given) to the Enable state. 
+            Sets CountEnabled to the given Enable state. 
+            Triggers the internal Enable/Disable counting functionality
+            </summary>
+            <param name="Enable"> Whether or not to enable counting. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.EventTriggered(System.Object,System.EventArgs)">
+            <summary> Receives external events. </summary>
+            <param name="Sender"> Sender of the event </param>
+            <param name="Event"> Sent event </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.Test">
+            <summary> Tests the LS7366R device. </summary>
+            <returns> Whether or not the test passed </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.UpdateState">
+            <summary>
+            Loads the buffer data into the chip's
+            read buffer in parallel, then read
+            from the read buffer and update Count.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.LS7366R.OnOverflow(Scarlet.Components.Sensors.OverflowEvent)">
+            <summary> Event called on an overflow </summary>
+            <param name="Event"> Event to be passed in to the invoke upon overflow. </param>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R.Configuration">
+            <summary> Structure for the configuration of the device. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R.QuadMode">
+            <summary> Quadrature mode for encoder counting </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R.CountMode">
+            <summary> Encoder counter count mode </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R.IndexConfig">
+            <summary> Index setup </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.LS7366R.CounterMode">
+            <summary> Number of bytes to count </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.OverflowEvent">
+            <summary>
+            Event to store overflow events.
+            Includes overflow and underflow fields.
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.MAX31855">
+            <summary>
+            Cold-Junction Compensated Thermocouple-to-Digital Converter
+            Datasheet: https://datasheets.maximintegrated.com/en/ds/MAX31855.pdf
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.MAX31855.Fault">
+            <summary>
+            Lists the possible reported faults.
+            SHORT_VCC: The thermoucouple is shorted to the Vcc line.
+            SHORT_GND: The thermoucouple is shorted to the GND line.
+            NO_THERMOCOUPLE: The thermoucouple is not properly connected or is defective.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.Test">
+            <summary> Checks if the sensor reports any faults. </summary>
+            <returns> true if the sensor is in fault state, or cannot be reached. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.UpdateState">
+            <summary> Gets a new reading from the sensor and stores it. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.GetInternalTemp">
+            <summary> Gets the internal (on-board) temperature at the last UpdateState() call. </summary>
+            <returns> The temperature, in Celsius. In increments of 1/16 (0.0625) degree increments. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.GetExternalTemp">
+            <summary> Gets the external (thermocouple) temperature at the last UpdateState() call. </summary>
+            <returns> The temperature, in degrees Celcius. In increments of 1/4 (0.25) degrees. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.GetFaults">
+            <summary> Gets the present faults at the last UpdateState() call. </summary>
+            <returns> One or more Fault states if applicable, or Fault.NONE if the sensor reports none. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.GetRawData">
+            <summary> Gets the sensor's raw data as it was received at the last UpdateState() call. </summary>
+            <returns> The bytes sent over SPI from the sensor at the last reading. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.ConvertInternalFromRaw(System.UInt32)">
+            <summary> Interprets the internal (on-board) temperature data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via SPI. </param>
+            <returns> The temperature, in Celsius. In increments of 1/16 (0.0625) degree increments. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.ConvertExternalFromRaw(System.UInt32)">
+            <summary> Interprets the external (thermocouple) temperature data out of the raw data. </summary>
+            <param name="RawData"> The raw bytes, as transferred via SPI. </param>
+            <returns> The temperature, in degrees Celcius. In increments of 1/4 (0.25) degrees. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MAX31855.ConvertFaultFromRaw(System.UInt32)">
+            <summary> Interprets the sensor's fault states out of the raw data. </summary>
+            <param name="RawData">The raw bytes, as transferred via SPI. </param>
+            <returns> One or more Fault states if applicable, or Fault.NONE if the sensor reports none. </returns>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.MQ135">
+            <summary>
+            Simple sensor to detect approximate concentration of air pollutants.
+            Datasheet here: https://www.olimex.com/Products/Components/Sensors/SNS-MQ135/resources/SNS-MQ135.pdf
+            Math based on: http://davidegironi.blogspot.com/2017/05/mq-gas-sensor-correlation-function.html#.Wo84_UxFx9A
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.Test">
+            <summary> Due to this being an analogue sensor, this simply tries to get a reading and sees if it is within range. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.GetReading">
+            <summary> Gets the most recent sensor reading. </summary>
+            <remarks> Currently, temperature/humidity calibration settings are not applied. </remarks>
+            <returns> The estimated total ppm of pollutants in the air. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.GetReadingUncalibrated">
+            <summary> Gets the most recent sensor reading, without applying temperature or humidity compensation. </summary>
+            <returns> The estimated total ppm of pollutants in the air. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.CalibrateTemperature(System.Single)">
+            <summary> Applies some basic calibration to the sensor to compensate for air temperature. </summary>
+            <remarks> Defaults to 20 C. </remarks>
+            <param name="Temperature"> The current air temperature in degrees C, between -10 and 45. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.CalibrateHumidity(System.Single)">
+            <summary> Applies some basic calibration to the sensor to compensate for environmental humidity. </summary>
+            <remarks> Defaults to 65% RH. </remarks>
+            <param name="Humidity"> % Relative Humidity value, between 0.0 and 0.95. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.CalibrateResistance(System.Int32)">
+            <summary> Applies calibration for base sensor resistance. This is probably constant for each individual sensor. Gets used in both calibrated and uncalibrated readings. </summary>
+            <remarks> You'll need to put the sensor into a 100 ppm CO2 environment at 20C and 65% RH to get this value. 41763 is used as default. </remarks>
+            <param name="Resistance"> The measured resistance of the sensor, in the specific calibration conditions as listed above. Should be near 42K. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.CalibrateSupply(System.Double)">
+            <summary> Updates the current supply voltage used for readings. Gets used in both calibrated and uncalibrated readings. </summary>
+            <param name="SupplyVoltage"> The current supply voltage (should be close to 5V). </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MQ135.CalculatePPM">
+            <summary> Approximates pollutant PPM from sensor output. </summary>
+            <remarks> See comments at the top of this class to understand the expected electrical setup and values. </remarks>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.#ctor(Scarlet.IO.IUARTBus)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Scarlet.Components.Sensors.MTK3339"/> class. 
+            Sets it to send GPRMC and GPGGA every 200 milliseconds. 
+            </summary>
+            <param name="UART"> The UART bus to read from and write to. </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.Test">
+            <summary> Checks whether this GPS has a fix. </summary>        
+            <returns> Returns true if the GPS has a fix and false otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.UpdateState">
+            <summary> Gets new readings from GPS. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.HasFix">
+            <summary> Queries the GPS to see if it has a fix. </summary>
+            <returns> <c>true</c>, if fix was hased, <c>false</c> otherwise. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.GetCoords">
+            <summary> Gets the GPS coordinates of this GPS. </summary>
+            <returns> Returns a tuple with the GPS coordinates, with Latitude first and Longitude second. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.MTK3339.RawToDeg(System.String)">
+            <summary> Converts a string number to a degree value. </summary>
+            <returns> The degree value. </returns>
+            <param name="Val"> The string value. </param>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.Potentiometer">
+            <summary>
+            A class for converting an IAnalogueInput with a linear potentiometer connected into a rotation degrees value.
+            Can send events when the potentiometer has been turned.
+            Will only update the current angle when UpdateState is called, and therefore will only send events then as well.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.Potentiometer.UpdateState">
+            <summary>
+            Checks the IAnalogueInput for the new angle, and sends events if applicable.
+            Cannot determine the total amount turned since the last UpdateState call, only the net change.
+            As such, if the potentiometer is turned one direction, then back to the same place, we have no way of determining any movement occured.
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.VH400">
+            <summary>
+            Analogue Soil Moisture Sensor
+            Data: http://vegetronix.com/Products/VH400/
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.#ctor(Scarlet.IO.IAnalogueIn,System.Double)">
+            <summary> Prepares a VH400 soil moisture sensor for use. </summary>
+            <param name="Input"> The analogue input where the sensor is connected. </param>
+            <param name="VoltageMultiplier">
+            If a resistor divider or other scaling is applied to the sensor's output, specify this parameter in order to scale the readings to the appropriate levels.
+            For example, if there is a 3:1 divider, bringing the sensor's 0-3V output to a range of 0-1V on the IAnalogeIn device, then specify a multiplier of 3.
+            This would be decided by the hardware configuration of the sensor and analogue input systems, and varies by implementation.
+            </param>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.GetData">
+            <summary> Gets the sensor's data in a standard format. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.Test">
+            <summary> Checks to see if the current analogue input is within the output range of the sensor. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.UpdateState">
+            <summary> Gets a new reading from the sensor. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.GetReading">
+            <summary> Gets the volumetric water content in %, between 0 and 1. </summary>
+            <returns> VWC %, or -1 if the sensor is not functioning correctly. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.GetVoltage">
+            <summary> Gets the sensor's output voltage (should be between 0 and 3V). </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VH400.ToMoisture(System.Double)">
+            <summary> Converts the sensor's voltage output to Volumetric water content (%) between 0 and 1. </summary>
+            <remarks> Uses the piecewise curve taken from https://vegetronix.com/Products/VH400/VH400-Piecewise-Curve.phtml </remarks>
+            <param name="RawReading"> The sensor's output voltage (0-3V) </param>
+            <returns> Volumetric water content % (0-1) if valid input, -1 if invalid input. </returns>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.VL53L0X_MVP">
+            <summary> A minimum viable product implementation of the VL53L0X, based on the simplified library here: https://github.com/pololu/vl53l0x-arduino </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.VEML6070">
+            <summary>
+            VEML6070 UV-A Light Sensor with I2C Interface
+            Datasheet: http://www.vishay.com/docs/84277/veml6070.pdf
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Sensors.VEML6070.RefreshSpeed">
+            <summary> Determines how often readins are taken. DOUBLE is fastest, QUARTER is slowest. </summary>
+            <remarks>
+            The actual time depends on R_SET. See here for times:
+            (Note: The Adafruit breakout board uses 300k)
+            
+            SETTING     TIME@300k   TIME@600k
+            =================================
+            DOUBLE      62.5ms      125ms
+            REGULAR     125ms       250ms
+            HALF        250ms       500ms
+            QUARTER     500ms       1000ms
+            
+            (From page 8 in datasheet)
+            </remarks>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VEML6070.SetRefreshSpeed(Scarlet.Components.Sensors.VEML6070.RefreshSpeed)">
+            <summary> Instructs the sensor to use the gven refresh speed starting now. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VEML6070.GetReading">
+            <summary> Gets the current UV light level as of the last UpdateState() call. </summary>
+            <returns> UV light level in μW/cm/cm, in increments of 5. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VEML6070.GetRawData">
+            <summary> Gets the sensor's raw data as it was received at the last UpdateState() call. </summary>
+            <returns> The bytes sent over I2C from the sensor at the last reading. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VEML6070.ConvertFromRaw(System.UInt16)">
+            <summary> Gets the UV reading at the last UpdateState() call. </summary>
+            <returns> UV light level in μW/cm/cm, in increments of 5. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Sensors.VEML6070.UpdateState">
+            <summary> Gets a new reading from the sensor and stores it. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Outputs.PCA9685">
+            <summary>
+            16-channel, 12-bit PWM Fm+ I2C bus LED controller.
+            Datasheet: https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Outputs.PCA9685.OutputInvert">
+            <summary>
+            Determines if the output pins are inverted from regular logic. Common to all channels.
+            Regular: The pin is LOW when not being driven, and HIGH when being driven.
+            Inverted: The pin is HIGH when not being driven, and LOW when being driven. Useful if attached to some inverting secondary driver.
+            </summary>
+        </member>
+        <member name="T:Scarlet.Components.Outputs.PCA9685.OutputDriverMode">
+            <summary> Determines how output pins are driven. Common to all channels. </summary>
+        </member>
+        <member name="T:Scarlet.Components.Outputs.PCA9685.OutputDisableBehaviour">
+            <summary>
+            Determines how the outputs will behave when the ~OE physical pin is brought HIGH (outputs disabled).
+            Low: The pin is set to LOW
+            DriverDependent:
+            -   OutputDriverMode.TotemPole: The pin is set LOW
+            -   OutputDriverMode.OpenDrain: The pin is in high-impedance mode
+            HighImpedance: The pin is in high-impedance mode
+            </summary>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.PCA9685.#ctor(Scarlet.IO.II2CBus,System.Byte,System.Int32,Scarlet.Components.Outputs.PCA9685.OutputInvert,Scarlet.Components.Outputs.PCA9685.OutputDriverMode,Scarlet.Components.Outputs.PCA9685.OutputDisableBehaviour)">
+            <summary> Prepares the PCA9685 device for use. </summary>
+            <remarks> During setup, there will be quite a bit of communication with the device (70+ bytes). </remarks>
+            <param name="Bus"> The I2C bus that the device will communicate over. </param>
+            <param name="Address"> The I2C address set via the device's physical address pins. </param>
+            <param name="ExtOscFreq"> If there is an external oscillator, set the frequency here. If there isn't, set to -1. </param>
+            <param name="InvertMode"> Sets device-wide output invert mode. </param>
+            <param name="DriverMode"> Sets device-wide output driver configuration. </param>
+            <param name="DisableMode"> Sets device-wide output disable behaviour. </param>
+            <exception cref="T:System.ArgumentException"> If invalid oscillator frequency is provided. </exception>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.PCA9685.SetEnabledAll(System.Boolean)">
+            <summary> Sets all channel's enabled status at once (single bus transaction). </summary>
+            <param name="Enable"> Whether all outputs should be enabled or disabled. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.PCA9685.SetOutputAll(System.Single)">
+            <summary> Sets all channel's duty cycle at once (single bus transaction). </summary>
+            <param name="DutyCycle"> The duty cycle (between 0.0 and 1.0 to set all channels to. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.PCA9685.SetFrequency(System.Single)">
+            <summary> Sets the device's PWM output frequency (common to all channels). Note that outputs will stop working briefly during this process. </summary>
+            <remarks> The range for this depends on the external oscillator frequency. If the internal oscillator is used, the range is approximately 24 - 1526 Hz. </remarks>
+            <param name="Frequency"> The new PWM frequency to use. If the given value is not possible, it will be set to the min/max allowable as needed. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.PCA9685.UseExternalOscillator(System.Int32)">
+            <summary> Switches the PCA9685 to use the external oscillator. This can only be disabled via a power cycle or software reset. </summary>
+            <remarks> External oscillator must be between 0 and 50MHz. </remarks>
+            <param name="Frequency"> This is used in software to determine some timing values. Provide the actual frequency of the attached oscillator. </param>
+        </member>
+        <member name="P:Scarlet.Components.Outputs.RGBLED.Inverted">
+            <summary> Gets or sets a value indicating whether colour outputs should be flipped. E.g. 0x14 Green will become 0xEB if enabled. </summary>
+        </member>
+        <member name="P:Scarlet.Components.Outputs.RGBLED.RedScale">
+            <summary> Gets or sets the factor to scale red output by. Value of 1 will provide no scaling. </summary>
+        </member>
+        <member name="P:Scarlet.Components.Outputs.RGBLED.GreenScale">
+            <summary> Gets or sets the factor to scale green output by. Value of 1 will provide no scaling. </summary>
+        </member>
+        <member name="P:Scarlet.Components.Outputs.RGBLED.BlueScale">
+            <summary> Gets or sets the factor to scale blue output by. Value of 1 will provide no scaling. </summary>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.RGBLED.#ctor(Scarlet.IO.IPWMOutput,Scarlet.IO.IPWMOutput,Scarlet.IO.IPWMOutput)">
+            <summary> Provides easy output controls for an RGB LED. </summary>
+            <param name="Red"> PWM output for the red LED channel. </param>
+            <param name="Green"> PWM output for the green LED channel. </param>
+            <param name="Blue"> PWM channel for the blue LED channel. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.RGBLED.SetOutput(System.UInt32)">
+            <summary> Sets the LED's colour. </summary>
+            <remarks> If <see cref="P:Scarlet.Components.Outputs.RGBLED.Inverted"/> is set, colour gradients are reversed. E.g. 0x14 Green will become 0xEB. </remarks>
+            <param name="Colour"> The colour to output, in standard form like 0x811426 for 0x81 Red, 0x14 Green, 0x26 Blue. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.RGBLED.RedGreenGradient(System.Double,System.Double,System.Double)">
+            <summary> Converts a given value to a range in a red-green colour gradient. </summary>
+            <param name="Now"> The current value to plot. </param>
+            <param name="Worst"> The value that should correspond to full red. </param>
+            <param name="Best"> The value that should correspond to full green. </param>
+            <returns> Either a red-green gradient value, or white (0xFFFFFF) if the value falls outside of the range. </returns>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.RGBLED.SetFrequency(System.Int32)">
+            <summary> Sets the frequency of the PWM outputs for all channels. </summary>
+            <param name="Frequency"> The frequency to set the PWM output to. </param>
+        </member>
+        <member name="M:Scarlet.Components.Outputs.RGBLED.SetEnabled(System.Boolean)">
+            <summary> Sets the enabled state of all three PWM channels. </summary>
+            <param name="Enable"> Enables/disables the PWM outputs. </param>
+        </member>
+        <member name="T:Scarlet.Controllers.PID">
+            <summary>
+            Class built to create a PID control loop in C#
+            Based off of the PID control algorithm:
+            https://en.wikipedia.org/wiki/PID_controller
+            </summary>
+            <remarks>
+            * * Built for Real-Time Operation * * 
+            Basic Implementation as follows:
+            1) Choose P, I, and D constants in constructor
+            2) Set a target value using <c>SetTarget()</c>
+                (Units do not matter as long as they are used uniformly in the loop)
+            3) Use <c>Feed(...)</c> to run the PID loop given a sensor reading
+                (Should be called iteratively, since it depends on system time)
+            4) Use <c>YourPIDInstance.Output</c> to return the desired output 
+                (Output restrained to +/-1, tune PID coefficients accordingly)
+            * NOTE: This output will be relative to the units given in the Feed() method.
+            Map this output to a given range if necessary, for example, in using motors, consider a map to -1 to 1
+            * NOTE: Nothing has to be done to change the target value during operation, it is all handled
+            in this class.
+            * * IMPORTANT * *
+            A PID Control loop needs to be tuned.
+            That is, to be used correctly, the P, I, and D
+            coefficients need to be precisely chosen.
+            An algorithm for determining coefficients:
+            https://en.wikipedia.org/wiki/PID_controller#Ziegler.E2.80.93Nichols_method
+            </remarks>
+        </member>
+        <member name="M:Scarlet.Controllers.PID.#ctor(System.Double,System.Double,System.Double)">
+            <param name="Kp"> Proportional Coefficient </param>
+            <param name="Ki"> Integral Coefficient </param>
+            <param name="Kd"> Derivative Coefficient </param>
+        </member>
+        <member name="M:Scarlet.Controllers.PID.Feed(System.Double)">
+            <summary>
+            Feeds the PID controller with given input value.
+            The input is the desired controlled value, the output is the relative control value to the control mechanism (e.g. a motor).
+            Tune PID coefficients accordingly and limit output to desired limits.
+            </summary>
+            <param name="Input"> Input to feed the PID controller. </param>
+        </member>
+        <member name="M:Scarlet.Controllers.PID.SetTarget(System.Double)">
+            <summary> Sets the PID target to a new target. </summary>
+            <param name="Target"> New PID target. </param>
+        </member>
+        <member name="M:Scarlet.Controllers.PID.SetCoefficients(System.Double,System.Double,System.Double)">
+            <summary> Sets the PID coefficients. </summary>
+            <param name="Kp"> Proportional Coefficient </param>
+            <param name="Ki"> Integral Coefficient </param>
+            <param name="Kd"> Derivative Coefficient </param>
+        </member>
+        <member name="M:Scarlet.Controllers.PID.Reset">
+            <summary> Resets PID Controller, setting all values to 0. </summary>
+        </member>
+        <member name="T:Scarlet.Filters.Average`1">
+            <summary> 
+            The Average filter is intended for use as an average-gathering system.
+            Takes averages using a rolling average with "roll-length" <see cref="F:Scarlet.Filters.Average`1.FilterCount"/> or continuous average. 
+            </summary>
+            <remarks>
+            Intended Usage:
+            * Construct Average filter given a rolling filter length, <see cref="F:Scarlet.Filters.Average`1.FilterCount"/>. 
+              Setting FilterCount to null puts the filter into continuous mode.
+            * Iteratively add values into the filter using <see cref="M:Scarlet.Filters.Average`1.Feed(`0)"/>
+            * Get the filter output by calling <see cref="M:Scarlet.Filters.Average`1.GetOutput"/>
+            </remarks>
+            <typeparam name="T"> A type, which must be a numeric. </typeparam>
+        </member>
+        <member name="M:Scarlet.Filters.Average`1.#ctor(System.Nullable{System.Int32})">
+            <summary> Construct an average filter with given roll-length; give null for continuous mode. </summary>
+            <remarks> To use this as a continuous (non-rolling) average filter, set <see cref="F:Scarlet.Filters.Average`1.FilterCount"/> to null </remarks>
+            <param name="FilterCount"> 
+            Roll length for the average filter. 
+            If this value is null, the filter is set to continuous mode (as opposed to a roll mode). 
+            </param>
+        </member>
+        <member name="M:Scarlet.Filters.Average`1.Feed(`0)">
+            <summary> Feeds a value into the filter. </summary>
+            <param name="Input"> Value to feed into the filter. </param>
+        </member>
+        <member name="M:Scarlet.Filters.Average`1.Feed(`0,`0)">
+            <summary> Rate is irrelevant to average filter, so this is no different than using <see cref="M:Scarlet.Filters.Average`1.Feed(`0)"/>. </summary>
+            <param name="Input"> Value to feed into the filer. </param>
+            <param name="Rate"> This value is ignored. </param>
+        </member>
+        <member name="M:Scarlet.Filters.Average`1.IsSteadyState">
+            <summary> Computes whether or not the average filter is in steady state. </summary>
+            <remarks> If in continuous mode, the filter is never considered to be in steady state. </remarks>
+            <returns> Whether or not filter is in steady state. </returns>
+        </member>
+        <member name="M:Scarlet.Filters.Average`1.InitializeArray">
+            <summary> Initializes dynamic number array to all zeros. </summary>
+        </member>
+        <member name="T:Scarlet.Filters.IFilter`1">
+            <summary>
+             This is an interface meant to wrap all filters in the Filters namespace.
+             * * * Some Filters require use of just the Feed(T Input) method. Others may require a given Feed(T Input, T Rate).
+                   See the documentation for the given filter to determine necessary information.
+            </summary>
+            <typeparam name="T"> T must be a numeric type. </typeparam>
+        </member>
+        <member name="M:Scarlet.Filters.IFilter`1.Feed(`0,`0)">
+            <summary>
+            Feeds the filter with a given input and
+            rate. Typically if not using Rate the implementation of this
+            method will call just Feed(Input) and ignore rate.
+            </summary>
+            <param name="Input"> Filter input </param>
+            <param name="Rate"> Rate input </param>
+        </member>
+        <member name="M:Scarlet.Filters.IFilter`1.Feed(`0)">
+            <summary> Feeds the filter with a given input. </summary>
+            <param name="Input"> Filter input </param>
+        </member>
+        <member name="M:Scarlet.Filters.IFilter`1.GetOutput">
+            <summary> Gets output from filter. </summary>
+            <returns> Filter Output </returns>
+        </member>
+        <member name="M:Scarlet.Filters.IFilter`1.IsSteadyState">
+            <summary> Computes whether or not the filter is in a steady state. </summary>
+            <returns> The steady state </returns>
+        </member>
+        <member name="T:Scarlet.Filters.LowPass`1">
+            <summary> The Low Pass filter is intended for use as a low pass filter with time constant <see cref="P:Scarlet.Filters.LowPass`1.LPFk"/>. </summary>
+            <remarks>
+            Implementation Details:
+            * Construct Low Pass filter given a time constant <see cref="P:Scarlet.Filters.LowPass`1.LPFk"/>
+            * Iteratively add values into the filter using <see cref="M:Scarlet.Filters.LowPass`1.Feed(`0)"/>
+            * Get the filter output by calling <see cref="M:Scarlet.Filters.LowPass`1.GetOutput"/>
+            </remarks>
+            <typeparam name="T"> A type, which must be a numeric. </typeparam>
+        </member>
+        <member name="M:Scarlet.Filters.LowPass`1.#ctor(System.Double,System.Double)">
+            <summary> Constructs a low pass filter with time constant <see cref="P:Scarlet.Filters.LowPass`1.LPFk"/>. </summary>
+            <param name="LPFk"> Low Pass Filter Time Constant. </param>
+            <param name="SteadyStateEpsilon"> Allowable difference in output to be considered a steady state system. </param>
+        </member>
+        <member name="M:Scarlet.Filters.LowPass`1.Feed(`0)">
+            <summary> Feeds a value into the filter. </summary>
+            <param name="Input"> Value to feed into the filter. </param>
+        </member>
+        <member name="M:Scarlet.Filters.LowPass`1.Feed(`0,`0)">
+            <summary> Feeds filter with specified rate. Not used for average filter. </summary>
+            <param name="Input"> Value to feed into the filer. </param>
+            <param name="Rate"> Current rate to feed into the filter. </param>
+        </member>
+        <member name="M:Scarlet.Filters.LowPass`1.Reset">
+            <summary> Resets the low pass filter to the default value of <see cref="!:T"/>.</summary>
+        </member>
+        <member name="M:Scarlet.Filters.LowPass`1.IsSteadyState">
+            <summary> Computes whether or not the low pass filter is in steady state </summary>
+            <returns> Returns whether or not the filter is in steady state </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.AnalogueInBBB.#ctor(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Prepares the analogue input for use. This can block for up to 5 seconds while the hardware and kernel are intiializing. </summary>
+            <param name="Pin"> The pin on the BeagleBone to use for analogue input. Must be one of the 7 AIN pins. </param>
+            <exception cref="T:System.TimeoutException"> If the hardware/kernel take longer than 5 seconds to initialize. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.AnalogueInBBB.GetRawRange">
+            <summary> The number of possible ADC values. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.AnalogueInBBB.GetRange">
+            <summary> The range of voltages the ADC can sense. In Volts. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.AnalogueInBBB.GetInput">
+            <summary> Gets the current ADC value, as a voltage. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.AnalogueInBBB.GetRawInput">
+            <summary> Gets the current ADC value, as the raw number. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.PinToGPIO(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Converts a Scarlet <see cref="T:Scarlet.IO.BeagleBone.BBBPin"/> to a BBBCSIO <see cref="T:BBBCSIO.GpioEnum"/>. </summary>
+            <param name="Pin"> The pin to translate. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.PinToA2D(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Converts a Scarlet <see cref="T:Scarlet.IO.BeagleBone.BBBPin"/> to a BBBCSIO <see cref="T:BBBCSIO.A2DPortEnum"/>. </summary>
+            <param name="Pin"> The pin to translate. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.CheckPin(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.SystemMode)">
+            <summary> Determines if the given pin can be used in the given system mode, or if it used by another device. </summary>
+            <param name="Pin"> The pin to check. </param>
+            <param name="Mode"> The system mode to check the pin's usability in. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.GetOffset(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Gets the memory address offset for a given pin. </summary>
+            <param name="Pin"> The pin to get the address for. </param>
+            <returns> The memory address offset for the given pin. 0x000 if not found or invalid pin. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.GetPinMode(System.Boolean,System.Boolean,Scarlet.IO.ResistorState,System.Byte)">
+            <summary> Creates a 8-bit pin mode from the specified parameters. </summary>
+            <param name="FastSlew"> Whether to use fast edges. </param>
+            <param name="EnableReceiver"> Whether to turn on input capabilities. </param>
+            <param name="Resistor"> The resistor configuration to apply. </param>
+            <param name="ModeID"> The pin's intended use. </param>
+            <returns> The 8-bit pin configuration value for use in the device tree overlay. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.Pin.GetModeID(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPinMode)">
+            <summary> Gets the mux mode that needs to be used for the given pin usage. </summary>
+            <param name="Pin"> The pin to get the mode of. </param>
+            <param name="Mode"> The desired pin usage mode. </param>
+            <returns> The mode ID corresponding to the desired use mode for this pin, or 255 if invalid usage provided. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BeagleBone.Initialize(Scarlet.IO.BeagleBone.SystemMode,System.Boolean)">
+            <summary> Prepares the Beaglebone I/O system for use. </summary>
+            <param name="UseFastAccess">
+            This switches between memory mapped I/O (true), and filesystem-based I/O (false).
+            Filesystem-based I/O is the "correct" Linux way to do it, so is therefore more supported.
+            Memory mapping is several orders of magnitude faster (Up to 1000x!), but is not technically supported. That said, it almost always works fine.
+            We suggest you try memory-mapped at first, then if you run into odd issues, try filesystem to see if it helps.
+            This only affects some I/O types, mainly GPIO.
+            </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingGPIO(Scarlet.IO.BeagleBone.BBBPin,System.Boolean,Scarlet.IO.ResistorState,System.Boolean)">
+            <summary>
+            Adds a GPIO mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="SelectedPin"> The pin to assign as GPIO. </param>
+            <param name="IsOutput"> Whether this pin will be used as input or output. </param>
+            <param name="Resistor"> The type of resistance to apply to the pin. Only useful for inputs. </param>
+            <param name="FastSlew"> Whether to use fast or slow rising/falling edges. Leave at true unless this causes issues in your application. </param>
+            <exception cref="T:System.InvalidOperationException"> If this pin cannot be used for GPIO at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingPWM(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds a PWM mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="SelectedPin"> The pin to assign as a PWM output. Must be one of the PWM-capable pins. See the BBB chart in the documentation. </param>
+            <exception cref="T:System.InvalidOperationException"> If this pin cannot be used as a PWM output at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingsI2C(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds an I2C mapping to the BBB device tree overlay, preparing the pins for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="ClockPin"> The pin to use for the I2C clock signal. </param>
+            <param name="DataPin"> The pin to use for the I2C data signal. </param>
+            <exception cref="T:System.InvalidOperationException"> If one of the given pins cannot be used for the given I2C task at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingsSPI(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds an SPI mapping to the BBB device tree overlay, preparing the pins for use in hardware and kernel.
+            To add Slave-/Chip- select lines, use <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingSPI_CS(Scarlet.IO.BeagleBone.BBBPin)"/>.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="MISO"> The pin to use as Master-In, Slave-Out data line. Can be <see cref="F:Scarlet.IO.BeagleBone.BBBPin.NONE"/> if you don't need communication in this direction. </param>
+            <param name="MOSI"> The pin to use as Master-Out, Slave-In data line. Can be <see cref="F:Scarlet.IO.BeagleBone.BBBPin.NONE"/> if you don't need communication in this direction. </param>
+            <param name="Clock"> The pin to use as the SPI clock line. </param>
+            <exception cref="T:System.InvalidOperationException"> If one of the given pins cannot be used for the given SPI task at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingSPI_CS(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds an SPI chip-select mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            To prepare the data/clock lines, use <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingsSPI(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin)"/>.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="ChipSelect"> The pin to prepare for use as a chip-select line. It will be treated like a GPIO output, and the pull-up will be enabled. </param>
+            <exception cref="T:System.InvalidOperationException"> If the given pin cannot be used for chip-select at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingsCAN(Scarlet.IO.BeagleBone.BBBPin,Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds a CAN bus mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="TX"> The pin to use for the transmit line. </param>
+            <param name="RX"> The pin to use for the receive line. </param>
+            <exception cref="T:System.InvalidOperationException"> If one of the given pins cannot be used for CAN at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingUART(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds a UART mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="SelectedPin"> The pin to use for the UART pin (RX or TX). </param>
+            <exception cref="T:System.InvalidOperationException"> If the given pin cannot be used for UART at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddMappingADC(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary>
+            Adds an ADC mapping to the BBB device tree overlay, preparing the pin for use in hardware and kernel.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="SelectedPin"> The pin to prepare for use as ADC input. </param>
+            <exception cref="T:System.InvalidOperationException"> If the given pin cannot be used as an ADC input at this time. Reason will be given. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.AddBusCAN(System.Byte,System.Boolean)">
+            <summary>
+            Prepares the given CAN bus for use. Assumes device tree changes have already been made external to Scarlet.
+            You'll need to call <see cref="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)"/> to actually apply the device tree overlay. Please read the documentation regarding this, as it is a complex process.
+            </summary>
+            <param name="BusID"> The bus number to prepare for use. </param>
+            <param name="FD"> Whether or not this bus uses CAN Flexible Data frames. This allows for sending of payloads up to 64 bytes, as opposed to the normal 8. </param>
+            <exception cref="T:System.InvalidOperationException"> If the given bus is unavailable. Only 0 and 1 exist on the BBB. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.ApplyPinSettings(Scarlet.IO.BeagleBone.BBBPinManager.ApplicationMode)">
+            <summary>
+            Generates the device tree file, compiles it, and instructs the kernel to load the overlay though the cape manager. May take a while. Should only be run once per program execution.
+            We recommend you only do this once per BBB OS reboot, as removing the device tree overlay can cause serious issues. Please read the documentation for more info.
+            </summary>
+            <remarks> If no device tree overlay changes are required, calling this will initialize other systems, like the CAN buses, then do nothing. </remarks>
+            <param name="Mode">
+            The behaviour to use when determining what to do during application of the overlay. Please read the documentation for a more thorough explanation.
+            NO_CHANGES: Does not apply the device tree overlay regardless.
+            APPLY_IF_NONE: Apply the overlay only if there is no Scarlet overlay already applied.
+            REMOVE_AND_APPLY: Removes old Scarlet overlays, and applies the new one.
+            APPLY_REGARDLESS: Blindly applies the current overlay, regardless of current state.
+            </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.RemovePinSettings">
+            <summary>
+            Unloads all Scarlet device tree overlays.
+            NOTE: This has a high probability of causing instability, issues, and possibly even a kernel panic. Only do this if it is really necessary.
+            </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.BBBPinManager.GenerateDeviceTree">
+            <summary> Uses all of the previously created device tree overlay mappings (using the AddMapping___() functions), and generates a device tree overlay for application via the cape manager. </summary>
+            <remarks> This is probably the longest function I've ever written. It's reasonably simple to follow though, there's just a lot of output it needs to be able to generate. </remarks>
+            <returns> A list of lines to save to a file, which can then be compiled into a DTBO and applied as an overlay. </returns>
+            Fragment IDs:
+            GPIO: 0, 1
+            PWM: 2, 10, 11, 12, 13, 14, 15
+            I2C: 3, 20, 21
+            SPI: 4, 30, 31
+            ADC: 5
+            CAN: 6, 40, 41
+            UART: 7, 50, 51, 52, 53
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBBB.Initialize(System.Boolean[],System.Boolean[])">
+            <summary> Prepares the given CAN buses for use. Should only be called from BeagleBone.Initialize(). </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBBB.PinToCANBus(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Converts a pin number to the corresponding CAN bus ID. 255 if invalid. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.Read">
+            <summary> Blocks the current thread and reads a CAN frame, returning the payload and the ID of the received CAN frame. </summary>
+            <returns> A tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.ReadAsync">
+            <summary> Reads a CAN frame asynchronously, returning the payload and the ID of the received CAN frame. </summary>
+            <returns> A task that will return a tuple, with the first element being the ID of the received CAN frame and the second being the payload </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.DLCToLength(System.Byte)">
+            <summary>
+            Converts a CAN Data Length Code into a length in bytes. 
+            A DLC is a 4-bit number between 0 and 15. 0-8 map to themselves
+            while higher numbers map to a multiple of 4. 
+            </summary>
+            <returns> The length of the data in bytes </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.LengthToDLC(System.Byte)">
+            <summary> 
+            Converts a byte array length to a CAN Data Length Code. 
+            A Data Length Code is a 4-bit number that represents the
+            length of the CAN data to send. Lengths 0-8 map to 
+            themselves while higher lengths map to a different DLC.
+            </summary>
+            <returns> The Data Length Code. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.Write(System.UInt32,System.Byte[])">
+            <summary> Write a payload with specified ID </summary>
+            <param name="ID"> ID of CAN Frame </param>
+            <param name="Data"> Payload of CAN Frame. Must be at most 8 bytes. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.CANBusBBB.Dispose">
+            <summary> Cleans up the bus object, freeing resources. </summary> 
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.DigitalInBBB.RegisterInterruptHandler(System.EventHandler{Scarlet.IO.InputInterrupt},Scarlet.IO.InterruptType)">
+            <summary> Registers a handler for the given type of interrupt on this pin. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.DigitalInBBB.SetResistor(Scarlet.IO.ResistorState)">
+            <summary> Resistor state cannot be changed during runtime on BBB, it must be set in the device tree overlay. This will throw an exception. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.DigitalOutBBB.SetOutput(System.Boolean)">
+            <summary> Sets the logic-level ouput. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.DigitalOutBBB.Dispose">
+            <summary> Cleans up the pin for future use by other software. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBBB.Initialize(System.Boolean[])">
+            <summary> Prepares the given I2C ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBusBBB.#ctor(System.Byte)">
+            <summary> This should only be initialized from I2CBBB. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBusBBB.Write(System.Byte,System.Byte[])">
+            <summary> Writes the data as given to the device at the specified address. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBusBBB.WriteRegister(System.Byte,System.Byte,System.Byte[])">
+            <summary> Selects the register in the given device, then writes the given data. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBusBBB.Read(System.Byte,System.Int32)">
+            <summary> Reads raw data from the device at the given address. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.I2CBusBBB.ReadRegister(System.Byte,System.Byte,System.Int32)">
+            <summary> Requests data from the given device at the specified register. </summary>
+        </member>
+        <member name="T:Scarlet.IO.BeagleBone.PWMBBB">
+            <summary> Keeps track of all PWM functions on the BBB. </summary>
+            <remarks>
+            Hierarchy is as follows:
+            PWMBBB -> Device -> Output -> Physical Pin
+            PWMBBB
+            |- Device0
+            |  |- OutputA
+            |  |  |- Physical Pin
+            |  |  |- Physical Pin
+            |  |- OutputB
+            |     |- Physical Pin
+            |     |- Physical Pin
+            |- Device1
+            |  |- OutputA
+            |  |  |- Physical Pin
+            |  |  |- Physical Pin
+            |  |- OutputB
+            |     |- Physical Pin
+            |     |- Physical Pin
+            |- Device2
+               |- OutputA
+               |  |- Physical Pin
+               |  |- Physical Pin
+               |- OutputB
+                  |- Physical Pin
+                  |- Physical Pin
+            </remarks>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMBBB.GetFromPin(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Gets the PWM output corresponding to a given pin on the BeagleBone Black. </summary>
+            <param name="Pin"> The pin to find a PWM output associated with. </param>
+            <returns> A <see cref="T:Scarlet.IO.BeagleBone.PWMOutputBBB"/>, or <c>null</c> if the given pin is not valid. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMBBB.Initialize(System.Boolean[])">
+            <summary> Prepares the given PWM ports for use. Should only be called from <see cref="M:Scarlet.IO.BeagleBone.BeagleBone.Initialize(Scarlet.IO.BeagleBone.SystemMode,System.Boolean)"/>. </summary>
+            <param name="EnableBuses"> Whether to enable each of the PWM devices. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMBBB.PinToPWMID(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Converts a pin number to the corresponding PWM device and output number. Needed as every output is connected to 2 physical pins. </summary>
+            <param name="Pin"> The pin to find the PWM ID of. </param>
+            <returns> The PWM ID corresponding to the pin, or <see cref="F:BBBCSIO.PWMPortEnum.PWM_NONE"/> if the given pin is invalid. </returns>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMDeviceBBB.#ctor(Scarlet.IO.BeagleBone.BBBPin[],Scarlet.IO.BeagleBone.BBBPin[])">
+            <summary> This should only be initialized from <see cref="T:Scarlet.IO.BeagleBone.PWMBBB"/>. </summary>
+            <param name="PinsA"> The pins in channel A. </param>
+            <param name="PinsB"> The pins in channel B. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMDeviceBBB.SetFrequency(System.Single)">
+            <summary> Sets the clock frequency of this PWM device. Note that this gets applied to both outputs. </summary>
+            <param name="Frequency"> The new frequency, in Hz. </param>
+            <exception cref="T:System.InvalidOperationException"> If you attempt to change the frequency before initialization. </exception>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.#ctor(Scarlet.IO.BeagleBone.BBBPin[],Scarlet.IO.BeagleBone.PWMDeviceBBB)">
+            <summary> This should only be initialized from <see cref="T:Scarlet.IO.BeagleBone.PWMDeviceBBB"/>. </summary>
+            <param name="Pins"> The two pins that correspond to this output channel. </param>
+            <param name="Parent"> The PWM device that this output belongs to. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.SetFrequency(System.Single)">
+            <summary> Sets the device's (both output A and B) clock frequency to the given one, in Hz. </summary>
+            <param name="Frequency"> The frequency to set the device to. Rounded to nearest Hz. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.SetOutput(System.Single)">
+            <summary> Sets the output to the given duty cycle. Must be between 0.0 and 1.0. </summary>
+            <param name="DutyCycle"> The duty cycle to set the output to. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.SetDelay(System.Single)">
+            <summary> <c>PWMOutputBBB</c> does not support clock delay. This will do nothing. </summary>
+            <param name="ClockDelay"> Does nothing. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.SetEnabled(System.Boolean)">
+            <summary> Sets the output state. </summary>
+            <param name="Enabled"> Whether PWM output is enabled. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.GetOutput">
+            <summary> Gets the current duty cycle, from 0.0 to 1.0. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.GetFrequency">
+            <summary> Gets the current output frequency, in Hz. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.ResetOutput">
+            <summary> Re-sets the duty cycle. This must be done after changing the clock frequency, as it will have incorrect output afterwards. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.PWMOutputBBB.Initialize">
+            <summary> Prepares the PWM output for use. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.SPIBBB.Initialize(System.Boolean[])">
+            <summary> Prepares the given SPI ports for use. Should only be called from BeagleBOne.Initialize(). </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.SPIBusBBB.#ctor(System.Byte)">
+            <summary> This should only be initialized from SPIBBB. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.SPIBusBBB.Write(Scarlet.IO.IDigitalOut,System.Byte[],System.Int32)">
+            <summary> Simultaneously writes/reads data to/from the device. </summary>
+        </member>
+        <member name="P:Scarlet.IO.BeagleBone.UARTBBB.UARTBus3">
+            <summary> Note that this bus can only transmit. </summary>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.UARTBBB.Initialize(System.Boolean[])">
+            <summary> Prepares the given UART buses for use. Should only be called from <see cref="M:Scarlet.IO.BeagleBone.BeagleBone.Initialize(Scarlet.IO.BeagleBone.SystemMode,System.Boolean)"/>. </summary>
+            <param name="EnableBuses"> Whether to enable each of the UART buses. </param>
+        </member>
+        <member name="M:Scarlet.IO.BeagleBone.UARTBBB.PinToUARTBus(Scarlet.IO.BeagleBone.BBBPin)">
+            <summary> Converts a pin number to the corresponding UART bus ID.</summary>
+            <param name="Pin"> The pin to translate. </param>
+            <returns> The corresponding UART bus ID, or 255 if the input is invalid.</returns>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueIn.GetInput">
+            <summary> Gets the current input level in Volts. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueIn.GetRange">
+            <summary> Gets the maximum input level in Volts. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueIn.GetRawInput">
+            <summary> Gets the current input level as a raw value. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueIn.GetRawRange">
+            <summary> Gets the maximum input level as a raw value. This is likely 2^(ADC Bits). </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueIn.Dispose">
+            <summary> Releases handles to the pin, allowing it to be used by another component or application. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueOut.SetOutput(System.Double)">
+            <summary> Sets the output to the specified level. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueOut.GetRange">
+            <summary> Gets the maximum output level. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IAnalogueOut.Dispose">
+            <summary> Releases handles to the output, allowing it to be used by another component or application. </summary>
+        </member>
+        <member name="M:Scarlet.IO.ICANBus.Write(System.UInt32,System.Byte[])">
+            <summary> Write a payload with specified ID. </summary>
+            <param name="ID"> ID of CAN Frame </param>
+            <param name="Data"> Payload of CAN Frame. Must be at most 8 bytes. </param>
+        </member>
+        <member name="M:Scarlet.IO.ICANBus.Read">
+            <summary> Blocks the current thread and reads a CAN frame, returning the payload and the address of the received CAN frame. </summary>
+            <returns> A tuple, with the first element being the ID of the received CAN frame and the second being the payload. </returns>
+        </member>
+        <member name="M:Scarlet.IO.ICANBus.Dispose">
+            <summary> Cleans up the bus object, freeing resources. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IDigitalIn.SetResistor(Scarlet.IO.ResistorState)">
+            <summary> Sets the input resistor. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IDigitalIn.GetInput">
+            <summary> Gets the current input state. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IDigitalIn.Dispose">
+            <summary> Releases handles to the pin, allowing it to be used by another component or application. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IDigitalOut.SetOutput(System.Boolean)">
+            <summary> Sets the output to on or off. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IDigitalOut.Dispose">
+            <summary> Releases handles to the output, allowing it to be used by another component or application. </summary>
+        </member>
+        <member name="M:Scarlet.IO.II2CBus.Write(System.Byte,System.Byte[])">
+            <summary>Writes data to the given device by address over the I2C bus.</summary>
+        </member>
+        <member name="M:Scarlet.IO.II2CBus.WriteRegister(System.Byte,System.Byte,System.Byte[])">
+            <summary>Writes data to the specified register to the given device by address over the I2C bus.</summary>
+        </member>
+        <member name="M:Scarlet.IO.II2CBus.Read(System.Byte,System.Int32)">
+            <summary>Reads the specified amount of data from the device by address.</summary>
+        </member>
+        <member name="M:Scarlet.IO.II2CBus.ReadRegister(System.Byte,System.Byte,System.Int32)">
+            <summary>Reads the specified amount of data from the specified register from the device by address.</summary>
+        </member>
+        <member name="M:Scarlet.IO.II2CBus.Dispose">
+            <summary>Cleans up the bus object, freeing resources.</summary>
+        </member>
+        <member name="M:Scarlet.IO.IInterruptSource.RegisterInterruptHandler(System.EventHandler{Scarlet.IO.InputInterrupt},Scarlet.IO.InterruptType)">
+            <summary> Registers a new interrupt handler, asking for the specificed type of interrupt. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IPWMOutput.SetFrequency(System.Single)">
+            <summary> Sets the PWM Frequency. </summary>
+            <param name="Frequency"> The output frequency in Hz. </param>
+        </member>
+        <member name="M:Scarlet.IO.IPWMOutput.SetOutput(System.Single)">
+            <summary> Sets the output duty cycle. </summary>
+            <param name="DutyCycle"> % duty cycle from 0.0 to 1.0. </param>
+        </member>
+        <member name="M:Scarlet.IO.IPWMOutput.SetDelay(System.Single)">
+            <summary> Sets the delay time of the cycle start. </summary>
+            <remarks> Only useful for devices that have multiple PWM outputs that share a clock, and you need custom synchronization. Not all devices will support this, if they do not, this setting will simply not apply. </remarks>
+            <param name="ClockDelay"> % of a clock cycle to delay the leading edge by, from 0.0 to (exclusive) 1.0. </param>
+        </member>
+        <member name="M:Scarlet.IO.IPWMOutput.SetEnabled(System.Boolean)">
+            <summary> Turns on/off the PWM output device. May have different results on different platforms. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IPWMOutput.Dispose">
+            <summary> Releases handles to the output, allowing it to be used by another component or application. </summary>
+        </member>
+        <member name="M:Scarlet.IO.ISPIBus.Write(Scarlet.IO.IDigitalOut,System.Byte[],System.Int32)">
+            <summary>Reads and writes the given amount of data from the device.</summary>
+        </member>
+        <member name="M:Scarlet.IO.ISPIBus.Dispose">
+            <summary>Cleans up, freeing bus resources.</summary>
+        </member>
+        <member name="M:Scarlet.IO.IUARTBus.Write(System.Byte[])">
+            <summary> Writes the given data onto the UART bus. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IUARTBus.Read(System.Int32,System.Byte[])">
+            <summary> Attempts to read <c>Length</c> bytes from the UART bus. Returns the actual number of bytes read (will be lower if there wasn't enough data available). Consider re-using <c>Buffer</c> if you're doing a lot of I/O to reduce Garbage Collection. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IUARTBus.BytesAvailable">
+            <summary> Tells you how many bytes have been received and are ready to be read. </summary>
+        </member>
+        <member name="M:Scarlet.IO.IUARTBus.Flush">
+            <summary> Clears input and output buffers. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalInPi.SetResistor(Scarlet.IO.ResistorState)">
+            <summary> Sets the input to either have a ~50KΩ pullup resistor, pulldown resistor, or no resistor. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalInPi.GetInput">
+            <summary> Gets the current logic-level input. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalInPi.RegisterInterruptHandler(System.EventHandler{Scarlet.IO.InputInterrupt},Scarlet.IO.InterruptType)">
+            <summary> Registers an interrupt handler for the specified interrupt type. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalInPi.Dispose">
+            <summary> Does nothing currently. You should still call this when finished in case it does gain functionality later on. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalOutPi.SetOutput(System.Boolean)">
+            <summary> Sets the logic-level ouput. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.DigitalOutPi.Dispose">
+            <summary> Does nothing currently. You should still call this when finished in case it does gain functionality later on. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.Read(System.Byte,System.Int32)">
+            <summary> Reads 8-bit data from the device at the given address. </summary>
+            <param name="Address"> The address of the device to read from. </param>
+            <param name="DataLength"> How many bytes to read. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.ReadRegister(System.Byte,System.Byte,System.Int32)">
+            <summary> Requests 8-bit data from the given device at the specified register. </summary>
+            <param name="Address"> The address of the device to read from. </param>
+            <param name="Register"> The register to start reading data from. </param>
+            <param name="DataLength"> How many bytes to read. If more than 1, subsequent registers are polled. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.Write(System.Byte,System.Byte[])">
+            <summary> Writes the data as given to the device at the specified address. </summary>
+            <param name="Address"> The address of the device to write data to. </param>
+            <param name="Data"> The 8-bit data to write to the device. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.WriteRegister(System.Byte,System.Byte,System.Byte[])">
+            <summary> Selects the register in the given device, then writes the given data. </summary>
+            <param name="Address"> The address of the device to write data to. </param>
+            <param name="Register"> The register to start writing data at. </param>
+            <param name="Data"> The 8-bit data to write. If more than 1 byte, subsequent registers are written. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.WriteRegister16(System.Byte,System.Byte,System.UInt16)">
+            <summary> Writes data to a 16-bit register. </summary>
+            <param name="Address"> The address of the device to write to. </param>
+            <param name="Register"> The register to write data to. </param>
+            <param name="Data"> The 16-bit data to write to the register. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.ReadRegister16(System.Byte,System.Byte)">
+            <summary> Reads data from a 16-bit register. </summary>
+            <param name="Address"> The address of the device to read from. </param>
+            <param name="Register"> The register to read from. </param>
+            <returns> The 16-bit data in the register. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.I2CBusPi.Dispose">
+            <summary> Does nothing. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.Initialize">
+            <summary> Prepares the Raspberry Pi's GPIO system for use. You should do this before using any GPIO functions. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SetPinMode(System.Int32,Scarlet.IO.RaspberryPi.RaspberryPi.PinMode)">
+            <summary> Sets the given GPIO pin to the given mode. </summary>
+            <param name="Pin"> The pin to configure. </param>
+            <param name="Mode"> The functionality to select. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SetResistor(System.Int32,Scarlet.IO.ResistorState)">
+            <summary> Configures the internal resistor for the given pin. </summary>
+            <param name="Pin"> THe pin to configure. </param>
+            <param name="ResMode"> The resistor to apply. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.DigitalRead(System.Int32)">
+            <summary> Gets the GPIO pin's current input state. </summary>
+            <param name="Pin"> THe pin to get. </param>
+            <returns> Whether the pin sees a logic high level on the input. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.DigitalWrite(System.Int32,System.Boolean)">
+            <summary> Set's the GPIO pin's output state. </summary>
+            <param name="Pin"> The pin to set. </param>
+            <param name="OutputVal"> Whether to output logic high or low. </param>
+        </member>
+        <member name="T:Scarlet.IO.RaspberryPi.RaspberryPi.InterruptCallback">
+            <summary> Method template for interrupt callbacks. </summary>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.AddInterrupt(System.Int32,System.Int32,Scarlet.IO.RaspberryPi.RaspberryPi.InterruptCallback)">
+            <summary> Adds an interrupt to the given GPIO pin. </summary>
+            <param name="Pin"> The pin to monitor. </param>
+            <param name="InterruptType"> The type of edge to listen for. </param>
+            <param name="Delegate"> The delegate to call when the given type of event happens. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CSetup(System.Byte)">
+            <summary> Prepares an I2C device for use. </summary>
+            <param name="DeviceID"> The I2C address of the device. </param>
+            <returns> A handle to use for communicating with the device. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CRead(System.Int32)">
+            <summary> Listens for data coming from the I2C device. </summary>
+            <param name="DeviceID"> The device handle to receive data from. </param>
+            <returns> 1 byte of data. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CWrite(System.Int32,System.Byte)">
+            <summary> Sends data to the I2C device. </summary>
+            <param name="DeviceID"> The device handle to send data to. </param>
+            <param name="Data"> 1 byte of data to send. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CReadRegister8(System.Int32,System.Byte)">
+            <summary> Reads an 8-bit register. </summary>
+            <param name="DeviceID"> The device handle to read from. </param>
+            <param name="Register"> The register to request. </param>
+            <returns> The data contained in the given register. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CWriteRegister8(System.Int32,System.Byte,System.Byte)">
+            <summary> Writes an 8-bit register. </summary>
+            <param name="DeviceID"> The device handle to write to. </param>
+            <param name="Register"> The register to set. </param>
+            <param name="Data"> The data to write to the register. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CReadRegister16(System.Int32,System.Byte)">
+            <summary> Reads a 16-bit register. </summary>
+            <param name="DeviceID"> The device handle to write to. </param>
+            <param name="Register"> The register to request. </param>
+            <returns> The data contained in the given register. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.I2CWriteRegister16(System.Int32,System.Byte,System.UInt16)">
+            <summary> Writes a 16-bit register. </summary>
+            <param name="DeviceID"> The device handle to write to. </param>
+            <param name="Register"> The register to set. </param>
+            <param name="Data"> The data to write to the register. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SPISetup(System.Int32,System.Int32)">
+            <summary> Prepares an SPI bus for use. </summary>
+            <param name="BusNum"> The ID of the bus to set up. </param>
+            <param name="Speed"> The speed to use for the bus. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SPIRW(System.Int32,System.Byte[],System.Int32)">
+            <summary> Does an SPI transaction. </summary>
+            <param name="BusNum"> The bus to send/receive from. </param>
+            <param name="Data"> The data to send out (not modified). </param>
+            <param name="Length"> THe amount of data to send/receive. </param>
+            <returns> The data received from the bus. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialOpen(System.Byte,System.Int32)">
+            <summary> Attempts to prepare a UART device for use. </summary>
+            <param name="Device"> The ID of the UART bus to set up. </param>
+            <param name="Baud"> The baudrate to set the bus to. </param>
+            <returns> Device handle, or -1 on error </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialClose(System.Int32)">
+            <summary> Closes resources used by the UART bus. </summary>
+            <param name="DeviceID"> The bus handle to free resources for. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialPut(System.Int32,System.Byte[])">
+            <summary> Sends data over the UART bus. </summary>
+            <param name="DeviceID"> The bus handle to use. </param>
+            <param name="Data"> The data to send. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialDataAvailable(System.Int32)">
+            <summary> Checks how many bytes are available for read. </summary>
+            <param name="DeviceID"> The bus handle to use. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialFlush(System.Int32)">
+            <summary> Clears all data waiting to be sent/received. </summary>
+            <param name="DeviceID"> The bus handle to use. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialGetChar(System.Int32)">
+            <summary> Gets a single byte of data from the UART bus. </summary>
+            <param name="DeviceID"> The bus handle to use. </param>
+            <returns> One byte of data from the bus. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.RaspberryPi.SerialPrintf(System.Int32,System.Byte[])">
+            <summary> Sends data over the UART bus. </summary>
+            <param name="DeviceID"> The bus handle to use. </param>
+            <param name="Data"> The data to send. </param>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.SPIBusPi.Write(Scarlet.IO.IDigitalOut,System.Byte[],System.Int32)">
+            <summary> Simultaneously writes/reads data to/from the device. </summary>
+            <param name="DeviceSelect"> The chip select output to use to choose the desired device. </param>
+            <param name="Data"> The data to write. </param>
+            <param name="DataLength"> The amount of data to read/write. </param>
+            <returns> The data provided back by the device. </returns>
+        </member>
+        <member name="M:Scarlet.IO.RaspberryPi.SPIBusPi.Dispose">
+            <summary> Does nothing. </summary>
+        </member>
+        <member name="M:Scarlet.IO.Utilities.SoftwareInterrupt.#ctor(Scarlet.IO.IDigitalIn,System.Int32)">
+            <summary> Takes a non-interrupt capable <see cref="T:Scarlet.IO.IDigitalIn"/> and does software-based interrupt detection. </summary>
+            <remarks> Because this is done in software on a non-realtime OS, there is no guarantee that input events will be captured if they are too short. </remarks>
+            <param name="Input"> The digital input to listen for interrupts on. </param>
+            <param name="PollingTime"> The time in between checks for state changes, in milliseconds. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.#ctor(System.String,System.Boolean)">
+            <summary>
+            Constructs a DataLog system, which is used to log given data into a CSV file.
+            Particularly useful for applications like logging sensor data over time.
+            </summary>
+            <param name="Filename"> Name of the file to log to (a date and timestamp will be directly appended to this). </param>
+            <param name="AutoFlush"> If true, output will be flushed on every call to <see cref="M:Scarlet.Utilities.DataLog.Output(Scarlet.Utilities.DataUnit[])"/>, otherwise use <see cref="M:Scarlet.Utilities.DataLog.Flush"/> to manually flush. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.Output(Scarlet.Utilities.DataUnit[])">
+            <summary> Outputs these data points to CSV. If this is the first one, these structures will be used to build the header. </summary>
+            <remarks> You need to keep the order and number of elements the same each call. There is no internal sorting or checking. Things are output to CSV in the order given, so if the order is incorrect, data will be in the wrong column. </remarks>
+            <param name="Data"> The data to output. Provide as much as you'd like. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.Flush">
+            <summary> Manually flushes the output to the file. If AutoFlush is true, this is ignored. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.DeleteAll">
+            <summary> Deletes all DataLog CSV files with the same given Filename except any that are currently in-use. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.CloseFile">
+            <summary> Flush the output and stop writing. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.DataLog.CreateLogFile">
+            <summary> Creates a log file with a unique filename determined by a current timestamp. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.DataUnit.#ctor(System.String)">
+            <summary> A single set of instantaneous data. </summary>
+            <param name="SourceType"> The source type. Something like "MAX31855" </param>
+        </member>
+        <member name="M:Scarlet.Utilities.DataUnit.SetSystem(System.String)">
+            <summary> Sets the name of the system that this data source belongs to. Used in the CSV header. </summary>
+            <remarks> This returns itself, so that you can do something like this: <c>DataLog.Output(MySensor.GetDataUnit().SetSystem("GNDTemp"));</c> </remarks>
+            <param name="SystemName"> The name of the system where this data source belongs. Something like "GroundTemperature" </param>
+            <returns> Itself, so that you can inline this call. See remarks. </returns>
+        </member>
+        <member name="P:Scarlet.Utilities.Log.Destination">
+            <summary> Sets where log output is directed. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.SetGlobalOutputLevel(Scarlet.Utilities.Log.Severity)">
+            <summary> Sets all sources to have this minimum severity for output. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.SetSingleOutputLevel(Scarlet.Utilities.Log.Source,Scarlet.Utilities.Log.Severity)">
+            <summary>
+            Sets <param name="Source" /> to have minimum output level <param name="OutputLevel" />.
+            </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.SetAllOutputLevels(Scarlet.Utilities.Log.Severity[])">
+            <summary> Replaces output levels with the given array. Length must be equal. </summary>
+        </member>
+        <member name="F:Scarlet.Utilities.Log.SystemNames">
+            <summary> The list of systems that an error can originate from, used by Log.Error(). Override this in your implementation. </summary>
+        </member>
+        <member name="F:Scarlet.Utilities.Log.ErrorCodes">
+            <summary> A human-readable, concise description for every possible error, used by Log.Error(). Override this in your implementation. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Output(Scarlet.Utilities.Log.Severity,Scarlet.Utilities.Log.Source,System.String)">
+            <summary> Outputs a general log message if configured to output this type of message. </summary>
+            <param name="Severity"> How severe this message is. This partially determines if it is output. </param>
+            <param name="Src"> The system where this log entry is originating. </param>
+            <param name="Message"> The actual log entry to output. </param>
+        </member>
+        <member name="T:Scarlet.Utilities.Log.MessageProvider">
+            <summary>
+            Delegate to defer Output message creation until the message actually needs
+            to be logged.
+            </summary>
+            <returns>The message to log</returns>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Output(Scarlet.Utilities.Log.Severity,Scarlet.Utilities.Log.Source,Scarlet.Utilities.Log.MessageProvider)">
+            <summary> Delegate version of Output. This should only be used if
+            message creation would be more expensive than the creation of the 
+            delegate MessageProvider.
+            </summary>
+            <param name="Severity"> How severe this message is. </param>
+            <param name="Src"> The system where this log entry is originating. </param>
+            <param name="Message"> Delegate to provide message. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.ForceOutput(Scarlet.Utilities.Log.Severity,Scarlet.Utilities.Log.Source,System.String)">
+            <summary> Same as Output, but ignores logging settings and always outputs. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Exception(Scarlet.Utilities.Log.Source,System.Exception)">
+            <summary>
+            Outputs an Exception objet in the form of a stack trace to the console.
+            Exceptions are always output.
+            </summary>
+            <param name="Src"> The system that this Exception is originating from. </param>
+            <param name="Ex"> The Exception object. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Error(System.Int16)">
+            <summary> Outputs a defined error code to the console. </summary>
+            <param name="Error"> The error code, in standard form. E.g. 0x0000 for all OK. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Begin">
+            <summary> Outputs a line to the console specifying the logging settings. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.CreateLogFile">
+            <summary> Creates a log file with a unique filename determined by a current timestamp </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.StopFileLogging">
+            <summary> Stops logging to file (future output directed to console), then saves and closes the log file. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.Write(System.String)">
+            <summary>
+            Writes a message to the console.
+            Does not carriage return/line feed.
+            </summary>
+            <param name="Message"> Message to write. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.Log.WriteLine(System.String)">
+            <summary> Writes a string and applies a new line in the console with a carriage return and line feed. </summary>
+            <param name="Message"> Message to write. </param>
+        </member>
+        <member name="T:Scarlet.Utilities.Log.WriteDestination">
+            <summary> Write destination. </summary>
+        </member>
+        <member name="T:Scarlet.Utilities.Log.Source">
+            <summary> The subsystem where the error occured, for use in output filtering. </summary>
+        </member>
+        <member name="T:Scarlet.Utilities.Log.Severity">
+            <summary> How important the log entry is. </summary>
+            Debug = Used for program flow debugging and light troubleshooting (e.g. "Starting distance sensor handler")
+            Information = Used for troubleshooting (e.g. "Distance sensor detected successfully")
+            Warning = When an issue arises, but functionality sees little to no impact (e.g. "Distance sensor took longer than expected to find value")
+            Error = When an issue arises that causes significant loss of functionality to one system (e.g. "Distance sensor unreachable")
+            Fatal = When an issue arises that causes loss of functionality to multiple systems or complete shutdown (e.g. Current limit reached, shutting down all motors)
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.Start(System.String)">
+            <summary> Prepares the system for use. Creates a file if it doesn't exist, or reads the configuration if it does. </summary>
+            <param name="SystemName"> A unique identifier for this application, used as part of the filename to prevent multiple applications on one system from interfering. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.Save">
+            <summary> Saves the configuration to disk. </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.Set(System.String,System.String)">
+            <summary> Sets the specified property internally. Does not change the file, you must use Save() to save changes to file. </summary>
+            <param name="Key"> The reference for the data to set. </param>
+            <param name="Value"> The data to associate to the key. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.Get(System.String)">
+            <summary> Gets the specified property, or null if it doesn't exist. </summary>
+            <param name="Key"> The key to get associated data for. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.GetOrCreate(System.String,System.String)">
+            <summary> Gets the specified property, or if it doesn't exist, sets it to the default value and then returns that default value. </summary>
+            <param name="Key"> The key to get associated data for, or which to set if it doesn't exist. </param>
+            <param name="DefaultValue"> The value to set the key to, and return, if the key is not found. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.StateStore.CheckForBackups">
+            <summary> Checks if a backup file exists, and uses it instead. This likely means that the program crashed during saving last time. </summary>
+        </member>
+        <member name="T:Scarlet.Utilities.Constants">
+            <summary> Class to store constants </summary>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilData.ToString(System.Byte[])">
+            <summary> Returns a string from the byte representation of the string in unicode </summary>
+            <param name="Input"> Byte representation of the unicode string </param>
+            <returns> String representation of the bytes </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilData.TryToString(System.Byte[],System.String@)">
+            <summary> Tries to convert a byte input (unicode) to a string </summary>
+            <param name="Input"> Bytes to convert to string </param>
+            <param name="Output"> Output of the conversion. (Null if failed) </param>
+            <returns> True if string conversion succeeds </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilData.IsNumericType(System.Type)">
+            <summary> Determines if the given type is numeric. </summary>
+            <param name="Type"> Type to determine whether or not it is a numeric </param>
+            <returns> Returns <c>true</c> if param is a numeric; otherwise returns <c>false</c>. </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilData.SwapBytes(System.UInt16)">
+            <summary> Takes a 16bit number, and swaps the locations of the first and last 8b. E.g. 0x54EC would become 0xEC54. </summary>
+            Intended for use with 16b I2C devices that expect the byte order reversed.
+            <param name="Input"> The 16b value to swap the bytes of. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilData.CRC16(System.Byte[])">
+            <summary> Computes a CRC-16 checksum from given payload. </summary>
+            <param name="Payload"> Payload of which to compute the checksum. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilMain.SubArray``1(``0[],System.Int32,System.Int32)">
+            <summary> Returns subarray of given array. </summary>
+            <typeparam name="T"> Datatype of array </typeparam>
+            <param name="Data"> Array to manipulate </param>
+            <param name="Index"> Starting index of subarray. </param>
+            <param name="Length"> Length of wanted subarray. </param>
+            <returns> Sub array of data[index:index+length-1] (inclusive) </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilMain.BytesToNiceString(System.Byte[],System.Boolean)">
+            <summary> Gives a user-readable representation of a byte array. </summary>
+            <param name="Data"> The array to format. </param>
+            <param name="Spaces"> Whether to add spaces between every byte in the output </param>
+            <returns> A string formatted as such: "4D 3A 20 8C", or "4D3A208C", depending on the Spaces parameter. </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilMain.StringToBytes(System.String)">
+            <summary> Takes in a string, converts it into its byte representation. </summary>
+            <param name="Data"> String to convert into bytes </param>
+            <returns> Byte array that represents the given string. </returns>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilMain.RepeatWithSeperator(System.String,System.String,System.Int32)">
+            <summary> Creates a string bby repeating a sequence seperated by something else, with fenceposting. </summary>
+            <param name="ToRepeat"> The string to repeat [Times] times. </param>
+            <param name="Seperator"> The string to place in between each occurence of [ToRepeat]. </param>
+        </member>
+        <member name="M:Scarlet.Utilities.UtilMain.LinearMap(System.Double,System.Double,System.Double,System.Double,System.Double)">
+            <summary> Takes an input value, original range, and final range. Returns input value linearly mapped to the final range. </summary>
+            <param name="Value"> The input value to be mapped (should be within SrcMin and SrcMax). </param>
+            <param name="SrcMin"> Minimum of the original range. </param>
+            <param name="SrcMax"> Maximum of the original range. </param>
+            <param name="DstMin"> Minimum of the destination range. </param>
+            <param name="DstMax"> Maximum of the destination range. </param>
+        </member>
+        <member name="T:BBBCSIO.ScarletI2CPortFS">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Provides the I2C Input/Output Port functionality for a BeagleBone Black
+            This is the SYSFS version
+            
+            Be aware that you need to ensure the I2C port is configured in the Device
+            Tree before this code will work.
+            
+            NOTE that you can use the i2c-tools package to probe the BBB for all available
+              I2C ports and also to probe for the addresses of the devices addresses
+              connected to a particular I2C port.
+            
+            </summary>
+            <history>
+               22 Jan 15  Cynic - Originally written
+               20 Jan 18  Cai B - Added error code output for I/O errors
+                                  Lines 45, 78, 137, 141, 353 edited.
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletI2CPortFS.#ctor(BBBCSIO.I2CPortEnum)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Constructor
+            </summary>
+            <param name="i2cPortIn">The I2C port we use</param>
+            <history>
+               22 Jan 15  Cynic - Originally written
+            </history>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:BBBCSIO.ScarletI2CPortFS.Write(System.Int32,System.Byte[],System.Int32)" -->
+        <!-- Badly formed XML comment ignored for member "M:BBBCSIO.ScarletI2CPortFS.Read(System.Int32,System.Byte[],System.Int32)" -->
+        <member name="M:BBBCSIO.ScarletI2CPortFS.OpenPort">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Opens the port. Throws an exception on failure
+            
+            </summary>
+            <history>
+               22 Jan 15 Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletI2CPortFS.ClosePort">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Closes the port. 
+            
+            </summary>
+            <history>
+               22 Jan 15 Cynic - Originally written
+            </history>
+        </member>
+        <member name="P:BBBCSIO.ScarletI2CPortFS.I2CPort">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the I2C Port. There is no Set accessor this is set in the constructor
+            </summary>
+            <history>
+               22 Jan 15 Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletI2CPortFS.PortDirection">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the PortDirection
+            </summary>
+            <history>
+               22 Jan 15 Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletI2CPortFS.Dispose(System.Boolean)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Implement IDisposable. 
+            Dispose(bool disposing) executes in two distinct scenarios. 
+            
+               If disposing equals true, the method has been called directly 
+               or indirectly by a user's code. Managed and unmanaged resources 
+               can be disposed.
+             
+               If disposing equals false, the method has been called by the 
+               runtime from inside the finalizer and you should not reference 
+               other objects. Only unmanaged resources can be disposed. 
+            
+             see: http://msdn.microsoft.com/en-us/library/system.idisposable.dispose%28v=vs.110%29.aspx
+            
+            </summary>
+            <history>
+               28 Aug 14 Cynic - Originally written
+            </history>
+        </member>
+        <member name="T:BBBCSIO.ScarletSPIPortFS">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Provides the SPI Master Input/Output Port functionality for a BeagleBone Black
+            This is the SPIDEV version
+            
+            Be aware that you need to ensure the SPI port is configured in the Device
+            Tree before this code will work.
+            
+            Also NOTE that you cannot use SPIPORT_1 without disabling the HDMI device
+            as they use some of the same pins.
+            
+            Also NOTE that if you use the GPIO based slave select lines you cannot
+              also connect anything to the SPI devices internal CS0 or CS1 slave select
+              lines. These will always be activated on every write irregardless
+              of the GPIO based slave select also asserted. This is just the way the
+              SPIDev driver works.
+            
+            </summary>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet:
+                - Removed native CS pin usage features, as we don't need this.
+                - Switched from using pins to IDigitalOut to better align with Scarlet's structure.
+                - Fixed bug that caused CS line to not be returned to high after communication finished.
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.#ctor(BBBCSIO.SPIPortEnum)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Constructor
+            </summary>
+            <param name="spiPortIn">The SPI port we use</param>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Renamed
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:BBBCSIO.ScarletSPIPortFS.SPITransfer(Scarlet.IO.IDigitalOut,System.Byte[],System.Byte[],System.Int32)" -->
+        <member name="M:BBBCSIO.ScarletSPIPortFS.GetMode">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the SPI mode. This is used for all Slave Devices on the port
+            It cannot be individually set on a per slave basis. At least one
+            non-GPIO slave must be enabled
+            </summary>
+            <param name="ssHandle">The SPI Slave Device handle</param>
+            <returns>the spi mode</returns>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Removing SS file descriptors
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.SetMode(BBBCSIO.SPIModeEnum)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Sets the SPI mode. This is used for all Slave Devices on the port
+            It cannot be individually set on a per slave basis. At least one
+            non-GPIO slave must be enabled
+            </summary>
+            <param name="spiMode">The spi mode to set</param>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.GetDefaultSpeedInHz">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the Default SPI speed in Hertz. This value can be overridden on 
+            a per slave basis by setting the SpeedInHz in the SPISlaveDeviceHandle
+            </summary>
+            <returns>the spi port speed in Hertz</returns>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.SetDefaultSpeedInHz(System.UInt32)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Sets the Default SPI speed in Hertz. This value can be overridden on 
+            a per slave basis by setting the SpeedInHz in the SPISlaveDeviceHandle
+            </summary>
+            <param name="spiSpeedInHz">The speed in Hertz to set</param>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Removed SS file descriptors
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.EnableSPIGPIOSlaveDevice(Scarlet.IO.IDigitalOut)">
+            <param name="output"> The <see cref="T:Scarlet.IO.IDigitalOut"/> to prepare for SPI CS use. </param>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Switched from direct GPIO control to IDigitalOut.
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.DisableAllSPISlaveDevices">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Disables all SPI slave devices. 
+            </summary>
+            <history>
+               16 Sep 17  Cai Biesinger - Modified for Scarlet: Disposes IDigitalOut objects instead of closing handles.
+               21 Dec 14  Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.ClosePort">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Closes the port. Because we do not open the port at the PortFS level
+            we cannot close it there either. This overrides the PortFS.ClosePort()
+            and does what is necessary internally to close things up.
+            
+            </summary>
+            <history>
+               21 Dec 14 Cynic - Originally written
+            </history>
+        </member>
+        <member name="P:BBBCSIO.ScarletSPIPortFS.SPIPort">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the SPI Port. There is no Set accessor this is set in the constructor
+            </summary>
+            <history>
+               21 Dec 14 Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.PortDirection">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Gets the PortDirection
+            </summary>
+            <history>
+               21 Dec 14 Cynic - Originally written
+            </history>
+        </member>
+        <member name="M:BBBCSIO.ScarletSPIPortFS.Dispose(System.Boolean)">
+            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=
+            <summary>
+            Implement IDisposable. 
+            Dispose(bool disposing) executes in two distinct scenarios. 
+            
+               If disposing equals true, the method has been called directly 
+               or indirectly by a user's code. Managed and unmanaged resources 
+               can be disposed.
+             
+               If disposing equals false, the method has been called by the 
+               runtime from inside the finalizer and you should not reference 
+               other objects. Only unmanaged resources can be disposed. 
+            
+             see: http://msdn.microsoft.com/en-us/library/system.idisposable.dispose%28v=vs.110%29.aspx
+            
+            </summary>
+            <history>
+               28 Aug 14 Cynic - Originally written
+            </history>
+        </member>
+    </members>
+</doc>

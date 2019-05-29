@@ -72,13 +72,17 @@
     <Compile Include="Components\ICamera.cs" />
     <Compile Include="Components\IMotor.cs" />
     <Compile Include="Components\Inputs\TLV2544.cs" />
+    <Compile Include="Components\Interfaces\PCA9535E.cs" />
     <Compile Include="Components\ISensor.cs" />
     <Compile Include="Components\IServo.cs" />
     <Compile Include="Components\ISubsystem.cs" />
     <Compile Include="Components\Motors\CytronMD30C.cs" />
+    <Compile Include="Components\Motors\PololuHPMDG2.cs" />
     <Compile Include="Components\Motors\Servo.cs" />
     <Compile Include="Components\Motors\TalonMC.cs" />
     <Compile Include="Components\Motors\VESC.cs" />
+    <Compile Include="Components\Outputs\LTC6992.cs" />
+    <Compile Include="Components\Outputs\MAX571x.cs" />
     <Compile Include="Components\Sensors\BME280.cs" />
     <Compile Include="Components\Sensors\BNO055.cs" />
     <Compile Include="Components\Sensors\HX711.cs" />
@@ -132,6 +136,9 @@
     <Compile Include="IO\RaspberryPi\RaspberryPi.cs" />
     <Compile Include="IO\RaspberryPi\SPIBusPi.cs" />
     <Compile Include="IO\RaspberryPi\UARTBusPi.cs" />
+    <Compile Include="IO\Transforms\AnalogueInTransform.cs" />
+    <Compile Include="IO\Transforms\AnalogueOutTransform.cs" />
+    <Compile Include="IO\Transforms\TransformTypes.cs" />
     <Compile Include="IO\Utilities\SoftwareInterrupt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\DataLog.cs" />

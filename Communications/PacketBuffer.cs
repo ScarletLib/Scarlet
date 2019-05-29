@@ -71,8 +71,9 @@ namespace Scarlet.Communications
         {
             lock (this.Queue)
             {
-                try { return this.Queue.Dequeue(); }
-                catch (InvalidOperationException) { return null; }
+                return (this.Queue.Count > 0) ? this.Queue.Dequeue() : null;
+                //try { return this.Queue.Dequeue(); }
+                //catch (InvalidOperationException) { return null; }
             }
         }
 
