@@ -72,6 +72,7 @@
     <Compile Include="Components\ICamera.cs" />
     <Compile Include="Components\IMotor.cs" />
     <Compile Include="Components\Inputs\TLV2544.cs" />
+    <Compile Include="Components\Interfaces\PCA9535E.cs" />
     <Compile Include="Components\ISensor.cs" />
     <Compile Include="Components\IServo.cs" />
     <Compile Include="Components\ISubsystem.cs" />
