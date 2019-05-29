@@ -43,7 +43,7 @@ namespace Scarlet.Components.Motors
         public bool StopOnFault { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating the sleep state of the motor.
+        /// Gets or sets a value indicating whether the motor driver is in sleep mode.
         /// No effect if Sleep pin not set in constructor.
         /// </summary>
         public bool Sleep
@@ -96,23 +96,6 @@ namespace Scarlet.Components.Motors
             }
         }
 
-        /// <summary> Sets the speed on a thread for filtering. </summary>
-        private void SetSpeedThread()
-        {
-            float Output = this.Filter.GetOutput();
-            while (!this.Filter.IsSteadyState())
-            {
-                if (this.Stopped) { SetSpeedDirectly(0); }
-                else
-                {
-                    this.Filter.Feed(this.TargetSpeed);
-                    SetSpeedDirectly(this.Filter.GetOutput());
-                }
-                Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
-            }
-            this.OngoingSpeedThread = false;
-        }
-
         /// <summary>
         /// Sets the motor speed. Output may vary from the given value under the following conditions:
         /// - Input exceeds maximum speed. Capped to given maximum.
@@ -131,6 +114,23 @@ namespace Scarlet.Components.Motors
             }
             else { SetSpeedDirectly(Speed); }
             this.TargetSpeed = Speed;
+        }
+
+        /// <summary> Sets the speed on a thread for filtering. </summary>
+        private void SetSpeedThread()
+        {
+            float Output = this.Filter.GetOutput();
+            while (!this.Filter.IsSteadyState())
+            {
+                if (this.Stopped) { SetSpeedDirectly(0); }
+                else
+                {
+                    this.Filter.Feed(this.TargetSpeed);
+                    SetSpeedDirectly(this.Filter.GetOutput());
+                }
+                Thread.Sleep(Constants.DEFAULT_MIN_THREAD_SLEEP);
+            }
+            this.OngoingSpeedThread = false;
         }
 
         /// <summary> Creates a new thread for setting speed during motor filtering output </summary>
