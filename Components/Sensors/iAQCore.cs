@@ -46,7 +46,15 @@ namespace Scarlet.Components.Sensors
         /// <summary> Gets the most recent data from the sensor. This may fail, check <see cref="Test"/> to see the most recent status after this. </summary>
         public void UpdateState()
         {
+            ushort Data = this.I2C.ReadRegister16(this.Address, 0xFF);
+            ushort FixedData = UtilData.SwapBytes(Data);
+            if (FixedData > 2000) { this.LastReading = new byte[9]; }
+            else { this.LastReading = new byte[] { (byte)(Data & 0xFF), (byte)((Data >> 8) & 0xFF), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }; }
+
+            // Won't work until we get arbitrary-length reads functioning.
+            /*
             byte Attempts = 0;
+            
             do
             {
                 this.LastReading = this.I2C.Read(this.Address, 9);
@@ -58,7 +66,9 @@ namespace Scarlet.Components.Sensors
             {
                 this.ReadingValid = false;
                 Log.Output(Log.Severity.WARNING, Log.Source.SENSORS, "Failed to get valid sensor data from iAQ-Core after 10 attempts. Last status code: 0x" + this.LastReading[2].ToString("X2"));
-            }
+                if (this.TraceLogging) { Log.Trace(this, "Last attempt returned data 0x" + UtilMain.BytesToNiceString(this.LastReading, true)); }
+                if (this.TraceLogging) { Log.Trace(this, "Alt got " + data); }
+            }*/
         }
 
         /// <summary> Gets the most recent CO2 content reading. Update the reading with <see cref="UpdateState"/>. </summary>
